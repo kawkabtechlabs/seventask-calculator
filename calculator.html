@@ -16,7 +16,7 @@
 <link rel="icon" href="icon-192.png?v=seven-task-outline-1" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=seven-task-outline-1">
 <meta name="description" content="SevenTask Calculator is your calm, capable calculator for everyday math, money, science and work.">
-<style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"><style>
   :root{ --page-bg:#F4F4F6; }
   *{ box-sizing:border-box; }
   html,body{ height:100%; }
@@ -53,7 +53,7 @@
   }
   .tai7-dock:hover svg{ filter:drop-shadow(0 4px 4px rgba(17,17,20,.4)) drop-shadow(0 20px 28px rgba(17,17,20,.38)) drop-shadow(0 1px 0 rgba(255,255,255,.2)); }
 </style>
-<style>html,body{height:100%;margin:0;background:#ffffff;overflow:hidden}body{padding:0}taskai7-calculator{position:fixed;inset:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);display:block;width:100%;height:auto} @media (max-width:360px){taskai7-calculator{font-size:15px}} @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"><style>html,body{height:100%;margin:0;background:#ffffff;overflow:hidden}body{padding:0}taskai7-calculator{position:fixed;inset:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);display:block;width:100%;height:auto} @media (max-width:360px){taskai7-calculator{font-size:15px}} @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   @keyframes brand-mark-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1px) scale(1.045)}}@keyframes calc-bubble-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}.seven-bubble{position:fixed;right:26px;bottom:26px;z-index:1000000;display:flex;align-items:center;gap:10px;padding:9px 17px 9px 10px;border:1px solid #111114;border-radius:999px;background:#ffffff;color:#111114;box-shadow:none;cursor:pointer;transition:transform .2s,opacity .2s}.seven-bubble img{width:38px;height:38px;display:block;animation:brand-mark-breathe 4.8s ease-in-out infinite}.seven-bubble{animation:calc-bubble-float 5s ease-in-out infinite}.seven-bubble:hover{transform:translateY(-3px) scale(1.03)}.seven-bubble .brand-title-line{display:flex;align-items:baseline;gap:4px;white-space:nowrap}.seven-bubble .brand-seven{font:400 15px/1.05 "Fjalla One","DM Sans",sans-serif;letter-spacing:.01em}.seven-bubble .brand-calculator{font:550 13px/1.05 "DM Sans",system-ui,sans-serif;letter-spacing:-.025em}@media(prefers-reduced-motion:reduce){.seven-bubble,.seven-bubble img{animation:none}}.seven-bubble[aria-expanded=true]{opacity:0;pointer-events:none;transform:translateY(8px) scale(.94)}taskai7-calculator{position:fixed;inset:0;display:block;width:100%;height:100%;pointer-events:none;z-index:999999}.info-links{display:grid;gap:6px;margin-top:12px}.info-links a{display:flex;justify-content:space-between;padding:11px 12px;border:1px solid #e8e9e6;border-radius:10px;color:#1b2119;text-decoration:none;font:650 12px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.info-links a:hover{background:#f3f3f3;border-color:#111114}.info-links a span{color:#111114}.histrow{display:grid!important;grid-template-columns:1fr auto;gap:5px 14px!important;align-items:center!important;padding:13px 12px!important;border-bottom:1px solid #f0f0ed!important}.histrow .histexpr{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#575b58;font:500 12px/1.35 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.histrow .histres{grid-column:2;grid-row:1/3;color:#182014!important;font-size:18px!important}.histrow .histstamp{grid-column:1;color:#999d96;font-size:10px;text-align:left}.histrow:hover{background:#f6f8f3}.histclear{padding:12px!important;color:#9c3f34!important}.calc-open .seven-bubble{opacity:0;pointer-events:none}.win.popup-mode{border-radius:0!important;border:0!important}.win.popup-mode .titlebar{padding-top:max(10px,env(safe-area-inset-top))}.win:not(.popup-mode){border:1px solid #dfe4d8;border-radius:24px;box-shadow:0 32px 90px #0008,0 0 0 1px #1111141e}.win:not(.popup-mode) .titlebar{padding:14px 16px}.win button.btn.eq{background:#111114!important;border-color:#111114!important;color:#fff!important;box-shadow:none!important}.win button.btn.eq:hover{background:#333!important}.win .modeitem.picked{background:#111114!important;color:#fff!important}.win .modeitem.picked svg{color:#fff!important}.win .modeitem.active svg{color:#111114!important}
 @media(max-width:719px){.seven-bubble{display:none}taskai7-calculator{inset:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);height:auto}}
   </style>
@@ -307,11 +307,19 @@
     { id:'carloan', name:'Car Loan', fields:[
         {key:'carPrice', label:'Car price', type:'number', default:''},
         {key:'downPayment', label:'Down payment', type:'number', default:''},
+        {key:'tradeIn', label:'Trade-in allowance', type:'number', default:0},
+        {key:'taxPct', label:'Sales tax %', type:'number', default:0},
+        {key:'fees', label:'Title / registration fees', type:'number', default:0},
         {key:'rate', label:'Rate % p.a.', type:'number', default:''},
         {key:'years', label:'Tenure (years)', type:'number', default:''},
-      ], compute:v=>{ const P=Math.max(0,num(v.carPrice)-num(v.downPayment)), months=Math.round(num(v.years)*12);
-        const emi=emiCalc(P,num(v.rate),months);
-        return [ {label:'Loan amount', value:fmtCur(P)}, {label:'EMI', value:fmtCur(emi), emphasis:true} ];
+      ], compute:v=>{ const price=Math.max(0,num(v.carPrice)), tax=price*Math.max(0,num(v.taxPct))/100, fees=Math.max(0,num(v.fees));
+        const onRoad=price+tax+fees, down=Math.min(onRoad,Math.max(0,num(v.downPayment))), tradeIn=Math.min(onRoad-down,Math.max(0,num(v.tradeIn)));
+        const P=Math.max(0,onRoad-down-tradeIn), months=Math.max(0,Math.round(num(v.years)*12)), rate=Math.max(0,num(v.rate));
+        const emi=emiCalc(P,rate,months), total=emi*months, interest=Math.max(0,total-P);
+        return [ {label:'Car price', value:fmtCur(price)}, {label:'Sales tax', value:fmtCur(tax)}, {label:'Title / registration fees', value:fmtCur(fees)},
+          {label:'Down payment', value:fmtCur(down)}, {label:'Trade-in credit', value:fmtCur(tradeIn)}, {label:'Amount financed', value:fmtCur(P)},
+          {label:'Monthly EMI', value:fmtCur(emi), emphasis:true}, {label:'Total interest', value:fmtCur(interest)},
+          {label:'Total of loan payments', value:fmtCur(total)}, {label:'Total cost incl. down payment & trade-in', value:fmtCur(total+down+tradeIn)} ];
       }},
     { id:'loaneligibility', name:'Loan Eligibility', fields:[
         {key:'income', label:'Monthly income', type:'number', default:''},
@@ -1162,7 +1170,7 @@
 
   /* ===================== shadow template ===================== */
   const TEMPLATE = `
-  <style>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"><style>
     :host{ all:initial; }
     *{ box-sizing:border-box; }
     .win{
@@ -1249,11 +1257,12 @@
     .shortcut-os span{display:block;margin-bottom:3px;font-size:9px;font-weight:650;color:#777980}
     .shortcut-os kbd{display:inline-block;max-width:100%;padding:3px 6px;border:1px solid #e2e2e5;border-bottom-width:2px;border-radius:5px;background:#f7f7f8;color:#222226;font:600 9.5px/1.35 "DM Sans",system-ui,sans-serif;white-space:normal}
     .infolabel{ font-size:10px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#B0B0B4; margin-bottom:6px; }
-    .infoversion{ font-size:12.5px; color:#3A3A3E; }
-    .infoversion b{ color:#111114; }
+    .infoversion{ display:flex;align-items:baseline;gap:6px;color:#3A3A3E; }
+    .infoversion .version-name{font:400 9px/1 "Fjalla One","DM Sans",sans-serif;letter-spacing:.11em;color:#777980;}
+    .infoversion .version-number{font:650 16px/1 Manrope,"DM Sans",sans-serif;letter-spacing:-.045em;color:#111114;}
     .infoabout{ font-size:11.5px; color:#6B6B70; line-height:1.6; }
     .infomade{ margin-top:14px; padding-top:14px; border-top:1px solid #EFEFF1; font-size:11.5px; color:#8A8A8E; }
-    .infomade b{ color:#111114; font-weight:700; }
+    .infomade b{ color:#111114; font-weight:700; }.kawkab-brand{display:inline-flex;flex-direction:column;align-items:flex-start;vertical-align:middle;gap:0;line-height:1}.kawkab-brand .kawkab-word{font-family:Michroma,sans-serif;font-size:1em;letter-spacing:.025em;text-transform:lowercase;font-weight:400}.kawkab-brand small{display:block;font-family:Michroma,sans-serif;font-size:.42em;letter-spacing:.36em;text-transform:uppercase;font-weight:400;line-height:1.5}
 
     .toolbar{ position:relative; flex:0 0 auto; padding:10px 12px; border-bottom:1px solid #EFEFF1; display:flex; align-items:center; gap:8px; }
     .modebtn{ flex:1 1 auto; display:flex; align-items:center; gap:6px; justify-content:space-between; background:#FFFFFF; border:1px solid #E4E4E7; border-radius:9px; padding:8px 11px; cursor:pointer; color:#111114; font-size:12.5px; font-weight:600; transition:border-color .15s ease, transform .1s ease; overflow:hidden; }
@@ -1307,7 +1316,7 @@
     .kpview{ display:none; flex:1 1 auto; min-height:0; flex-direction:column; }
     .kpview.show{ display:flex; animation:tai7ViewIn .16s ease; }
 
-    .display{ flex:0 0 auto; padding:14px 16px 10px; text-align:right; border-bottom:1px solid #EFEFF1; }
+    .display{ flex:0 0 auto; padding:14px 16px 10px; text-align:right; border-bottom:1px solid #EFEFF1; cursor:grab; touch-action:none; }
     .history{ display:flex; flex-direction:column; gap:2px; margin-bottom:4px; max-height:34px; overflow:hidden; opacity:.6; }
     .history span{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-size:10.5px; color:#8A8A8E; cursor:pointer; }
     .history span:hover{ color:#111114; }
@@ -1479,7 +1488,7 @@
     .cal-day.today{ box-shadow:inset 0 0 0 1px #C7C7CB; font-weight:700; }
     .cal-day.selected{ background:#111114; color:#FFFFFF; font-weight:700; }
     .cal-day.muted{ color:#D4D4D6; cursor:default; }
-    .cal-today{ width:100%; margin-top:8px; padding:7px; border-radius:8px; border:1px solid #E4E4E7; background:#FFFFFF; color:#6B6B70; font-size:11.5px; font-weight:700; cursor:pointer; transition:.12s ease; }
+    .cal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.cal-today{ width:100%; padding:7px; border-radius:8px; border:1px solid #E4E4E7; background:#FFFFFF; color:#6B6B70; font-size:11.5px; font-weight:700; cursor:pointer; transition:.12s ease; }
     .cal-today:hover{ background:#F5F5F6; color:#111114; }
 
     .time-cols{ display:flex; align-items:stretch; gap:6px; height:180px; }
@@ -1624,7 +1633,7 @@
       </button>
       <button class="brand-home" data-action="brand-home" type="button" aria-label="SevenTask Calculator — open Just the calculator" title="SevenTask Calculator · Just the calculator">
         <span class="logobtn" aria-hidden="true"><img class="ticon" src="icon.svg" alt=""></span>
-        <span class="title"><span class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></span><small>by Kawkab Tech Labs</small></span>
+        <span class="title"><span class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></span><small class="kawkab-brand" aria-label="Kawkab Tech Labs"><span class="kawkab-word">kawkab</span><small>TECH LABS</small></small></span>
       </button>
       <button class="iconbtn title-history" data-action="history-toggle" aria-label="Open calculation history" title="Calculation history">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 7.7V3.9m0 3.8h3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 7.5A8.5 8.5 0 1 1 3.6 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 7.7v4.6l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1644,7 +1653,7 @@
       </div>
       <div class="infosection">
         <div class="infolabel">Version</div>
-        <div class="infoversion"><b>TOUHID 1.0</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.0</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -1662,19 +1671,19 @@
           <div class="shortcut-row"><b class="shortcut-name">Delete last entry</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Backspace</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>Delete</kbd></div></div></div>
           <div class="shortcut-row"><b class="shortcut-name">Undo · Redo</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Ctrl Z</kbd> <kbd>Ctrl Y</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>⌘ Z</kbd> <kbd>⌘ Y</kbd></div></div></div>
           <div class="shortcut-row"><b class="shortcut-name">Search calculators</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Ctrl K</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>⌘ K</kbd></div></div></div>
-          <div class="shortcut-row"><b class="shortcut-name">Return to calculator list</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Backspace</kbd> from a tool</div><div class="shortcut-os"><span>Mac</span><kbd>Delete</kbd> from a tool</div></div></div><div class="shortcut-row"><b class="shortcut-name">Type calculator</b><div class="shortcut-keys"><div class="shortcut-os"><span>Both</span><kbd>calculator</kbd> in the calculator window, outside an input field</div><div class="shortcut-os"><span>Both</span><kbd>Esc</kbd> closes the picker</div></div></div><div class="shortcut-row"><b class="shortcut-name">Calculator list · move / select</b><div class="shortcut-keys"><div class="shortcut-os"><span>Both</span><kbd>↑ ↓</kbd> move · <kbd>Enter</kbd> select</div><div class="shortcut-os"><span>Both</span><kbd>PgUp / PgDn</kbd> · <kbd>Home / End</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Open calculator list</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>C</kbd> or type <kbd>calculator</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>C</kbd> or type <kbd>calculator</kbd></div></div></div><div class="shortcut-row"><b class="shortcut-name">Calculator list · move / select</b><div class="shortcut-keys"><div class="shortcut-os"><span>Both</span><kbd>↑ ↓</kbd> move · <kbd>Enter</kbd> select</div><div class="shortcut-os"><span>Both</span><kbd>PgUp / PgDn</kbd> · <kbd>Home / End</kbd></div></div></div>
           <div class="shortcut-row"><b class="shortcut-name">Escape</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Esc</kbd> close panel/list, or clear</div><div class="shortcut-os"><span>Mac</span><kbd>Esc</kbd> close panel/list, or clear</div></div></div>
         </div>
       </div>
-      <div class="infomade">Made by <b>Kawkab Tech Labs</b></div>
-      <div class="info-links"><a href="login.html">Sign in <span>↗</span></a><a href="plans.html">Explore plans <span>↗</span></a><a href="install.html">Install &amp; widgets <span>↗</span></a></div>
+      <div class="infomade">Made by <span class="kawkab-brand" aria-label="Kawkab Tech Labs"><span class="kawkab-word">kawkab</span><small>TECH LABS</small></span></div>
+      <div class="info-links"><a href="install.html">Install the app &amp; widgets <span>↗</span></a></div>
     </div>
 
     <div class="historybackdrop" data-historybackdrop></div>
     <div class="historydrawer" data-historypanel>
       <div class="infobrand">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#111114" stroke-width="1.6"/><path d="M12 7.5V12l3.2 2" stroke="#111114" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <div class="infobrandtext"><b>History</b></div>
+        <div class="infobrandtext"><b>History</b><span>Last 24 hours · saved on this device</span></div>
         <button class="iconbtn" data-action="history-toggle" title="Close">✕</button>
       </div>
       <div class="histlist" data-histlist></div>
@@ -1871,13 +1880,16 @@
       // instead of floating, and skips drag/resize (used for extension popups /
       // fixed embeds where there's no page around it to float over).
       const launchParams=new URLSearchParams(location.search);
+      const desktopMode=launchParams.has('desktop');
+      const requestedFeature=launchParams.get('feature');
+      if(desktopMode&&requestedFeature&&(requestedFeature==='scientific'||requestedFeature==='casio'||requestedFeature==='programmer'||requestedFeature==='unitconverter'||CALC_MAP[requestedFeature])) this.feature=requestedFeature;
       const roomyDemo=launchParams.has('demo') && window.innerWidth>=680;
       if(roomyDemo){
         this.$win.classList.add('demo-mode');
         this.$win.style.setProperty('--tai7-w',Math.min(480,Math.max(400,Math.floor(window.innerWidth*.42)))+'px');
         this.$win.style.setProperty('--tai7-h',Math.min(720,Math.max(560,window.innerHeight-120))+'px');
       }
-      if(this.hasAttribute('popup') || (launchParams.has('embed') && !roomyDemo) || (!roomyDemo && window.matchMedia('(max-width: 719px)').matches)){
+      if(this.hasAttribute('popup') || (!desktopMode&&launchParams.has('embed')&&!roomyDemo) || (!desktopMode&&!roomyDemo&&window.matchMedia('(max-width: 719px)').matches)){
         this.$win.classList.add('popup-mode');
         this.popupMode = true;
         const duplicateButton=this.$win.querySelector('[data-action="duplicate"]'); if(duplicateButton) duplicateButton.hidden=true;
@@ -1888,12 +1900,14 @@
       this.updateBaseTabs();
       this.render();
       this.renderHistory();
-      if(this.popupMode || roomyDemo) this.open();
+      if(this.popupMode || roomyDemo || desktopMode) this.open();
+      this.historyExpiryTimer=setInterval(()=>{if(this.pruneHistory()){this.renderHistory();if(this.$historyPanel.classList.contains("open"))this.renderHistoryPanel();this.saveState();}},5*60*1000);
       const warmMenu=()=>this.ensureMenuBuilt();
       if('requestIdleCallback' in window) requestIdleCallback(warmMenu,{timeout:1200});
       else setTimeout(warmMenu,180);
     }
 
+    disconnectedCallback(){ if(this.historyExpiryTimer) clearInterval(this.historyExpiryTimer); }
     ensureMenuBuilt(){if(this.menuBuilt)return;this.buildMenu();}
 
     syncMenuSelection(){
@@ -1990,7 +2004,7 @@
           if(s.mode) this.mode = s.mode;
         }
         const savedHistory = JSON.parse(localStorage.getItem(this.HISTORY_KEY) || '[]');
-        if(Array.isArray(savedHistory)) this.history = savedHistory.filter(h => h && typeof h.expr==='string' && typeof h.result==='string').slice(-100);
+        if(Array.isArray(savedHistory)){ const cutoff=Date.now()-86400000; this.history=savedHistory.filter(h=>h&&typeof h.expr==='string'&&typeof h.result==='string'&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)>=cutoff&&Number(h.createdAt)<=Date.now()+60000).slice(-100); }
       }catch(e){ this.history=[]; }
     }
     saveState(){
@@ -2002,6 +2016,7 @@
       };
       try{
         localStorage.setItem(this.STORE_KEY, JSON.stringify(s));
+        this.pruneHistory();
         localStorage.setItem(this.HISTORY_KEY, JSON.stringify(this.history.slice(-100)));
       }catch(e){}
     }
@@ -2025,21 +2040,21 @@
 
     duplicate(){
       if(this.popupMode) return;
+      if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature);return;}
       const el = document.createElement('taskai7-calculator');
       el.feature = 'basic';
       document.body.appendChild(el);
       el.open();
-      const gap=16;
-      const paneW=Math.max(320,Math.min(480,Math.floor((window.innerWidth-48)/2)));
-      const h=Math.max(440,Math.min(window.innerHeight-32,720));
-      const left=Math.max(8,Math.round((window.innerWidth-(paneW*2+gap))/2));
-      const top=Math.max(8,Math.round((window.innerHeight-h)/2));
-      [[this,left],[el,left+paneW+gap]].forEach(([calc,x])=>{
-        calc.$win.style.setProperty('--tai7-w',paneW+'px');
-        calc.$win.style.setProperty('--tai7-h',h+'px');
-        calc.$win.style.setProperty('--tai7-left',x+'px');
-        calc.$win.style.setProperty('--tai7-top',top+'px');
-      });
+      const rect=this.$win.getBoundingClientRect(),gap=16;
+      const width=rect.width,height=rect.height;
+      let left=rect.left+width+gap;
+      if(left+width>window.innerWidth-8) left=rect.left-width-gap;
+      left=Math.min(Math.max(8,left),Math.max(8,window.innerWidth-width-8));
+      const top=Math.min(Math.max(8,rect.top+gap),Math.max(8,window.innerHeight-height-8));
+      el.$win.style.setProperty('--tai7-w',width+'px');
+      el.$win.style.setProperty('--tai7-h',height+'px');
+      el.$win.style.setProperty('--tai7-left',left+'px');
+      el.$win.style.setProperty('--tai7-top',top+'px');
     }
 
     // ---------- events ----------
@@ -2169,6 +2184,8 @@
         if(calNav){ this.navCalendar(calNav.closest('[data-picker-panel]').dataset.pickerPanel, parseInt(calNav.dataset.calNav,10)); return; }
         const calToday = e.target.closest('[data-cal-today]');
         if(calToday){ const key=calToday.closest('[data-picker-panel]').dataset.pickerPanel; const now=new Date(),iso=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; this.pickDate(key, iso); return; }
+        const calClear = e.target.closest('[data-cal-clear]');
+        if(calClear){ this.pickDate(calClear.closest('[data-picker-panel]').dataset.pickerPanel, ''); return; }
 
         const timeHour = e.target.closest('[data-time-hour]');
         if(timeHour){ this.pickTimePart(timeHour.closest('[data-picker-panel]').dataset.pickerPanel, 'hour', timeHour.dataset.timeHour); return; }
@@ -2320,8 +2337,7 @@
         return;
       }
       if(target && (target.tagName==='INPUT' || target.tagName==='TEXTAREA' || target.isContentEditable)) return;
-      if(e.key==='Backspace' && CALC_MAP[this.feature]){ e.preventDefault(); e.stopPropagation(); this.openModeMenu(); return; }
-      if(e.key==='Backspace' && this.feature==='basic' && !this.expr){ e.preventDefault(); e.stopPropagation(); this.openModeMenu(); return; }
+      if(e.key.toLowerCase()==='c' && !(this.feature==='programmer'&&this.progBase==='HEX')){ e.preventDefault();e.stopPropagation();this.openModeMenu();this.$modeSearch.value='';this.filterMenu('');return; }
       if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.length===1&&/[a-z]/i.test(e.key)){
         const now=Date.now(); this.commandBuffer=(now-(this.commandAt||0)<1400?(this.commandBuffer||''):'')+e.key.toLowerCase(); this.commandAt=now;
         if('calculator'.startsWith(this.commandBuffer)){ if(this.commandBuffer==='calculator'){ e.preventDefault(); e.stopPropagation(); this.openModeMenu(); this.$modeSearch.value=''; this.filterMenu(''); this.commandBuffer=''; } return; }
@@ -2585,6 +2601,7 @@
     closeInfoPanel(){ this.$infoPanel.classList.remove('open'); this.$infoPanel.setAttribute('aria-hidden','true'); this.$infoBackdrop.classList.remove('open'); this.$infoBackdrop.setAttribute('aria-hidden','true'); this.$infoBtn.setAttribute('aria-expanded','false'); this.$infoBtn.setAttribute('aria-label','Open menu'); this.$infoBtn.setAttribute('title','Open menu — about SevenTask Calculator'); }
     closeHistoryPanel(){ this.$historyPanel.classList.remove('open'); this.$historyBackdrop.classList.remove('open'); this.$histBtn.classList.remove('open'); }
     renderHistoryPanel(){
+      this.pruneHistory();
       this.$histList.replaceChildren();
       if(!this.history.length){
         const empty=document.createElement('div'); empty.className='histempty'; empty.textContent='Your calculations will appear here.'; this.$histList.appendChild(empty); return;
@@ -2774,7 +2791,8 @@
       const daysInMonth = new Date(st.year, st.month+1, 0).getDate();
       const daysInPrevMonth = new Date(st.year, st.month, 0).getDate();
       const selected = this.formValues[key];
-      const todayStr = new Date().toISOString().slice(0,10);
+      const today=new Date();
+      const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       let cells = '';
       for(let i=startDay-1; i>=0; i--){ cells += `<button type="button" class="cal-day muted" disabled>${daysInPrevMonth-i}</button>`; }
@@ -2794,7 +2812,7 @@
         </div>
         <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
         <div class="cal-grid">${cells}</div>
-        <button type="button" class="cal-today" data-cal-today="1">Today</button>`;
+        <div class="cal-actions"><button type="button" class="cal-today" data-cal-clear="1">Clear</button><button type="button" class="cal-today" data-cal-today="1">Today</button></div>`;
     }
     navCalendar(key, dir){
       const st = this.calendarState[key];
@@ -2812,7 +2830,7 @@
     }
     pickDate(key, iso){
       this.formValues[key] = iso;
-      if(this.calendarState && this.calendarState[key]){
+      if(iso && this.calendarState && this.calendarState[key]){
         const d = new Date(iso+'T00:00:00');
         this.calendarState[key] = { year:d.getFullYear(), month:d.getMonth() };
       }
@@ -2969,12 +2987,14 @@
       }catch(err){ this.showError(true); }
     }
     formatNumber(n){ if(Number.isInteger(n)) return String(n); return String(parseFloat(n.toPrecision(12))); }
-    pushHistory(expr,result){ this.history.push({expr, result:this.formatNumber(result), createdAt:Date.now()}); if(this.history.length>100) this.history.shift(); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); }
+    pruneHistory(now=Date.now()){ const cutoff=now-86400000,previous=this.history.length; this.history=this.history.filter(h=>h&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)>=cutoff&&Number(h.createdAt)<=now+60000).slice(-100); return this.history.length!==previous; }
+    pushHistory(expr,result){ this.pruneHistory(); this.history.push({expr, result:this.formatNumber(result), createdAt:Date.now()}); if(this.history.length>100) this.history.shift(); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); }
     previewOrLast(){
       try{ const result=this.evalExpr(this.expr); if(typeof result==='number' && isFinite(result)) return this.formatNumber(result); }catch(e){}
       return this.expr;
     }
     renderHistory(){
+      this.pruneHistory();
       this.$history.replaceChildren();
       for(const h of this.history.slice(-2)){
         const item=document.createElement('span'); item.dataset.hist=h.result; item.textContent=`${h.expr} = ${h.result}`;
@@ -2990,7 +3010,7 @@
     _el(){ let el=document.querySelector('taskai7-calculator'); if(!el){ el=document.createElement('taskai7-calculator'); document.body.appendChild(el); } return el; },
     open(){ this._el().open(); }, close(){ this._el().close(); }, toggle(){ this._el().toggle(); }, home(){const el=this._el();el.selectFeature('basic');el.open();}, openFeature(id){const el=this._el();el.selectFeature(id);el.open();},
   };
-window.addEventListener('message',event=>{if(event.source!==window.parent||event.origin!==location.origin)return;const data=event.data;if(data?.type==='seventask:open-feature'&&typeof data.feature==='string'&&/^[a-z0-9-]+$/.test(data.feature))window.TaskAI7Calculator.openFeature(data.feature);});
+window.addEventListener('message',event=>{if(event.source!==window.parent||event.origin!==location.origin)return;const data=event.data;if(!data||typeof data.feature!=='string'||!/^[a-z0-9-]+$/.test(data.feature))return;if(data.type==='seventask:open-feature'){window.TaskAI7Calculator.openFeature(data.feature);return}if(data.type!=='seventask:showcase-feature')return;const el=window.TaskAI7Calculator._el();el.selectFeature(data.feature);el.open();setTimeout(()=>{switch(data.action){case'library':el.openModeMenu();break;case'search':el.openModeMenu();el.$modeSearch?.focus({preventScroll:true});break;case'history':el.openHistoryPanel();break;case'shortcuts':el.openInfoPanel();el.toggleShortcutGuide();break;case'edit':el.expr='';el.render();for(const key of'42+7')el.insert(key);break;default:break}},120)});
 })();
 </script>
 <script>if("serviceWorker" in navigator && location.protocol !== "file:"){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script>
