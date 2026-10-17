@@ -1,1 +1,1 @@
-/calculator /calculator.html 200
+# Cloudflare Pages Clean URLs serves calculator.html at /calculator. Avoid a conflicting rewrite.
