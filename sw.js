@@ -1,13 +1,13 @@
-const CACHE = "seventask-calculator-shell-v27";
+const CACHE = "seventask-calculator-shell-v28";
 const CORE = [
   "./",
-  "./index.html",
   "./calculator",
-  "./calculator.html",
+  "./install",
+  "./promo/",
+  "./promo/embed-guide",
   "./manifest.webmanifest",
   "./favicon.svg?v=calculator-1",
   "./icon.svg?v=seven-task-outline-1",
-  "./install.html",
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png"
@@ -49,7 +49,7 @@ self.addEventListener("fetch", event => {
         })
         .catch(() => {
           const isCalculatorRoute = /\/calculator(?:\.html)?\/?$/.test(url.pathname);
-          return caches.match(isCalculatorRoute ? "./calculator.html" : "./index.html");
+          return caches.match(isCalculatorRoute ? "./calculator" : "./");
         });
     })
   );
