@@ -1,6 +1,6 @@
 # SevenTask Calculator Web App
 
-This is the free web app and PWA. Publish the contents of this folder as the static-host document root. Keep `_redirects`, `_headers`, `calculator.html`, `sw.js`, and `manifest.webmanifest` in the deployed output. `_redirects` maps `/calculator` to `calculator.html` so direct navigation and refresh work on Cloudflare Pages. Keep large desktop binaries in a separate release host; Cloudflare Pages limits each site asset to 25 MiB.
+This is the free web app and PWA. Publish the contents of this folder as the static-host document root. Keep `_redirects`, `_headers`, `calculator.html`, `sw.js`, and `manifest.webmanifest` in the deployed output. Cloudflare Pages clean URLs serve `/calculator` from `calculator.html`; `_redirects` intentionally has no conflicting rewrite, which would create a redirect loop. Keep large desktop binaries in a separate release host; Cloudflare Pages limits each site asset to 25 MiB.
 
 - Local preview: open `index.html`; calculator links use the local `calculator.html` file.
 - Production route: `/calculator` is rewritten to `/calculator.html` by `_redirects`.

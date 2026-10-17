@@ -17,7 +17,7 @@
 
 ## Deployment and install readiness
 
-- The clean `/calculator` route is rewritten to the actual `calculator.html` file. This route rule must ship in the web app's root `_redirects` file.
+- Cloudflare Pages clean URLs serve `calculator.html` at `/calculator`. The root `_redirects` file intentionally avoids a conflicting rewrite because that creates a redirect loop.
 - The service worker precaches the calculator file and restores the calculator route when offline. Its syntax has been checked and the cache version advanced to v27.
 - The Windows portable ZIP is stored in the sibling desktop release folder. It must be hosted separately before the web download button can be enabled; Cloudflare Pages cannot store a 150 MB asset because its per-file limit is 25 MiB. No setup installer is included in this release.
 - Extract the ZIP and run `SevenTask Calculator.exe`; Windows users can pin the running app from its taskbar icon.
