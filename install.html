@@ -11,7 +11,7 @@
 </section>
 <section class="section widget" id="widgets"><div><div class="eyebrow">Widgets &amp; quick access</div><h2>Install the web app or add a mobile widget.</h2><p>Browser installation creates a SevenTask app shortcut. Live Android and iOS home-screen widgets will be available with the native store releases.</p></div><div class="actions"><button class="button" id="addWidget">How to add</button></div></section>
 <p class="fine" id="widgetStatus">The web app, PWA install and portable Windows desktop app are free. No account or subscription is required.</p>
-<footer class="footer"><a href="/calculator">Open SevenTask Calculator</a><a href="index.html">SevenTask home</a></footer></main>
+<footer class="footer"><a href="/calculator">Open SevenTask Calculator</a><a href="/" onclick="if(location.protocol==='file:')this.href='index.html'">SevenTask home</a></footer></main>
 <script>
 let deferredInstall=null;const installButton=document.getElementById('pwaInstall'),pwaStatus=document.getElementById('pwaStatus');
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstall=event;installButton.hidden=false;});
