@@ -3,7 +3,7 @@
   const status = document.querySelector('[data-desktop-download-status]');
   if (!buttons.length || !status) return;
 
-  const release = '1.0.9';
+  const release = '1.0.10';
   const folder = `downloads/desktop-${release}`;
   const filename = `SevenTask-Calculator-Setup-${release}.exe`;
 
@@ -68,7 +68,7 @@
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       }
-      status.textContent = 'SevenTask Calculator 1.0.9 is ready.';
+      status.textContent = 'SevenTask Calculator 1.0.10 is ready.';
     } catch (error) {
       if (error?.name === 'AbortError') {
         status.textContent = 'Download cancelled.';
