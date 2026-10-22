@@ -1,1 +1,4 @@
-# Cloudflare Pages Clean URLs serves calculator.html at /calculator. Avoid a conflicting rewrite.
+# Redirect the legacy promo shortcut and extension URL to the 9-slide presentation.
+/promo /promo/product-presentation 301
+/promo/ /promo/product-presentation 301
+/promo/product-presentation.html /promo/product-presentation 301

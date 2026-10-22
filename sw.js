@@ -1,16 +1,18 @@
-const CACHE = "seventask-calculator-shell-v29";
+const CACHE = "seventask-calculator-shell-v60";
 const CORE = [
   "./",
   "./calculator",
   "./install",
   "./promo/",
   "./promo/embed-guide",
+  "./promo/product-presentation.html",
   "./manifest.webmanifest",
-  "./favicon.svg?v=calculator-1",
-  "./icon.svg?v=seven-task-outline-1",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./apple-touch-icon.png"
+  "./favicon.svg?v=calculator-2",
+  "./icon.svg?v=1.0.9-transparent",
+  "./icon-192.png?v=1.0.9-transparent",
+  "./icon-512.png?v=1.0.9-transparent",
+  "./apple-touch-icon.png?v=1.0.9-transparent",
+  "./assets/fonts/fjalla-one-latin.woff2"
 ];
 
 self.addEventListener("install", event => {
