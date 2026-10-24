@@ -12,12 +12,15 @@ try {
     try {
       $graphics = [Drawing.Graphics]::FromImage($output)
       try {
-        $graphics.Clear([Drawing.Color]::Transparent)
+        $graphics.Clear([Drawing.Color]::White)
+        $ring=[Drawing.Pen]::new([Drawing.Color]::FromArgb(210,222,243),[single]($size*0.025))
+        $graphics.DrawEllipse($ring,[single]($size*0.035),[single]($size*0.035),[single]($size*0.93),[single]($size*0.93))
+        $ring.Dispose()
         $graphics.SmoothingMode = [Drawing.Drawing2D.SmoothingMode]::HighQuality
         $graphics.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
         $graphics.PixelOffsetMode = [Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-        $inset = [single]($size * 0.13)
-        $extent = [single]($size * 0.74)
+        $inset = [single]($size * 0.05)
+        $extent = [single]($size * 0.90)
         $graphics.DrawImage($source, $inset, $inset, $extent, $extent)
       } finally { $graphics.Dispose() }
       $stream = [IO.MemoryStream]::new()

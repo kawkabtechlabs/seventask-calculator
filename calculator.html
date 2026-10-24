@@ -55,13 +55,13 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"><style>html,body{height:100%;margin:0;background:#ffffff;overflow:hidden}body{padding:0}taskai7-calculator{position:fixed;inset:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);display:block;width:100%;height:auto} @media (max-width:360px){taskai7-calculator{font-size:15px}} @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   @keyframes brand-mark-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1px) scale(1.045)}}@keyframes calc-bubble-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}.seven-bubble[hidden]{display:none!important}.seven-bubble{position:fixed;right:26px;bottom:26px;z-index:1000000;display:flex;align-items:center;gap:10px;padding:9px 17px 9px 10px;border:1px solid #111114;border-radius:999px;background:#ffffff;color:#111114;box-shadow:none;cursor:pointer;transition:transform .2s,opacity .2s}.seven-bubble img{width:38px;height:38px;display:block;animation:brand-mark-breathe 4.8s ease-in-out infinite}.seven-bubble{animation:calc-bubble-float 5s ease-in-out infinite}.seven-bubble:hover{transform:translateY(-3px) scale(1.03)}.seven-bubble .brand-title-line{display:flex;align-items:baseline;gap:4px;white-space:nowrap}.seven-bubble .brand-seven{font:400 15px/1.05 "Fjalla One","DM Sans",sans-serif;letter-spacing:.01em}.seven-bubble .brand-calculator{font:550 13px/1.05 "DM Sans",system-ui,sans-serif;letter-spacing:-.025em}@media(prefers-reduced-motion:reduce){.seven-bubble,.seven-bubble img{animation:none}}.seven-bubble[aria-expanded=true]{opacity:0;pointer-events:none;transform:translateY(8px) scale(.94)}taskai7-calculator{position:fixed;inset:0;display:block;width:100%;height:100%;pointer-events:none;z-index:999999}.info-links{display:grid;gap:6px;margin-top:12px}.info-links a{display:flex;justify-content:space-between;padding:11px 12px;border:1px solid #e8e9e6;border-radius:10px;color:#1b2119;text-decoration:none;font:650 12px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.info-links a:hover{background:#f3f3f3;border-color:#111114}.info-links a span{color:#111114}.histrow{display:grid!important;grid-template-columns:1fr auto;gap:5px 14px!important;align-items:center!important;padding:13px 12px!important;border-bottom:1px solid #f0f0ed!important}.histrow .histexpr{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#575b58;font:500 12px/1.35 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.histrow .histres{grid-column:2;grid-row:1/3;color:#182014!important;font-size:18px!important}.histrow .histstamp{grid-column:1;color:#999d96;font-size:10px;text-align:left}.histrow:hover{background:#f6f8f3}.histclear{padding:12px!important;color:#9c3f34!important}.calc-open .seven-bubble{opacity:0;pointer-events:none}.win.popup-mode{border-radius:0!important;border:0!important}.win.popup-mode .titlebar{padding-top:max(10px,env(safe-area-inset-top))}.win:not(.popup-mode){border:1px solid #dfe4d8;border-radius:24px;box-shadow:0 32px 90px #0008,0 0 0 1px #1111141e}.win:not(.popup-mode) .titlebar{padding:14px 16px}.win button.btn.eq{background:#111114!important;border-color:#111114!important;color:#fff!important;box-shadow:none!important}.win button.btn.eq:hover{background:#333!important}.win .modeitem.picked{background:#111114!important;color:#fff!important}.win .modeitem.picked svg{color:#fff!important}.win .modeitem.active svg{color:#111114!important}
-@media(max-width:719px){.seven-bubble{display:none}taskai7-calculator{inset:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);height:auto}}
+@media(max-width:719px){.seven-bubble{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));padding:7px 13px 7px 8px}.seven-bubble img{width:42px;height:42px}taskai7-calculator{inset:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);height:auto}}
   </style>
 </head>
 <body>
-
-
-
+<div id="launch-branding" hidden aria-label="SevenTask Calculator made by Kawkab Tech Labs, version TOUHID 1.0.18"><img src="icon.svg?v=1.0.18" alt=""><strong>SevenTask Calculator</strong><span>Made by Kawkab Tech Labs</span><small>Version — TOUHID 1.0.18</small></div>
+<style>#launch-branding[hidden]{display:none!important}#launch-branding{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#fff;color:#111114;font:600 16px/1.3 system-ui,-apple-system,Segoe UI,sans-serif}#launch-branding img{width:92px;height:92px;padding:12px;border:2px solid #dce8fb;border-radius:50%;background:#f7faff}#launch-branding strong{font-size:22px}#launch-branding span,#launch-branding small{color:#666;font-size:14px} @media(prefers-reduced-motion:no-preference){#launch-branding{animation:launchfade .45s ease 9.55s forwards}}@keyframes launchfade{to{opacity:0;visibility:hidden;pointer-events:none}}</style>
+<script>if((matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)&&!new URLSearchParams(location.search).has('desktop')){const splash=document.getElementById('launch-branding');splash.hidden=false;setTimeout(()=>{splash.hidden=true},10000)}</script>
   <button class="seven-bubble" hidden type="button" aria-label="Open SevenTask Calculator — Just the calculator" aria-expanded="false" title="SevenTask Calculator · Just the calculator">
     <img src="icon.svg" alt="" width="38" height="38"><span class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></span>
   </button>
@@ -1129,6 +1129,7 @@
   };
   const CALC_MAP = {};
   CATEGORIES.forEach(c=> c.items.forEach(it=> CALC_MAP[it.id]=it));
+  const PINNED_FEATURES_KEY='seventask-pinned-calculators-v1';
   const SPECIAL_LABELS = { basic:'Just the calculator', scientific:'Scientific', casio:'Casio fx-991CW ClassWiz · Scientific', programmer:'Programmer' };
   const baseRadix = { HEX:16, DEC:10, OCT:8, BIN:2 };
 
@@ -1295,7 +1296,7 @@
     .modecat .cattext{ flex:1 1 auto; }
     .modecat .catcount{ font-size:10.5px; font-weight:700; color:#8A8A8E; background:#F2F2F3; padding:2px 8px; border-radius:20px; flex:0 0 auto; }
 
-    .modeitem{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8.5px 8px; background:transparent; border:none; border-radius:8px; color:#26262A; font-size:13.5px; font-weight:600; letter-spacing:.05px; cursor:pointer; font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; transition:background .12s ease, color .12s ease, transform .12s ease; }
+    .tai7-toast{position:absolute;left:50%;bottom:24px;z-index:1000001;transform:translateX(-50%);max-width:calc(100% - 32px);padding:11px 15px;border-radius:12px;background:#171717;color:#fff;box-shadow:0 8px 28px #0003;font:600 13px/1.35 system-ui,sans-serif;text-align:center}.tai7-toast[hidden]{display:none!important}.modeentry{display:flex;align-items:center;gap:2px}.modeentry>.modeitem{flex:1;min-width:0}.modepin{flex:0 0 30px;width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:#777;font-size:18px;cursor:pointer}.modepin:hover,.modepin.is-pinned{background:#f4f4f5;color:#111114}.modecat.pinned-heading{margin-top:0}.modeitem{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8.5px 8px; background:transparent; border:none; border-radius:8px; color:#26262A; font-size:13.5px; font-weight:600; letter-spacing:.05px; cursor:pointer; font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; transition:background .12s ease, color .12s ease, transform .12s ease; }
     .modeitem svg{ width:15px; height:15px; flex:0 0 auto; color:#8A8A8E; transition:color .12s ease; }
     .modeitem:hover{ background:#F5F5F6; color:#111114; }
     .modeitem:hover svg{ color:#111114; }
@@ -1629,8 +1630,8 @@
 
   <div class="win" part="window">
     <div class="titlebar" data-drag>
-      <button class="iconbtn dotmenu" type="button" aria-label="Open menu" aria-controls="app-info-panel" aria-expanded="false" title="Open menu — about SevenTask Calculator">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5.2" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="18.8" r="1.7" fill="currentColor"/></svg>
+      <button class="iconbtn dotmenu hamburger-menu" type="button" aria-label="Open menu" aria-controls="app-info-panel" aria-expanded="false" title="Open menu — about SevenTask Calculator">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
       <button class="brand-home" data-action="brand-home" type="button" aria-label="SevenTask Calculator — open Just the calculator" title="SevenTask Calculator · Just the calculator">
         <span class="logobtn" aria-hidden="true"><img class="ticon" src="icon.svg" alt=""></span>
@@ -1654,7 +1655,7 @@
       </div>
       <div class="infosection">
         <div class="infolabel">Version</div>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.0.11</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.0.18</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -1818,6 +1819,7 @@
       <div class="formview" data-formview></div>
     </div>
     <div class="select-popover" data-select-popover hidden role="dialog" aria-label="Choose an option"></div>
+    <div class="tai7-toast" data-toast role="status" aria-live="polite" hidden></div>
 
     <div class="grip" data-resize title="Resize">
       <svg viewBox="0 0 16 16"><path d="M14 2 L2 14 M14 8 L8 14 M14 14 L14 14" stroke="#C7C7CB" stroke-width="1.5"/></svg>
@@ -1930,7 +1932,7 @@
         const visibleItems = cat.items.filter(it=>it.id!=='unitconverter');
         listHtml += `<div class="modecat"><span class="catic">${icon}</span><span class="cattext">${cat.name}</span><span class="catcount">${visibleItems.length}</span></div>`;
         visibleItems.forEach(it=>{
-          listHtml += `<button class="modeitem" data-select-feature="${it.id}" data-search="${it.name.toLowerCase()}"><span class="mitext">${it.name}</span><span class="tick">✓</span></button>`;
+          listHtml += `<div class="modeentry" data-entry-feature="${it.id}"><button class="modeitem" data-select-feature="${it.id}" data-search="${it.name.toLowerCase()}"><span class="mitext">${it.name}</span><span class="tick">✓</span></button><button class="modepin" type="button" data-pin-feature="${it.id}" aria-label="Pin ${it.name}" title="Pin calculator">☆</button></div>`;
         });
       });
       this.$modeMenu.innerHTML = `
@@ -1944,6 +1946,9 @@
       this.$menuList = this.$modeMenu.querySelector('[data-menulist]');
       this.$menuEmpty = this.$modeMenu.querySelector('[data-menuempty]');
       this.$modeSearch.addEventListener('input', ()=> this.filterMenu(this.$modeSearch.value));
+      this.$menuList.addEventListener('click',e=>{const pin=e.target.closest('[data-pin-feature]');if(pin){e.preventDefault();e.stopPropagation();this.togglePinnedFeature(pin.dataset.pinFeature);}});
+      window.addEventListener('storage',e=>{if(e.key===PINNED_FEATURES_KEY&&this.menuBuilt)this.refreshPinnedMenu();});
+      this.refreshPinnedMenu();
       this.$modeSearch.addEventListener('click', e=> e.stopPropagation());
       this.menuBuilt=true;
       this.syncMenuSelection();
@@ -1956,13 +1961,16 @@
       });
     }
 
+    readPinnedFeatures(){try{return JSON.parse(localStorage.getItem(PINNED_FEATURES_KEY)||'[]').filter(id=>CATEGORIES.some(cat=>cat.items.some(item=>item.id===id)));}catch{return[];}}
+    togglePinnedFeature(id){const pins=this.readPinnedFeatures();const next=pins.includes(id)?pins.filter(item=>item!==id):[...pins,id];try{localStorage.setItem(PINNED_FEATURES_KEY,JSON.stringify(next));}catch{}this.refreshPinnedMenu();this.filterMenu(this.$modeSearch?.value||'');}
+    refreshPinnedMenu(){if(!this.$menuList)return;this.$menuList.querySelector('.pinned-wrap')?.remove();const ids=this.readPinnedFeatures();if(!ids.length)return;const names=new Map(CATEGORIES.flatMap(cat=>cat.items.map(item=>[item.id,item.name])));const pinned=ids.map(id=>this.$menuList.querySelector(`[data-entry-feature="${id}"]`)).filter(Boolean);if(!pinned.length)return;const wrap=document.createElement('div');wrap.className='pinned-wrap';wrap.innerHTML='<div class="modecat pinned-heading"><span class="cattext">Pinned</span><span class="catcount">'+pinned.length+'</span></div>';pinned.forEach(entry=>wrap.appendChild(entry.cloneNode(true)));this.$menuList.insertBefore(wrap,this.$menuList.querySelector('.modecat'));wrap.querySelector('.pinned-heading').style.display='';wrap.querySelectorAll('[data-pin-feature]').forEach(btn=>{btn.textContent='★';btn.classList.add('is-pinned');btn.setAttribute('aria-label','Unpin '+(names.get(btn.dataset.pinFeature)||'calculator'));btn.title='Unpin calculator';});this.$menuList.querySelectorAll('.modeentry').forEach(entry=>{const btn=entry.querySelector('[data-pin-feature]');const active=ids.includes(entry.dataset.entryFeature);btn.textContent=active?'★':'☆';btn.classList.toggle('is-pinned',active);btn.setAttribute('aria-label',(active?'Unpin ':'Pin ')+(names.get(entry.dataset.entryFeature)||'calculator'));btn.title=active?'Unpin calculator':'Pin calculator';});}
     filterMenu(query){
       const q = query.trim().toLowerCase();
       let anyVisible = false;
       this.$menuList.querySelectorAll('.modecat').forEach(cat=>{
         let sib = cat.nextElementSibling, hasMatch = false;
-        while(sib && sib.classList.contains('modeitem')){
-          const match = !q || sib.dataset.search.includes(q);
+        while(sib && sib.classList.contains('modeentry')){
+          const item=sib.querySelector('.modeitem'),match = !q || (item?.dataset.search||'').includes(q);
           sib.style.display = match ? '' : 'none';
           if(match) hasMatch = true;
           sib = sib.nextElementSibling;
@@ -1979,6 +1987,7 @@
       });
       if(specialMatch) anyVisible = true;
       specialWrap.style.display = specialMatch ? '' : 'none';
+      const pinnedWrap=this.$menuList.querySelector('.pinned-wrap');if(pinnedWrap){const matches=[...pinnedWrap.querySelectorAll('.modeentry')].some(entry=>{const match=!q||(entry.querySelector('.modeitem')?.dataset.search||'').includes(q);entry.style.display=match?'':'none';return match;});pinnedWrap.querySelector('.pinned-heading').style.display=matches?'':'none';pinnedWrap.style.display=matches?'':'none';if(matches)anyVisible=true;}
       this.$menuEmpty.hidden = anyVisible;
       this.clearMenuHighlight();
     }
@@ -2036,13 +2045,15 @@
       this.$win.style.setProperty('--tai7-top', top + 'px');
     }
 
+    showToast(message){const toast=this.$win?.querySelector('[data-toast]');if(!toast)return;toast.textContent=message;toast.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{toast.hidden=true;},3200);}
     open(){ this.centerWindow(); this.$win.classList.add('open'); document.body.classList.add('calc-open'); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded','true'); ACTIVE = this; }
     close(){ this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.$win.classList.remove('open'); this.saveState(); const remaining=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el!==this&&el.shadowRoot?.querySelector('.win.open')); const stillOpen=remaining.length>0; document.body.classList.toggle('calc-open',stillOpen); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded',String(stillOpen)); if(ACTIVE===this) ACTIVE=remaining.at(-1)||null; }
     toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
 
     duplicate(){
       if(this.popupMode) return;
-      if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature);return;}
+      if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature).then(ok=>{if(!ok)this.showToast('You can open up to 7 calculators at once.');}).catch(()=>this.showToast('Could not open another calculator.'));return;}
+      const openCount=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el.shadowRoot?.querySelector('.win.open')).length;if(openCount>=7){this.showToast('You can open up to 7 calculators at once.');return;}
       const el = document.createElement('taskai7-calculator');
       el.feature = 'basic';
       document.body.appendChild(el);
@@ -2940,8 +2951,8 @@
         const quote=await getCurrencyRate(from,to);if(request!==this._currencyRequest||!box.isConnected)return;
         const converted=amount*quote.rate;let formatted;
         try{formatted=new Intl.NumberFormat(undefined,{style:'currency',currency:to,maximumFractionDigits:6}).format(converted);}catch(e){formatted=`${fmtMeasure(converted)} ${to}`;}
-        box.innerHTML=`<div class="rrow emph"><span>${fmtMeasure(amount)} ${from} converts to</span><b>${formatted}</b></div><div class="rrow"><span>Reference rate</span><b>1 ${from} = ${fmtMeasure(quote.rate)} ${to}</b></div><div class="fx-note">Daily reference rate · ${quote.date}${quote.stale?' · offline saved rate':quote.cached?' · saved rate':''} · <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a></div>`;
-      }catch(err){if(request!==this._currencyRequest||!box.isConnected)return;box.innerHTML=`<div class="rrow"><span>Currency rate</span><b>${err.message}</b></div><div class="fx-note">Rates need an internet connection. Try another pair or check back later.</div>`;}
+        box.innerHTML=`<div class="rrow emph"><span>${fmtMeasure(amount)} ${from} converts to</span><b>${formatted}</b></div><div class="rrow"><span>Reference rate</span><b>1 ${from} = ${fmtMeasure(quote.rate)} ${to}</b></div><div class="fx-note">Daily reference rate · ${escapeHtml(quote.date)}${quote.stale?' · offline saved rate':quote.cached?' · saved rate':''} · <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a></div>`;
+      }catch(err){if(request!==this._currencyRequest||!box.isConnected)return;box.innerHTML=`<div class="rrow"><span>Currency rate</span><b>${escapeHtml(err.message)}</b></div><div class="fx-note">Rates need an internet connection. Try another pair or check back later.</div>`;}
     }
 
     // ---------- math (basic/scientific keypad) ----------
@@ -3020,7 +3031,7 @@ window.addEventListener('message',event=>{if(event.source!==window.parent||event
 <style>
 #st-ad-break[hidden]{display:none!important}#st-ad-break{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:#111114a8;backdrop-filter:blur(8px);font:14px/1.55 "DM Sans",system-ui,sans-serif;color:#111114}#st-ad-break .ad-card{position:relative;width:min(520px,100%);overflow:hidden;border:1px solid #e3e4e7;border-radius:24px;background:#fff;box-shadow:0 28px 90px #0005}#st-ad-break .ad-top{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 19px;border-bottom:1px solid #ececef;color:#676a71;font-size:10px;font-weight:800;letter-spacing:.12em}#st-ad-break .ad-top span:last-child{padding:4px 8px;border:1px solid #e5e6e9;border-radius:99px;color:#777980;font-size:9px;letter-spacing:.08em}#st-ad-break .ad-content{min-height:210px;padding:30px 27px 20px;background:radial-gradient(ellipse at 86% 5%,#f2f4f8,transparent 55%),linear-gradient(145deg,#fff,#fafbfc)}#st-ad-break .ad-index{color:#868991;font-size:10px;font-weight:750;letter-spacing:.12em}#st-ad-break h2{max-width:430px;margin:12px 0 9px;font:800 clamp(27px,6vw,39px)/1.05 "Segoe UI",Arial,sans-serif;letter-spacing:-.065em}#st-ad-break p{max-width:430px;margin:0;color:#686b73;font-size:13px}#st-ad-break .ad-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 19px;border-top:1px solid #ececef}#st-ad-break .ad-dots{display:flex;align-items:center;gap:6px}#st-ad-break .ad-dot{width:7px;height:7px;padding:0;border:0;border-radius:99px;background:#d6d8dd;cursor:pointer;transition:width .18s,background .18s}#st-ad-break .ad-dot[aria-current=true]{width:20px;background:#111114}#st-ad-break .ad-actions{display:flex;align-items:center;gap:8px}#st-ad-break .ad-continue,#st-ad-break .ad-link{min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #111114;border-radius:11px;background:#111114;color:#fff;text-decoration:none;font:700 11px "DM Sans",system-ui,sans-serif;cursor:pointer}#st-ad-break .ad-link{background:#fff;color:#111114}#st-ad-break .ad-continue:hover,#st-ad-break .ad-link:hover{transform:translateY(-1px)}@media(max-width:480px){#st-ad-break{padding:13px}#st-ad-break .ad-card{border-radius:19px}#st-ad-break .ad-content{min-height:190px;padding:24px 20px 18px}#st-ad-break .ad-footer{padding:13px 15px;flex-wrap:wrap}#st-ad-break .ad-continue,#st-ad-break .ad-link{min-height:36px;padding-inline:10px}}@media(prefers-reduced-motion:reduce){#st-ad-break .ad-dot,#st-ad-break .ad-continue,#st-ad-break .ad-link{transition:none}}
 </style>
-<div id="st-ad-break" role="dialog" aria-modal="true" aria-labelledby="st-ad-title" aria-describedby="st-ad-copy" aria-hidden="true" hidden><section class="ad-card"><header class="ad-top"><span>SEVENTASK · FEATURED</span><span>AD</span></header><div class="ad-content" aria-live="polite"><div class="ad-index" id="st-ad-index"></div><h2 id="st-ad-title"></h2><p id="st-ad-copy"></p></div><footer class="ad-footer"><nav class="ad-dots" aria-label="Advertisement slides" id="st-ad-dots"></nav><div class="ad-actions"><a class="ad-link" id="st-ad-link" href="https://seventaskcalculator.pages.dev/promo/" target="_blank" rel="noopener noreferrer">Explore SevenTask ↗</a><button class="ad-continue" id="st-ad-continue" type="button">Continue calculating</button></div></footer></section></div>
+<div id="st-ad-break" role="dialog" aria-modal="true" aria-labelledby="st-ad-title" aria-describedby="st-ad-copy" aria-hidden="true" hidden><section class="ad-card"><header class="ad-top"><span>SEVENTASK · FEATURED</span><span>AD</span></header><div class="ad-content" aria-live="polite"><div class="ad-index" id="st-ad-index"></div><h2 id="st-ad-title"></h2><p id="st-ad-copy"></p></div><footer class="ad-footer"><nav class="ad-dots" aria-label="Advertisement slides" id="st-ad-dots"></nav><div class="ad-actions"><a class="ad-link" id="st-ad-link" href="https://seventaskcalculator.in/promo/" target="_blank" rel="noopener noreferrer">Explore SevenTask ↗</a><button class="ad-continue" id="st-ad-continue" type="button">Continue calculating</button></div></footer></section></div>
 <script>
 (()=>{const slides=[{title:'Calculate everything. Move with clarity.',copy:'Everyday math, money, science and work tools in one calm calculator.',label:'A clearer way to calculate'},{title:'Quick answers for everyday sums.',copy:'Work out percentages, discounts, ratios and time without switching tools.',label:'Everyday calculator'},{title:'Make the numbers make sense.',copy:'Explore savings, interest and other practical money calculations.',label:'Money & finance'},{title:'Go beyond the basic keypad.',copy:'Scientific functions, programmer tools and reusable custom formulas are ready when you need them.',label:'Science & formulas'},{title:'Keep business calculations close.',copy:'Handle prices, margins, stock and practical shop calculations in one workspace.',label:'Business tools'},{title:'Pick up where you left off.',copy:'Calculation history, undo and redo help you revisit work and continue from the result.',label:'History & control'},{title:'136+ focused tools. One workspace.',copy:'Open SevenTask Calculator on the web and find the right calculator for the task.',label:'SevenTask Calculator'}];const panel=document.getElementById('st-ad-break');if(!panel)return;const title=document.getElementById('st-ad-title'),copy=document.getElementById('st-ad-copy'),index=document.getElementById('st-ad-index'),dots=document.getElementById('st-ad-dots'),done=document.getElementById('st-ad-continue');let active=0,timer=0,successes=0,lastHistory='';function show(i){active=(i+slides.length)%slides.length;const s=slides[active];title.textContent=s.title;copy.textContent=s.copy;index.textContent=`${String(active+1).padStart(2,'0')} / 07 · ${s.label}`;[...dots.children].forEach((b,n)=>b.setAttribute('aria-current',String(n===active)))}slides.forEach((_,i)=>{const b=document.createElement('button');b.className='ad-dot';b.type='button';b.setAttribute('aria-label',`Advertisement slide ${i+1}`);b.setAttribute('aria-current',String(i===0));b.addEventListener('click',()=>show(i));dots.append(b)});function close(){panel.hidden=true;panel.setAttribute('aria-hidden','true');document.body.style.overflow='';window.clearInterval(timer);timer=0;done.focus({preventScroll:true})}done.addEventListener('click',close);document.addEventListener('keydown',e=>{if(!panel.hidden&&e.key==='Escape')close()});function open(){panel.hidden=false;panel.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';let previous=0;try{const saved=Number(localStorage.getItem('st-ad-slide')||'0');if(Number.isInteger(saved)&&saved>=0)previous=saved}catch{}active=(previous+1)%slides.length;show(active);try{localStorage.setItem('st-ad-slide',String(active))}catch{}window.clearInterval(timer);timer=window.setInterval(()=>show(active+1),5000);done.focus({preventScroll:true})}document.addEventListener('click',e=>{const path=e.composedPath?.()||[];if(!path.some(el=>el?.dataset&&(el.dataset.action==='equals'||el.dataset.progAction==='equals')))return;window.setTimeout(()=>{const el=document.querySelector('taskai7-calculator'),root=el?.shadowRoot,result=root?.querySelector('[data-result]'),text=result?.textContent?.trim(),history=root?.querySelector('[data-history]')?.textContent?.trim()||'';if(!text||text==='Error'||history===lastHistory)return;lastHistory=history;successes++;if(successes>=10){successes=0;open()}},120)},true)})();
 </script>
