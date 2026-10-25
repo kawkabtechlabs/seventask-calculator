@@ -1,4 +1,4 @@
-const CACHE = "seventask-calculator-shell-v71";
+const CACHE = "seventask-calculator-shell-v72";
 const CORE = [
   "./",
   "./calculator",
@@ -8,6 +8,7 @@ const CORE = [
   "./promo/",
   "./promo/embed-guide",
   "./promo/product-presentation.html",
+  "./promo/product-presentation",
   "./promo/product-tour.html",
   "./manifest.webmanifest",
   "./favicon.svg?v=calculator-2",
