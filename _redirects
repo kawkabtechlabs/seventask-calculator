@@ -1,3 +1,6 @@
+/privacy-policy /privacy-policy.html 200
+/open-source-licenses /privacy-policy#open-source-licenses 301
+/open-source-licenses.html /privacy-policy#open-source-licenses 301
 # Redirect the legacy promo shortcut and extension URL to the 9-slide presentation.
 /promo /promo/product-presentation 301
 /promo/ /promo/product-presentation 301

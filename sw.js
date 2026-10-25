@@ -1,10 +1,9 @@
-const CACHE = "seventask-calculator-shell-v68";
+const CACHE = "seventask-calculator-shell-v69";
 const CORE = [
   "./",
   "./calculator",
   "./install",
   "./privacy-policy.html",
-  "./open-source-licenses.html",
   "./pwa-install.js",
   "./promo/",
   "./promo/embed-guide",
