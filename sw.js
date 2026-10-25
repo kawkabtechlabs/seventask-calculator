@@ -1,4 +1,4 @@
-const CACHE = "seventask-calculator-shell-v69";
+const CACHE = "seventask-calculator-shell-v70";
 const CORE = [
   "./",
   "./calculator",
@@ -41,6 +41,28 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (url.origin !== location.origin) return;
 
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE)
+              .then(cache => cache.put(event.request, copy))
+              .catch(() => {});
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cachedPage = await caches.match(event.request);
+          if (cachedPage) return cachedPage;
+          const isCalculatorRoute = /\/calculator(?:\.html)?\/?$/.test(url.pathname);
+          return caches.match(isCalculatorRoute ? "./calculator" : "./");
+        })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
@@ -48,14 +70,13 @@ self.addEventListener("fetch", event => {
         .then(response => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE).then(cache => cache.put(event.request, copy));
+            caches.open(CACHE)
+              .then(cache => cache.put(event.request, copy))
+              .catch(() => {});
           }
           return response;
         })
-        .catch(() => {
-          const isCalculatorRoute = /\/calculator(?:\.html)?\/?$/.test(url.pathname);
-          return caches.match(isCalculatorRoute ? "./calculator" : "./");
-        });
+        .catch(() => Response.error());
     })
   );
 });
