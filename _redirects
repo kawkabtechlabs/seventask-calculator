@@ -1,9 +1,11 @@
 /open-source-licenses /privacy-policy#open-source-licenses 301
 /open-source-licenses.html /privacy-policy#open-source-licenses 301
-# Redirect the legacy promo shortcut and extension URL to the 10-slide presentation.
+# Redirect legacy promo and product-tour URLs to the updated 10-slide presentation.
 /promo /promo/product-presentation 301
 /promo/ /promo/product-presentation 301
 /promo/product-presentation.html /promo/product-presentation 301
+/promo/product-tour /promo/product-presentation 301
+/promo/product-tour.html /promo/product-presentation 301
 /downloads/desktop-1.0.9/* /install#desktop 302
 /downloads/desktop-1.0.10/* /install#desktop 302
 /downloads/desktop-1.0.11/* /install#desktop 302
