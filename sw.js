@@ -1,4 +1,4 @@
-const CACHE = "seventask-calculator-shell-v77";
+const CACHE = "seventask-calculator-shell-v96";
 const CORE = [
   "./",
   "./calculator",
@@ -13,11 +13,12 @@ const CORE = [
   "./promo/product-tour.html",
   "./manifest.webmanifest",
   "./favicon.svg?v=calculator-2",
-  "./icon.svg?v=1.0.18",
-  "./icon-192.png?v=1.0.18",
-  "./icon-512.png?v=1.0.18",
-  "./apple-touch-icon.png?v=1.0.18",
-  "./assets/fonts/fjalla-one-latin.woff2"
+  "./icon.svg?v=1.18.01",
+  "./icon-192.png?v=1.18.01",
+  "./icon-512.png?v=1.18.01",
+  "./apple-touch-icon.png?v=1.18.01",
+  "./assets/fonts/fjalla-one-latin.woff2",
+  "./assets/kawkab-tech-labs-logo.svg"
 ];
 
 self.addEventListener("install", event => {
