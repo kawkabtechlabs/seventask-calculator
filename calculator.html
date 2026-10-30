@@ -1322,6 +1322,7 @@
 
     .display{ flex:0 0 auto; padding:14px 16px 10px; text-align:right; border-bottom:1px solid #111114; cursor:grab; touch-action:none; }
     .history{ display:flex; flex-direction:column; gap:2px; margin-bottom:4px; max-height:34px; overflow:hidden; opacity:.6; }
+    .history[hidden]{display:none}.history[role="button"]{cursor:pointer;touch-action:manipulation}.history:focus-visible{outline:2px solid #111114;outline-offset:3px;border-radius:3px}
     .history span{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-size:10.5px; color:#8A8A8E; cursor:pointer; }
     .history span:hover{ color:#111114; }
     .expr{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-size:12.5px; color:#8A8A8E; min-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1747,7 +1748,7 @@
       <div class="kpview" data-kpview>
         <div class="display">
           <div class="casio-brand">CASIO <span>fx-991CW</span></div>
-          <div class="history" data-history></div>
+          <div class="history" data-history data-action="history-toggle" role="button" tabindex="0" aria-label="Open calculation history" hidden></div>
           <div class="expr" data-expr>&nbsp;</div>
           <div class="result" data-result>0</div>
           <div class="edit-actions" aria-label="Undo and redo">
@@ -1882,6 +1883,8 @@
       this.expr = '';
       this.mode = 'deg';
       this.history = [];
+      this.inlineHistoryHiddenIds = new Set();
+      this.clearTapTimes = [];
       this.undoStacks = { expr:[], prog:[] };
       this.redoStacks = { expr:[], prog:[] };
       this.feature = 'basic';
@@ -2056,6 +2059,7 @@
             if(s.h) this.$win.style.setProperty('--tai7-h', s.h);
           }
           if(s.mode) this.mode = s.mode;
+          if(Array.isArray(s.inlineHistoryHiddenIds)) this.inlineHistoryHiddenIds = new Set(s.inlineHistoryHiddenIds.filter(id=>typeof id==='string'));
         }
         const savedHistory = JSON.parse(localStorage.getItem(this.HISTORY_KEY) || '[]');
         if(Array.isArray(savedHistory)){ const cutoff=Date.now()-86400000; this.history=savedHistory.filter(h=>h&&typeof h.expr==='string'&&typeof h.result==='string'&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)<=Date.now()+60000&&(h.pinned===true||Number(h.createdAt)>=cutoff)).map((h,index)=>({...h,id:typeof h.id==='string'&&h.id?h.id:`${h.createdAt}-${index}`,pinned:h.pinned===true})); this.pruneHistory(); }
@@ -2067,6 +2071,7 @@
         w: this.$win.style.getPropertyValue('--tai7-w') || cs.width,
         h: this.$win.style.getPropertyValue('--tai7-h') || cs.height,
         mode: this.mode,
+        inlineHistoryHiddenIds: this.history.filter(item=>this.inlineHistoryHiddenIds.has(item.id)).map(item=>item.id),
       };
       try{
         localStorage.setItem(this.STORE_KEY, JSON.stringify(s));
@@ -2119,6 +2124,10 @@
 
       R.addEventListener('pointerdown', ()=>{ ACTIVE = this; });
       R.addEventListener('focusin', ()=>{ ACTIVE = this; });
+      R.addEventListener('click', e=>{if(!e.target.closest('[data-action="clear"]'))this.clearTapTimes=[];},true);
+      this.$history.addEventListener('keydown', e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();this.openHistoryPanel();}
+      });
 
       // Keep the header menu independent from delegated keypad actions. The
       // SVG's circles are decorative; pointer events land on the button itself.
@@ -2163,7 +2172,7 @@
         if(t.closest('.kpview')){ this.bubbleFx(t); this.ripple(t, e); this.vibrate(); }
         if(t.dataset.key !== undefined) this.insert(t.dataset.key);
         else if(t.dataset.fn !== undefined) this.insert(t.dataset.fn);
-        else this.handleAction(t.dataset.action);
+        else { if(t.dataset.action==='clear')this.noteClearTap(); this.handleAction(t.dataset.action); }
       });
 
       document.addEventListener('pointerdown', (e)=>{
@@ -2462,6 +2471,16 @@
     }
 
     // ---------- actions ----------
+    noteClearTap(){
+      const now=Date.now();
+      this.clearTapTimes=this.clearTapTimes.filter(time=>now-time<=1200);
+      this.clearTapTimes.push(now);
+      if(this.clearTapTimes.length<3)return;
+      this.clearTapTimes=[];
+      this.inlineHistoryHiddenIds=new Set(this.history.map(item=>item.id));
+      this.renderHistory();
+      this.saveState();
+    }
     handleAction(action){
       switch(action){
         case 'close': this.close(); break;
@@ -3217,10 +3236,11 @@
     renderHistory(){
       this.pruneHistory();
       this.$history.replaceChildren();
-      for(const h of this.history.slice(-2)){
+      for(const h of this.history.filter(item=>!this.inlineHistoryHiddenIds.has(item.id)).slice(-2)){
         const item=document.createElement('span'); item.dataset.hist=h.result; item.textContent=`${h.expr} = ${h.result}`;
-        item.addEventListener('click', ()=> this.insert(h.result)); this.$history.appendChild(item);
+        this.$history.appendChild(item);
       }
+      this.$history.hidden=this.$history.childElementCount===0;
     }
     showError(isErr){ this.$result.classList.toggle('err', !!isErr); if(isErr) this.$result.textContent='Error'; }
   }
