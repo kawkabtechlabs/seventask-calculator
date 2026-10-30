@@ -1,4 +1,4 @@
-const CACHE = "seventask-calculator-shell-v97";
+const CACHE = "seventask-calculator-shell-v98";
 const CORE = [
   "./",
   "./calculator",
