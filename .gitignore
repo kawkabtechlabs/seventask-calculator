@@ -3,3 +3,4 @@
 .wrangler/
 node_modules/
 *.log
+downloads/desktop-1.18.07/*.exe

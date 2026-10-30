@@ -1248,7 +1248,7 @@
     .infosection{ padding:11px 0; border-bottom:1px solid #d0d0d4; }
     .infosection:last-child{ border-bottom:none; }
     .shortcut-intro{font-size:11px;line-height:1.45;color:#73777d;margin:0 0 8px}
-    .shortcut-section{padding:0!important}
+    .shortcut-section{padding:10px 0!important}
     .shortcut-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border:0;background:transparent;text-align:left;cursor:pointer}
     .shortcut-toggle .infolabel{margin:0;color:#111114}
     .shortcut-chevron{width:15px;height:15px;flex:0 0 auto;color:#686c71;transition:transform .18s ease}
@@ -1632,8 +1632,19 @@
     @media(prefers-reduced-motion:reduce){.info-links button[disabled] .update-icon{animation:none}}
     @media(max-width:680px){.win.popup-mode .titlebar{padding-top:max(10px,env(safe-area-inset-top))}}
     .win .titlebar{border-bottom-color:#111114}
+    .win .titlebar{container-type:inline-size}
+    @container (max-width: 410px){
+      .titlebar{gap:2px!important;padding-left:8px!important;padding-right:8px!important}
+      .titlebar .iconbtn{width:25px;flex:0 0 25px}
+      .brand-home{gap:4px}
+      .brand-home .logobtn .ticon{width:27px;height:27px}
+      .brand-home .brand-seven{font-size:clamp(11px,3.3cqi,14px)}
+      .brand-home .brand-calculator{font-size:clamp(10px,3cqi,13px)}
+      .brand-home .title small.brand-kawkab-straight{font-size:clamp(6px,1.8cqi,8px);letter-spacing:0}
+    }
     .histrow{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-rows:auto auto auto;gap:4px 8px!important;align-items:center!important;transition:background .16s ease,transform .2s cubic-bezier(.2,.8,.3,1)}
     .histrow.is-pinned{background:#f8f8f9}
+    .histrow .histrow-main{grid-column:1;grid-row:1 / 4;align-self:center}.histrow .histadd{grid-column:2;grid-row:1 / 4;align-self:center}.histrow .histpin{grid-column:3;grid-row:1 / 4;align-self:center}
     .histrow-main{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto}
     .histfeature{grid-column:1;grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#111114;font:650 11px/1.3 "DM Sans",system-ui,sans-serif}
     .histrow .histexpr{grid-column:1;grid-row:2}
@@ -1641,6 +1652,10 @@
     .histrow .histstamp{grid-column:1;grid-row:3}
     .histpin{display:grid;place-items:center;grid-column:3;grid-row:1/4;flex:0 0 30px;width:30px;height:30px;border:1px solid #E7E7E9;border-radius:9px;background:#fff;color:#666970;cursor:pointer;transition:background .16s,border-color .16s,color .16s,transform .16s}
     .modepin{display:grid;place-items:center;transition:background .16s,color .16s,transform .16s}.modepin svg{width:16px;height:16px;pointer-events:none}.modepin.is-pinned{background:#111114;color:#fff}.modepin:active{transform:scale(.92)}.modepin:focus-visible{outline:2px solid #777B80;outline-offset:2px}
+    .theme-choice{display:grid;gap:8px;padding:12px 0;border-bottom:1px solid #c4c4c8}.theme-choice label{font-size:12px;font-weight:700;color:#111114}.theme-choice select{width:100%;border:1px solid #c7c7cb;border-radius:10px;background:#fff;color:#111114;padding:10px;font:600 13px system-ui}
+    .win[data-theme="soft"]{background:#e9f0eb!important}.win[data-theme="soft"] :is(.titlebar,.toolbar,.display,.kpview){background:#e9f0eb!important}.win[data-theme="soft"] button.btn.eq{background:#386c59!important;border-color:#386c59!important;color:#fff!important}
+    .win[data-theme="cloud"]{background:#f0ebf6!important}.win[data-theme="cloud"] :is(.titlebar,.toolbar,.display,.kpview){background:#f0ebf6!important}.win[data-theme="cloud"] button.btn.eq{background:#7553a4!important;border-color:#7553a4!important;color:#fff!important}
+    .win[data-theme="dark"]{background:#17191d!important;color:#f5f5f5!important}.win[data-theme="dark"] :is(.titlebar,.toolbar,.display,.kpview,.body){background:#17191d!important;border-color:#62666f!important}.win[data-theme="dark"] :is(.title,.brand-seven,.brand-calculator,.result,.titlebar .iconbtn){color:#f5f5f5!important}.win[data-theme="dark"] .brand-home .ticon{filter:invert(1)}.win[data-theme="dark"] button.btn{background:#30343a!important;border-color:#555a62!important;color:#fff!important;box-shadow:none!important}.win[data-theme="dark"] button.btn.eq{background:#e7e7e7!important;border-color:#e7e7e7!important;color:#111!important}.win[data-theme="dark"] .modebtn{background:#292d32!important;border-color:#777!important;color:#fff!important}
     .histpin svg{width:16px;height:16px}.histpin:hover{background:#f1f1f3;border-color:#b8b8bc;color:#111114}.histpin:active{transform:scale(.92)}.histpin.is-pinned{background:#111114;border-color:#111114;color:#fff}.histpin:focus-visible{outline:2px solid #777B80;outline-offset:2px}
     @media(prefers-reduced-motion:reduce){.modemenu,.pickerpanel,.pickerbtn,.cal-select,.f{transition:none!important;animation:none!important}}
     @media(prefers-reduced-motion:reduce){.brand-home .ticon,.select-popover{animation:none!important}}
@@ -1648,13 +1663,65 @@
     .brand-title-line{display:flex;align-items:baseline;gap:4px;white-space:nowrap;} .brand-seven{font-family:"Fjalla One","DM Sans",sans-serif;font-size:14px;font-weight:400;letter-spacing:.01em;line-height:1.05;} .brand-calculator{font-family:"DM Sans",system-ui,sans-serif;font-size:13px;font-weight:550;letter-spacing:-.025em;line-height:1.05;} .win .title{gap:3px!important;}
     .win{font-optical-sizing:auto;font-kerning:normal;font-feature-settings:"ss01" 1;}
     .modebtn,.modeitem,.f label,.f input,.f select,.pickerbtn,.time-item,.history,.expr,.result,.histexpr,.histres,.progrow b,button.btn{font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-optical-sizing:auto;font-variant-numeric:lining-nums tabular-nums;}
-    .modebtn{font-weight:600;letter-spacing:-.01em;}
+    .modebtn{min-height:42px;font-size:14px;font-weight:600;letter-spacing:-.01em}.modebtn svg{width:14px;height:14px}
     .modeitem{font-weight:550;letter-spacing:0;}
-    .result{font-weight:550;letter-spacing:-.035em;font-feature-settings:"ss01" 1,"tnum" 1;}
+    .display{container-type:inline-size}.result{font-size:clamp(34px,9cqi,38px);font-weight:550;letter-spacing:-.035em;font-feature-settings:"ss01" 1,"tnum" 1;}
     .expr,.histexpr{font-weight:450;letter-spacing:0;}
     .histres,.progrow b{font-weight:600;}
     .f label{font-weight:600;letter-spacing:.005em;}
     button.btn{font-weight:550;letter-spacing:0;}
+    .pad{container-type:size}.pad button.btn{font-size:clamp(16px,min(7cqi,7cqb),30px);line-height:1}.pad button.btn svg{width:clamp(16px,min(5cqi,5cqb),24px);height:clamp(16px,min(5cqi,5cqb),24px)}
+    .pad button.btn.backspace svg{width:clamp(24px,min(7.5cqi,7.5cqb),33px);height:clamp(24px,min(7.5cqi,7.5cqb),33px)}
+    .pad button.btn.backspace{flex-direction:column;gap:clamp(2px,.8cqb,5px)}
+    .pad button.btn.backspace .delete-label{font:650 clamp(10px,2.6cqb,12px)/1 "DM Sans",system-ui,sans-serif;letter-spacing:0}
+    .pad button.btn:is([data-key="÷"],[data-key="×"],[data-key="−"],[data-key="+"]){font-size:clamp(19px,min(8cqi,8cqb),34px);font-weight:600}
+    .win .infopanel{border-right-color:#303236!important}
+    .win .infopanel :is(.infobrand,.infosection,.theme-choice,.infomade){border-color:#45484c!important}
+    .win .infopanel :is(.shortcut-toggle,.theme-dropdown summary,.theme-options,.info-links button,.info-links a){border-color:#45484c!important}
+    .win[data-theme="dark"] .infopanel{border-right-color:#a4abb5!important}
+    .win[data-theme="dark"] .infopanel :is(.infobrand,.infosection,.theme-choice,.infomade,.shortcut-toggle,.theme-dropdown summary,.theme-options,.info-links button,.info-links a){border-color:#a4abb5!important}
+    .pad button.btn{font-weight:600;letter-spacing:-.025em;font-variant-numeric:lining-nums tabular-nums;font-optical-sizing:auto;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    .pad button.btn:is([data-action="clear"],[data-action="equals"]){font-weight:700;letter-spacing:-.015em}
+    .pad button.btn.backspace svg{stroke-linecap:round;stroke-linejoin:round}
+    /* Theme-aware calculator selector and subtle feedback. */
+    .win .historydrawer .histclear{font-family:"DM Sans",system-ui,sans-serif;font-size:14px;font-weight:650;letter-spacing:-.01em;color:#8b3841!important}.win .historydrawer .histclear:hover{color:#68242c!important;background:#faf1f2}
+    .win .infopanel .kawkab-brand-logo{filter:brightness(0)!important;opacity:1!important}
+    .win .brand-home .title small.brand-kawkab-straight{color:#111114}
+    .win[data-theme="dark"] .infopanel .kawkab-brand-logo{filter:brightness(0) invert(1)!important;opacity:1!important}
+    .win[data-theme="dark"] .brand-home .title small.brand-kawkab-straight{color:#f2f4f6}
+    .shortcut-toggle{padding:10px 12px;border:1px solid #b8b8bc;border-radius:10px;background:#fff;transition:background .18s ease,border-color .18s ease}.shortcut-toggle .infolabel{font-size:12px}.theme-dropdown summary{transition:background .18s ease,border-color .18s ease}.theme-dropdown .theme-chevron{transition:transform .2s ease}.theme-dropdown[open] .theme-chevron{transform:rotate(180deg)}
+    @keyframes settings-reveal{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}.shortcut-content:not([hidden]),.theme-dropdown[open] .theme-options{animation:settings-reveal .2s ease both}.shortcut-content:not([hidden]){padding-top:10px}
+    .win[data-theme="soft"] .shortcut-toggle{background:#fff;border-color:#cad9cf}.win[data-theme="cloud"] .shortcut-toggle{background:#fff;border-color:#ded3e9}.win[data-theme="dark"] .shortcut-toggle{background:#30343a;border-color:#606772}.win[data-theme="dark"] :is(.shortcut-chevron,.theme-chevron){color:#e5e7eb}
+    @media(prefers-reduced-motion:reduce){.shortcut-content:not([hidden]),.theme-dropdown[open] .theme-options{animation:none}.shortcut-toggle,.theme-dropdown summary,.shortcut-chevron,.theme-chevron{transition:none!important}}
+    .theme-label{font-size:12px;font-weight:700;color:#111114}.theme-dropdown{position:relative}.theme-dropdown summary{list-style:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 12px;border:1px solid #b8b8bc;border-radius:10px;background:#fff;color:#111114;font:600 13px system-ui}.theme-dropdown summary::-webkit-details-marker{display:none}.theme-dropdown[open] summary{border-color:#777}.theme-options{display:grid;gap:2px;margin-top:4px;padding:5px;border:1px solid #c9c9cf;border-radius:12px;background:#fff;box-shadow:0 8px 24px #0002}.theme-options button{border:0;border-radius:7px;background:transparent;color:#111114;text-align:left;padding:9px;font:600 13px system-ui;cursor:pointer}.theme-options button:hover,.theme-options button[aria-pressed="true"]{background:#ededf0}.theme-options button[aria-pressed="true"]::after{content:"✓";float:right}
+    .win[data-theme="soft"] .theme-dropdown summary,.win[data-theme="soft"] .theme-options,.win[data-theme="soft"] .info-links :is(button,a){background:#fff;border-color:#cad9cf}.win[data-theme="soft"] .theme-options button:hover,.win[data-theme="soft"] .theme-options button[aria-pressed="true"]{background:#dfebe2}
+    .win[data-theme="cloud"] .theme-dropdown summary,.win[data-theme="cloud"] .theme-options,.win[data-theme="cloud"] .info-links :is(button,a){background:#fff;border-color:#ded3e9}.win[data-theme="cloud"] .theme-options button:hover,.win[data-theme="cloud"] .theme-options button[aria-pressed="true"]{background:#eee6f6}
+    .win[data-theme="dark"] .theme-label{color:#f2f4f6}.win[data-theme="dark"] .theme-dropdown summary,.win[data-theme="dark"] .theme-options{background:#30343a;color:#fff;border-color:#606772}.win[data-theme="dark"] .theme-options button{color:#fff}.win[data-theme="dark"] .theme-options button:hover,.win[data-theme="dark"] .theme-options button[aria-pressed="true"]{background:#505762}
+    .info-links a{background:#fff}
+    .win[data-theme] .modemenu .menuspecial{border-bottom-color:#666b69}
+    .win[data-theme] .modemenu .modecat{border-top-color:#666b69}
+    .win[data-theme="soft"] .modemenu :is(.menuspecial,.modecat){border-color:#527261}
+    .win[data-theme="cloud"] .modemenu :is(.menuspecial,.modecat){border-color:#78638d}
+    .win[data-theme="dark"] .modemenu :is(.menuspecial,.modecat){border-color:#a1a8b2!important}
+    .win[data-theme] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#111114!important;border-color:#111114!important;color:white!important;box-shadow:none!important}
+    .win[data-theme="soft"] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#386c59!important;border-color:#386c59!important;color:white!important}
+    .win[data-theme="cloud"] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#7553a4!important;border-color:#7553a4!important;color:white!important}
+    .win[data-theme="dark"] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#e7e7e7!important;border-color:#e7e7e7!important;color:#111!important}
+    .win[data-theme="soft"] .infopanel{background:#e9f0eb!important;border-color:#a7bcae!important}.win[data-theme="cloud"] .infopanel{background:#f0ebf6!important;border-color:#c8b8d9!important}
+    .win[data-theme="dark"] .infopanel{background:#202329!important;border-color:#5b616b!important;color:#f2f4f6!important}
+    .win[data-theme="dark"] .infopanel :is(.infolabel,.infoabout,.infoversion,.version-name,.version-number,.brand-seven,.brand-calculator,.shortcut-toggle,.theme-choice label,.iconbtn){color:#f2f4f6!important}
+    .win[data-theme="dark"] .infopanel :is(.infosection,.infobrand,.theme-choice,.infomade){border-color:#535963!important}
+    .win[data-theme="dark"] .infopanel :is(.info-links button,.info-links a,.theme-choice select){background:#30343a!important;border-color:#606772!important;color:#fff!important}
+    .win[data-theme="dark"] .infopanel :is(.info-links button span,.info-links a span,.update-icon){color:#fff!important}
+    .win[data-theme="dark"] .infopanel .info-brand-mark{filter:invert(1)}.win[data-theme="dark"] .infopanel .kawkab-brand-logo{filter:grayscale(1) invert(1);opacity:.85}
+    .win[data-theme="dark"] .infopanel :is(.shortcut-intro,.shortcut-name,.shortcut-os,.infomade){color:#d2d6dc!important}
+    .win[data-theme="dark"] .titlebar .dotmenu{background:#30343a;border-color:#626975;color:#fff!important}.win[data-theme="dark"] .titlebar .dotmenu:hover{background:#414750;border-color:#a2aab6}.win[data-theme="dark"] .titlebar .dotmenu:focus-visible{outline:2px solid #fff;outline-offset:2px}
+    .win[data-theme="soft"] .modemenu{background:#f4f8f4;border-color:#b7cbbd}.win[data-theme="soft"] .menusearch{background:#fff;border-color:#c8dacf}.win[data-theme="soft"] .modeitem:hover,.win[data-theme="soft"] .modeitem.highlight{background:#dfebe2}.win[data-theme="soft"] .modebtn{background:#f7fbf7;border-color:#a7bcae}
+    .win[data-theme="cloud"] .modemenu{background:#f9f6fc;border-color:#cfc1df}.win[data-theme="cloud"] .menusearch{background:#fff;border-color:#ded2eb}.win[data-theme="cloud"] .modeitem:hover,.win[data-theme="cloud"] .modeitem.highlight{background:#eee6f6}.win[data-theme="cloud"] .modebtn{background:#fcf9ff;border-color:#c8b8d9}
+    .win[data-theme="dark"] .modemenu{background:#24272d;border-color:#555b65;box-shadow:0 18px 45px #0009}.win[data-theme="dark"] .menusearch{background:#17191d;border-color:#525862}.win[data-theme="dark"] .menusearch input{color:#f4f5f6}.win[data-theme="dark"] .modeitem,.win[data-theme="dark"] .modecat{color:#eef0f2;border-color:#444953}.win[data-theme="dark"] .modeitem:hover,.win[data-theme="dark"] .modeitem.highlight{background:#3a3e47;color:#fff}.win[data-theme="dark"] .modeitem.active{color:#fff}.win[data-theme="dark"] .modeitem.picked{background:#dfe3ea!important;color:#16181c!important}.win[data-theme="dark"] .modeitem.picked svg{color:#16181c!important}.win[data-theme="dark"] .modecat .catic,.win[data-theme="dark"] .modecat .catcount{background:#393e47;color:#e5e8eb}.win[data-theme="dark"] .modepin{color:#bec3cc}.win[data-theme="dark"] .modepin:hover,.win[data-theme="dark"] .modepin.is-pinned{background:#e3e7ed;color:#1a1d21}.win[data-theme="dark"] .menuspecial{border-color:#444953}.win[data-theme="dark"] .expr,.win[data-theme="dark"] .history span{color:#b2b8c1}.win[data-theme="dark"] .edit-action{color:#d4d8de}
+    @media (hover:hover){.win[data-theme] .modebtn:hover{filter:brightness(.96)}.win[data-theme] button.btn:hover{filter:brightness(1.07)}}
+    .win[data-theme] .modebtn:focus-visible,.win[data-theme] .modepin:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+    @media(prefers-reduced-motion:reduce){.win[data-theme] .modemenu,.win[data-theme] button.btn{animation:none!important;transition:none!important}}
 
   </style>
 
@@ -1670,10 +1737,11 @@
       <button class="iconbtn title-history" data-action="history-toggle" aria-label="Open calculation history" title="Calculation history">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 7.7V3.9m0 3.8h3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 7.5A8.5 8.5 0 1 1 3.6 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 7.7v4.6l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
+      <button class="iconbtn" data-action="preview-floating" type="button" aria-label="Toggle floating calculator" title="Floating calculator"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4l6 6M4 10h6V4m10 16-6-6m6 0h-6v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="iconbtn" data-action="duplicate" title="Open a second calculator">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="13" height="14" rx="2.5" fill="#FFFFFF" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="1.6"/></svg>
       </button>
-      <button class="iconbtn" data-action="close" title="Close">✕</button>
+      <button class="iconbtn" data-action="close" type="button" aria-label="Close calculator" title="Close"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
 
     <div class="infobackdrop" data-infobackdrop aria-hidden="true"></div>
@@ -1700,7 +1768,7 @@
       </div>
       <div class="infosection">
         <div class="infolabel">Version</div>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.01</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.07</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -1722,6 +1790,7 @@
           <div class="shortcut-row"><b class="shortcut-name">Escape</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Esc</kbd> close panel/list, or clear</div><div class="shortcut-os"><span>Mac</span><kbd>Esc</kbd> close panel/list, or clear</div></div></div>
         </div>
       </div>
+      <div class="theme-choice"><span class="theme-label">Theme</span><details class="theme-dropdown"><summary aria-label="Choose theme"><span data-theme-label>Monochrome</span><svg class="shortcut-chevron theme-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="theme-options" role="group" aria-label="Themes"><button type="button" data-theme-option="monochrome">Monochrome</button><button type="button" data-theme-option="dark">Dark</button><button type="button" data-theme-option="soft">Sage Garden</button><button type="button" data-theme-option="cloud">Lavender Mist</button></div></details></div>
       <div class="info-links"><button type="button" data-action="share-app">Share Android app <span>↗</span></button><button type="button" data-action="check-updates"><span>Check for updates</span><span class="update-icon" aria-hidden="true">sync</span></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/install" onclick="if(location.protocol==='file:')this.href='install.html'">Install the app &amp; widgets <span>↗</span></a><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <span>↗</span></a><div class="infomade">Made by <img class="kawkab-brand-logo" src="assets/kawkab-tech-labs-logo.svg" alt="Kawkab Tech Labs" width="88" height="28"></div></div>
     </div>
 
@@ -1782,7 +1851,7 @@
         <div class="pad">
           <div class="grid">
             <button class="btn warn" data-action="clear" aria-label="All clear" title="All clear">AC</button>
-            <button class="btn warn backspace" data-action="back" type="button" aria-label="Backspace" title="Delete last character"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/><path d="m12 9 5 6m0-6-5 6" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg></button>
+            <button class="btn warn backspace" data-action="back" type="button" aria-label="Backspace" title="Delete last character"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/><path d="m12 9 5 6m0-6-5 6" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg><span class="delete-label" aria-hidden="true">Delete</span></button>
             <button class="btn" data-key="%">%</button>
             <button class="btn" data-key="÷">÷</button>
             <button class="btn" data-key="7">7</button>
@@ -1931,7 +2000,7 @@
       // instead of floating, and skips drag/resize (used for extension popups /
       // fixed embeds where there's no page around it to float over).
       const launchParams=new URLSearchParams(location.search);
-      const desktopMode=launchParams.has('desktop');
+      const desktopMode=launchParams.has('desktop') || launchParams.has('mobile-preview');
       const requestedFeature=launchParams.get('feature');
       if(desktopMode&&requestedFeature&&(requestedFeature==='scientific'||requestedFeature==='casio'||requestedFeature==='programmer'||requestedFeature==='unitconverter'||CALC_MAP[requestedFeature])) this.feature=requestedFeature;
       const roomyDemo=launchParams.has('demo') && window.innerWidth>=680;
@@ -1940,13 +2009,14 @@
         this.$win.style.setProperty('--tai7-w',Math.min(480,Math.max(400,Math.floor(window.innerWidth*.42)))+'px');
         this.$win.style.setProperty('--tai7-h',Math.min(720,Math.max(560,window.innerHeight-120))+'px');
       }
-      if(this.hasAttribute('popup') || (!desktopMode&&launchParams.has('embed')&&!roomyDemo) || (!desktopMode&&!roomyDemo&&window.matchMedia('(max-width: 719px)').matches)){
+      if((launchParams.has('mobile-preview') && !this.hasAttribute('preview-copy')) || this.hasAttribute('popup') || (!desktopMode&&launchParams.has('embed')&&!roomyDemo) || (!desktopMode&&!roomyDemo&&window.matchMedia('(max-width: 719px)').matches)){
         this.$win.classList.add('popup-mode');
         this.popupMode = true;
-        const duplicateButton=this.$win.querySelector('[data-action="duplicate"]'); if(duplicateButton) duplicateButton.hidden=true;
+        const duplicateButton=this.$win.querySelector('[data-action="duplicate"]'); if(duplicateButton && !launchParams.has('mobile-preview')) duplicateButton.hidden=true;
       }
 
       this.loadState();
+      try{const theme=localStorage.getItem('stc-preview-theme')||'monochrome';this.$win.dataset.theme=theme;this.setPreviewTheme(theme);}catch(e){}
       this.bindEvents();
       this.updateBaseTabs();
       this.render();
@@ -1959,7 +2029,7 @@
       else setTimeout(warmMenu,180);
     }
 
-    disconnectedCallback(){ if(this.historyExpiryTimer) clearInterval(this.historyExpiryTimer); }
+    disconnectedCallback(){ if(this.historyExpiryTimer) clearInterval(this.historyExpiryTimer); clearTimeout(this.previewHistoryTimer); }
     ensureMenuBuilt(){if(this.menuBuilt)return;this.buildMenu();}
 
     syncMenuSelection(){
@@ -2124,11 +2194,13 @@
     toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
 
     duplicate(){
+      if(this.popupMode && new URLSearchParams(location.search).has('mobile-preview')){this.popupMode=false;this.$win.classList.remove('popup-mode');this.centerWindow();}
       if(this.popupMode) return;
       if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature).then(ok=>{if(!ok)this.showToast('You can open up to 7 calculators at once.');}).catch(()=>this.showToast('Could not open another calculator.'));return;}
       const openCount=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el.shadowRoot?.querySelector('.win.open')).length;if(openCount>=7){this.showToast('You can open up to 7 calculators at once.');return;}
       const el = document.createElement('taskai7-calculator');
       el.feature = 'basic';
+      if(new URLSearchParams(location.search).has('mobile-preview'))el.setAttribute('preview-copy','');
       document.body.appendChild(el);
       el.open();
       const rect=this.$win.getBoundingClientRect(),gap=16;
@@ -2143,12 +2215,21 @@
       el.$win.style.setProperty('--tai7-top',top+'px');
     }
 
+    setPreviewTheme(theme){
+      const names={monochrome:'Monochrome',dark:'Dark',soft:'Sage Garden',cloud:'Lavender Mist'};
+      if(!Object.hasOwn(names,theme))theme='monochrome';
+      this.$win.dataset.theme=theme;
+      const label=this.shadowRoot.querySelector('[data-theme-label]');if(label)label.textContent=names[theme];
+      this.shadowRoot.querySelectorAll('[data-theme-option]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeOption===theme)));
+      try{localStorage.setItem('stc-preview-theme',theme)}catch(err){}
+    }
     // ---------- events ----------
     bindEvents(){
       const R = this.shadowRoot;
 
       R.addEventListener('pointerdown', ()=>{ ACTIVE = this; });
       R.addEventListener('focusin', ()=>{ ACTIVE = this; });
+      R.addEventListener('click',e=>{const option=e.target.closest('[data-theme-option]');if(!option)return;this.setPreviewTheme(option.dataset.themeOption);this.shadowRoot.querySelector('.theme-dropdown').open=false;});
       R.addEventListener('click', e=>{if(!e.target.closest('[data-action="clear"]'))this.clearTapTimes=[];},true);
       this.$history.addEventListener('keydown', e=>{
         if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();this.openHistoryPanel();}
@@ -2295,6 +2376,7 @@
       // normal click, typing and scrolling behavior.
       let pointerAction=null, px=0, py=0, startRect=null;
       const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+      const snapPixel=value=>Math.round(value*(window.devicePixelRatio||1))/(window.devicePixelRatio||1);
       const getResizeEdge=(e,rect)=>{
         const pad=10,x=e.clientX-rect.left,y=e.clientY-rect.top;
         let edge='';
@@ -2332,8 +2414,8 @@
         }
         const dx=e.clientX-px,dy=e.clientY-py,r=startRect;
         if(pointerAction==='drag'){
-          this.$win.style.setProperty('--tai7-left',clamp(r.left+dx,0,Math.max(0,window.innerWidth-60))+'px');
-          this.$win.style.setProperty('--tai7-top',clamp(r.top+dy,0,Math.max(0,window.innerHeight-40))+'px');
+          this.$win.style.setProperty('--tai7-left',snapPixel(clamp(r.left+dx,0,Math.max(0,window.innerWidth-60)))+'px');
+          this.$win.style.setProperty('--tai7-top',snapPixel(clamp(r.top+dy,0,Math.max(0,window.innerHeight-40)))+'px');
           this.$win.style.cursor='grabbing';
           return;
         }
@@ -2343,10 +2425,10 @@
         const west=edge.includes('w'),east=edge.includes('e'),north=edge.includes('n'),south=edge.includes('s');
         const width=clamp(r.width+(east?dx:west?-dx:0),minW,Math.min(maxW,west?r.right-12:window.innerWidth-r.left-12));
         const height=clamp(r.height+(south?dy:north?-dy:0),minH,Math.min(maxH,north?r.bottom-12:window.innerHeight-r.top-12));
-        this.$win.style.setProperty('--tai7-w',width+'px');
-        this.$win.style.setProperty('--tai7-h',height+'px');
-        if(west)this.$win.style.setProperty('--tai7-left',Math.max(0,r.right-width)+'px');
-        if(north)this.$win.style.setProperty('--tai7-top',Math.max(0,r.bottom-height)+'px');
+        this.$win.style.setProperty('--tai7-w',snapPixel(width)+'px');
+        this.$win.style.setProperty('--tai7-h',snapPixel(height)+'px');
+        if(west)this.$win.style.setProperty('--tai7-left',snapPixel(Math.max(0,r.right-width))+'px');
+        if(north)this.$win.style.setProperty('--tai7-top',snapPixel(Math.max(0,r.bottom-height))+'px');
       });
       const finishPointer=()=>{if(!pointerAction)return;pointerAction=null;startRect=null;this.$win.style.removeProperty('cursor');this.saveState();};
       this.$win.addEventListener('pointerup',finishPointer);
@@ -2509,6 +2591,7 @@
     handleAction(action){
       switch(action){
         case 'close': this.close(); break;
+        case 'preview-floating': this.popupMode=!this.popupMode; this.$win.classList.toggle('popup-mode',this.popupMode); if(!this.popupMode)this.centerWindow(); break;
         case 'duplicate': this.duplicate(); break;
         case 'modesel-toggle': this.$modeMenu.classList.contains('open') ? this.closeModeMenu() : this.openModeMenu(); break;
         case 'history-toggle': this.$historyPanel.classList.contains('open') ? this.closeHistoryPanel({restoreFocus:true}) : this.openHistoryPanel(); break;
@@ -2518,7 +2601,7 @@
         case 'download-app-update': this.downloadAppUpdate(); break;
         case 'reload-web-update': location.reload(); break;
         case 'shortcuts-toggle': this.toggleShortcutGuide(); break;
-        case 'history-clear': this.history=[]; this.renderHistoryPanel(); this.renderHistory(); this.saveState(); break;
+        case 'history-clear': clearTimeout(this.previewHistoryTimer); this.history=this.history.filter(item=>item.pinned===true); this.renderHistoryPanel(); this.renderHistory(); this.saveState(); break;
         case 'mode-deg': this.mode='deg'; this.updateModeChips(); this.saveState(); break;
         case 'mode-rad': this.mode='rad'; this.updateModeChips(); this.saveState(); break;
         case 'clear': if(this.expr){ this.pushUndo(); this.expr=''; } this.showError(false); this.render(); break;
@@ -2537,8 +2620,8 @@
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.01/SevenTask-Calculator-Android-1.18.01.apk';
-      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.01):',url:apkUrl};
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.07/SevenTask-Calculator-Android-1.18.07.apk';
+      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.07):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;
         if(typeof nativeApp?.shareApp==='function'){
@@ -2740,7 +2823,9 @@
         this.setModeLabel(SPECIAL_LABELS[this.feature]);
         this.$expr.textContent = this.expr || '\u00A0';
         this.$result.textContent = this.expr ? this.previewOrLast() : '0';
+        this.schedulePreviewHistory();
       } else if(isProg){
+        clearTimeout(this.previewHistoryTimer);
         this.setModeLabel(SPECIAL_LABELS.programmer);
         this.renderProg();
       } else {
@@ -2860,7 +2945,7 @@
         add.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
         row.append(pick,pin,add); this.$histList.appendChild(row);
       }
-      const clear=document.createElement('button'); clear.type='button'; clear.className='histclear'; clear.dataset.action='history-clear'; clear.textContent='Clear all history'; this.$histList.appendChild(clear);
+      if(this.history.some(item=>item.pinned!==true)){const clear=document.createElement('button'); clear.type='button'; clear.className='histclear'; clear.dataset.action='history-clear'; clear.textContent=this.history.some(item=>item.pinned===true)?'Clear unpinned history':'Clear all history'; this.$histList.appendChild(clear);}
       if(previousPositions&& !matchMedia('(prefers-reduced-motion: reduce)').matches){const rows=[...this.$histList.querySelectorAll('.histrow[data-history-id]')];for(const row of rows){const old=previousPositions.get(row.dataset.historyId);if(!old)continue;const next=row.getBoundingClientRect(),dy=old.top-next.top;if(Math.abs(dy)<1)continue;row.style.transition='none';row.style.transform=`translateY(${dy}px)`;void row.offsetHeight;requestAnimationFrame(()=>{row.style.transition='transform .2s cubic-bezier(.2,.8,.3,1)';row.style.transform='translateY(0)';row.addEventListener('transitionend',()=>{row.style.removeProperty('transition');row.style.removeProperty('transform');},{once:true});});}}
     }
 
@@ -3218,12 +3303,14 @@
       return fn(c.sin,c.cos,c.tan,c.log,c.ln,c.sqrt,c.pow,c.fact,c.PI,c.E);
     }
     evaluate(){
+      clearTimeout(this.previewHistoryTimer);
       if(!this.expr) return;
       try{
         const result = this.evalExpr(this.expr);
         if(typeof result!=='number' || !isFinite(result)) throw new Error('math error');
         this.pushUndo();
-        this.pushHistory(this.expr, result);
+        const last=this.history[this.history.length-1];
+        if(!(last?.autoPreview && last.expr===this.expr && last.featureId===this.feature && last.result===this.formatNumber(result))) this.pushHistory(this.expr, result);
         this.lastResult = result;
         this.expr = this.formatNumber(result);
         this.render(); this.saveState();
@@ -3253,7 +3340,21 @@
     historyPositions(){return new Map([...this.$histList.querySelectorAll('.histrow[data-history-id]')].map(row=>[row.dataset.historyId,row.getBoundingClientRect()]));}
     toggleHistoryPin(id){const item=this.history.find(entry=>entry.id===id);if(!item)return;const animateFrom=this.historyPositions();item.pinned=item.pinned!==true;if(item.pinned)item.pinnedAt=Date.now();else delete item.pinnedAt;this.saveState();this.renderHistoryPanel({animateFrom});}
     pruneHistory(now=Date.now()){ const cutoff=now-86400000,previous=this.history.length;this.history=this.history.filter(h=>h&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)<=now+60000&&(h.pinned===true||Number(h.createdAt)>=cutoff));const unpinned=this.history.reduce((count,h)=>count+(h.pinned===true?0:1),0),excess=Math.max(0,unpinned-100);if(excess){let remove=excess;this.history=this.history.filter(h=>{if(h.pinned===true)return true;if(remove>0){remove--;return false;}return true;});}return this.history.length!==previous; }
-    pushHistory(expr,result,metadata={}){ this.pruneHistory(); const now=Date.now();let id;try{id=crypto.randomUUID();}catch{id=`${now}-${Math.random().toString(36).slice(2,9)}`;}const numeric=typeof result==='number'?this.formatNumber(result):String(result);this.history.push({id,expr:String(expr),result:numeric,createdAt:now,featureId:metadata.featureId||this.feature,featureName:metadata.featureName||this.historyFeatureName(),...(metadata.formValues?{formValues:metadata.formValues}:{})});this.pruneHistory(now); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); }
+    pushHistory(expr,result,metadata={}){ this.pruneHistory(); const now=Date.now();let id;try{id=crypto.randomUUID();}catch{id=`${now}-${Math.random().toString(36).slice(2,9)}`;}const numeric=typeof result==='number'?this.formatNumber(result):String(result);this.history.push({id,expr:String(expr),result:numeric,createdAt:now,featureId:metadata.featureId||this.feature,featureName:metadata.featureName||this.historyFeatureName(),...(metadata.autoPreview?{autoPreview:true}:{}),...(metadata.formValues?{formValues:metadata.formValues}:{})});this.pruneHistory(now); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); }
+    schedulePreviewHistory(){
+      clearTimeout(this.previewHistoryTimer);
+      const expr=this.expr,feature=this.feature,mode=this.mode;
+      if(!expr || !/[+×÷−*/^%]/.test(expr))return;
+      let result;try{result=this.evalExpr(expr)}catch(e){return}
+      if(typeof result!=='number'||!Number.isFinite(result))return;
+      const formatted=this.formatNumber(result);
+      this.previewHistoryTimer=setTimeout(()=>{
+        if(this.expr!==expr||this.feature!==feature||this.mode!==mode)return;
+        const last=this.history[this.history.length-1];
+        if(last?.expr===expr&&last.featureId===feature&&last.result===formatted)return;
+        this.pushHistory(expr,result,{autoPreview:true});
+      },1200);
+    }
     previewOrLast(){
       try{ const result=this.evalExpr(this.expr); if(typeof result==='number' && isFinite(result)) return this.formatNumber(result); }catch(e){}
       return this.expr;

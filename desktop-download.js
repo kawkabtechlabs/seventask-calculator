@@ -3,7 +3,7 @@
   const status = document.querySelector('[data-desktop-download-status]');
   if (!buttons.length || !status) return;
 
-  const release = '1.18.01';
+  const release = '1.18.07';
   const folder = `downloads/desktop-${release}`;
   const filename = `SevenTask-Calculator-Setup-${release}.exe`;
 
