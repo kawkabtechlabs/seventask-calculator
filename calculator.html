@@ -1168,6 +1168,7 @@
   };
 
   /* ===================== shadow template ===================== */
+  const PIN_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 3h8v2l-1 1v5l2 2v1h-5v6l-1 1-1-1v-6H5v-1l2-2V6L6 5V3h2Z" fill="currentColor"/></svg>';
   const TEMPLATE = `
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"><style>
     :host{ all:initial; }
@@ -1639,6 +1640,7 @@
     .histrow .histres{grid-column:2;grid-row:1/4;white-space:nowrap}
     .histrow .histstamp{grid-column:1;grid-row:3}
     .histpin{display:grid;place-items:center;grid-column:3;grid-row:1/4;flex:0 0 30px;width:30px;height:30px;border:1px solid #E7E7E9;border-radius:9px;background:#fff;color:#666970;cursor:pointer;transition:background .16s,border-color .16s,color .16s,transform .16s}
+    .modepin{display:grid;place-items:center;transition:background .16s,color .16s,transform .16s}.modepin svg{width:16px;height:16px;pointer-events:none}.modepin.is-pinned{background:#111114;color:#fff}.modepin:active{transform:scale(.92)}.modepin:focus-visible{outline:2px solid #777B80;outline-offset:2px}
     .histpin svg{width:16px;height:16px}.histpin:hover{background:#f1f1f3;border-color:#b8b8bc;color:#111114}.histpin:active{transform:scale(.92)}.histpin.is-pinned{background:#111114;border-color:#111114;color:#fff}.histpin:focus-visible{outline:2px solid #777B80;outline-offset:2px}
     @media(prefers-reduced-motion:reduce){.modemenu,.pickerpanel,.pickerbtn,.cal-select,.f{transition:none!important;animation:none!important}}
     @media(prefers-reduced-motion:reduce){.brand-home .ticon,.select-popover{animation:none!important}}
@@ -1978,7 +1980,7 @@
         const visibleItems = cat.items.filter(it=>it.id!=='unitconverter');
         listHtml += `<div class="modecat"><span class="catic">${icon}</span><span class="cattext">${cat.name}</span><span class="catcount">${visibleItems.length}</span></div>`;
         visibleItems.forEach(it=>{
-          listHtml += `<div class="modeentry" data-entry-feature="${it.id}"><button class="modeitem" data-select-feature="${it.id}" data-search="${it.name.toLowerCase()}"><span class="mitext">${it.name}</span><span class="tick">✓</span></button><button class="modepin" type="button" data-pin-feature="${it.id}" aria-label="Pin ${it.name}" title="Pin calculator">☆</button></div>`;
+          listHtml += `<div class="modeentry" data-entry-feature="${it.id}"><button class="modeitem" data-select-feature="${it.id}" data-search="${it.name.toLowerCase()}"><span class="mitext">${it.name}</span><span class="tick">✓</span></button><button class="modepin" type="button" data-pin-feature="${it.id}" aria-label="Pin ${it.name}" title="Pin calculator" aria-pressed="false">${PIN_ICON}</button></div>`;
         });
       });
       this.$modeMenu.innerHTML = `
@@ -2009,7 +2011,30 @@
 
     readPinnedFeatures(){try{return JSON.parse(localStorage.getItem(PINNED_FEATURES_KEY)||'[]').filter(id=>CATEGORIES.some(cat=>cat.items.some(item=>item.id===id)));}catch{return[];}}
     togglePinnedFeature(id){const pins=this.readPinnedFeatures();const next=pins.includes(id)?pins.filter(item=>item!==id):[...pins,id];try{localStorage.setItem(PINNED_FEATURES_KEY,JSON.stringify(next));}catch{}this.refreshPinnedMenu();this.filterMenu(this.$modeSearch?.value||'');}
-    refreshPinnedMenu(){if(!this.$menuList)return;this.$menuList.querySelector('.pinned-wrap')?.remove();const ids=this.readPinnedFeatures();if(!ids.length)return;const names=new Map(CATEGORIES.flatMap(cat=>cat.items.map(item=>[item.id,item.name])));const pinned=ids.map(id=>this.$menuList.querySelector(`[data-entry-feature="${id}"]`)).filter(Boolean);if(!pinned.length)return;const wrap=document.createElement('div');wrap.className='pinned-wrap';wrap.innerHTML='<div class="modecat pinned-heading"><span class="cattext">Pinned</span><span class="catcount">'+pinned.length+'</span></div>';pinned.forEach(entry=>wrap.appendChild(entry.cloneNode(true)));this.$menuList.insertBefore(wrap,this.$menuList.querySelector('.modecat'));wrap.querySelector('.pinned-heading').style.display='';wrap.querySelectorAll('[data-pin-feature]').forEach(btn=>{btn.textContent='★';btn.classList.add('is-pinned');btn.setAttribute('aria-label','Unpin '+(names.get(btn.dataset.pinFeature)||'calculator'));btn.title='Unpin calculator';});this.$menuList.querySelectorAll('.modeentry').forEach(entry=>{const btn=entry.querySelector('[data-pin-feature]');const active=ids.includes(entry.dataset.entryFeature);btn.textContent=active?'★':'☆';btn.classList.toggle('is-pinned',active);btn.setAttribute('aria-label',(active?'Unpin ':'Pin ')+(names.get(entry.dataset.entryFeature)||'calculator'));btn.title=active?'Unpin calculator':'Pin calculator';});}
+    refreshPinnedMenu(){
+      if(!this.$menuList)return;
+      this.$menuList.querySelector('.pinned-wrap')?.remove();
+      const ids=this.readPinnedFeatures();
+      const names=new Map(CATEGORIES.flatMap(cat=>cat.items.map(item=>[item.id,item.name])));
+      this.$menuList.querySelectorAll('.modeentry').forEach(entry=>{
+        const btn=entry.querySelector('[data-pin-feature]');
+        if(!btn)return;
+        const active=ids.includes(entry.dataset.entryFeature);
+        btn.innerHTML=PIN_ICON;
+        btn.classList.toggle('is-pinned',active);
+        btn.setAttribute('aria-pressed',String(active));
+        btn.setAttribute('aria-label',(active?'Unpin ':'Pin ')+(names.get(entry.dataset.entryFeature)||'calculator'));
+        btn.title=active?'Unpin calculator':'Pin calculator';
+      });
+      if(!ids.length)return;
+      const pinned=ids.map(id=>this.$menuList.querySelector(`[data-entry-feature="${id}"]`)).filter(Boolean);
+      if(!pinned.length)return;
+      const wrap=document.createElement('div');wrap.className='pinned-wrap';
+      wrap.innerHTML='<div class="modecat pinned-heading"><span class="cattext">Pinned</span><span class="catcount">'+pinned.length+'</span></div>';
+      pinned.forEach(entry=>wrap.appendChild(entry.cloneNode(true)));
+      this.$menuList.insertBefore(wrap,this.$menuList.querySelector('.modecat'));
+      wrap.querySelector('.pinned-heading').style.display='';
+    }
     filterMenu(query){
       const q = query.trim().toLowerCase();
       let anyVisible = false;
@@ -2830,7 +2855,7 @@
         const stamp=document.createElement('small'); stamp.className='histstamp'; stamp.textContent=h.createdAt ? new Date(h.createdAt).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}) : 'Saved calculation';
         pick.append(feature,expr,result,stamp);
         const pin=document.createElement('button'); pin.type='button'; pin.className='histpin'+(h.pinned===true?' is-pinned':''); pin.dataset.historyPin=h.id; pin.setAttribute('aria-pressed',String(h.pinned===true)); pin.setAttribute('aria-label',`${h.pinned===true?'Unpin':'Pin'} ${h.featureName||'calculator'} history item`); pin.title=h.pinned===true?'Unpin history item':'Pin history item';
-        pin.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 3h8v2l-1 1v5l2 2v1h-5v6l-1 1-1-1v-6H5v-1l2-2V6L6 5V3h2Z" fill="currentColor"/></svg>';
+        pin.innerHTML=PIN_ICON;
         const add=document.createElement('button'); add.type='button'; add.className='histadd'; add.dataset.histAdd=h.result; add.setAttribute('aria-label',`Add result ${h.result} to current calculation`); add.title='Add result to current calculation';
         add.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
         row.append(pick,pin,add); this.$histList.appendChild(row);
