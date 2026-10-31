@@ -1,0 +1,16 @@
+# SevenTask Calculator
+
+> SevenTask Calculator is a calculator workspace by Kawkab Tech Labs, with 136+ calculators for everyday math, money, business, science, and unit conversions.
+
+## Public pages
+- [Home](https://seventaskcalculator.in/): Product overview and calculator access.
+- [Calculator](https://seventaskcalculator.in/calculator.html): Interactive calculator application.
+- [Apps and downloads](https://seventaskcalculator.in/install): Web, Android, and Windows installation information.
+- [How to Use](https://seventaskcalculator.in/promo/product-presentation): Product guide and presentation.
+- [Privacy Policy and open-source licenses](https://seventaskcalculator.in/privacy-policy): Privacy information and third-party license notices.
+
+## Product details
+- Product name: SevenTask Calculator
+- Publisher: Kawkab Tech Labs
+- Current product version: 1.18.07
+- Website: https://seventaskcalculator.in/
