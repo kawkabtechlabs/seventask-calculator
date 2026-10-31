@@ -59,9 +59,10 @@
       </style>
 </head>
 <body>
-  <button class="seven-bubble" hidden type="button" aria-label="Open SevenTask Calculator — Just the calculator" aria-expanded="false" title="SevenTask Calculator · Just the calculator">
+  <button class="seven-bubble" hidden type="button" aria-label="Open SevenTask Calculator" aria-expanded="false" title="Open SevenTask Calculator">
     <img src="icon.svg" alt="" width="38" height="38"><span class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></span>
   </button>
+  <button class="seven-bubble-dismiss" type="button" hidden aria-label="Close floating calculator" title="Close floating calculator">×</button>
   <taskai7-calculator id="tai7-calc"></taskai7-calculator>
 
 
@@ -921,7 +922,7 @@
         {key:'date1', label:'Start date', type:'date', default:''}, {key:'date2', label:'End date', type:'date', default:''},
       ], compute:v=>{ if(!v.date1||!v.date2) return [{label:'Difference', value:'—', emphasis:true}];
         const d1=new Date(v.date1), d2=new Date(v.date2), days=Math.round((d2-d1)/86400000);
-        return [ {label:'Days', value:String(days), emphasis:true}, {label:'Weeks', value:fmtNum(days/7)}, {label:'Months (approx)', value:fmtNum(days/30.44)} ];
+      return [ {label:'Days', value:String(days), emphasis:true}, {label:'Weeks', value:fmtNum(days/7)}, {label:'Months (approx)', value:fmtNum(days/30.44)}, {label:'Years (approx)', value:fmtNum(days/365.2425)} ];
       }},
     { id:'workingdays', name:'Working Days', fields:[
         {key:'date1', label:'Start date', type:'date', default:''}, {key:'date2', label:'End date', type:'date', default:''},
@@ -1275,7 +1276,7 @@
     .infobrandtext .brand-calculator{font-size:13.5px;color:#111114}
     .infosection{ padding:11px 0; border-bottom:1px solid #d0d0d4; }
     .infosection.version-section{display:flex;align-items:baseline;gap:8px}
-    .mobile-guide-entry,.mobile-feedback-entry{display:none}
+    .mobile-guide-entry,.mobile-feedback-entry{display:block}
     .mobile-guide-entry{padding:6px 0;border-bottom:1px solid #d0d0d4}
     .mobile-guide-entry button,.mobile-feedback-entry a{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 0;border:0;background:none;color:#111114;text-decoration:none;text-align:left;font:600 14px/1.35 "DM Sans",system-ui,sans-serif;cursor:pointer}
     .mobile-guide-entry button:hover,.mobile-feedback-entry a:hover{text-decoration:underline;text-underline-offset:3px}
@@ -1807,6 +1808,13 @@
     @media(prefers-reduced-motion:reduce){.win[data-theme] .modemenu,.win[data-theme] button.btn{animation:none!important;transition:none!important}}
 
         .f input,.f select,.app-select,.pickerbtn,.cal-select,.select-popover,.select-search,.currency-swap,.time-custom,.time-custom input{border-color:#BFC2C8}.rrow{border-bottom-color:#D1D3D8}.rtable td{border-top-color:#D1D3D8}.win[data-theme="dark"] .results{border-top-color:#9AA1AB}.win[data-theme="dark"] .results::before{color:#F2F4F6}.win[data-theme="dark"] .rrow{border-bottom-color:#454A52}.win[data-theme="dark"] .rtable td{border-top-color:#454A52}.win[data-theme="dark"] .f input,.win[data-theme="dark"] .f select,.win[data-theme="dark"] .app-select,.win[data-theme="dark"] .pickerbtn,.win[data-theme="dark"] .cal-select,.win[data-theme="dark"] .select-popover,.win[data-theme="dark"] .select-search,.win[data-theme="dark"] .currency-swap,.win[data-theme="dark"] .time-custom,.win[data-theme="dark"] .time-custom input{border-color:#626975}
+    .win.mobile-floating{position:fixed!important;top:var(--tai7-top)!important;left:var(--tai7-left)!important;width:var(--tai7-w)!important;height:var(--tai7-h)!important;min-width:min(260px,calc(100vw - 16px))!important;min-height:min(480px,calc(100dvh - 24px))!important;max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 24px)!important;border:2px solid #111114!important;border-radius:18px!important;box-shadow:0 20px 45px #0005!important;z-index:1000001}
+    .win.mobile-floating .titlebar{border-bottom:1px solid #111114!important}
+    @container (max-width: 350px){.win.mobile-floating .brand-home .title{display:none}.win.mobile-floating .brand-home .logobtn,.win.mobile-floating .brand-home .ticon{width:30px;height:30px}.win.mobile-floating .brand-home{flex:1 1 auto;min-width:30px}}
+    .win.mobile-floating .titlebar{touch-action:none;cursor:grab}
+    .win.mobile-floating .grip{display:block;touch-action:none}
+    .win.mobile-floating [data-action="close"]{display:inline-flex}
+    .win.mobile-app-mode.popup-mode:not(.open){visibility:hidden;opacity:0;pointer-events:none}
   </style>
 
   <div class="win" part="window">
@@ -2290,10 +2298,34 @@
     }
 
     showToast(message){const toast=this.$win?.querySelector('[data-toast]');if(!toast)return;toast.textContent=message;toast.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{toast.hidden=true;},3200);}
-    open(){ this.centerWindow(); this.$win.classList.add('open'); document.body.classList.add('calc-open'); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded','true'); ACTIVE = this; }
+    open(){ if(this.mobileAppMode&&this.mobileFloating)this.restoreMobileStandard(); this.centerWindow(); this.$win.classList.add('open'); document.body.classList.add('calc-open'); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded','true'); ACTIVE = this; }
+    enterMobileFloating(){
+      this.closeInfoPanel();this.closeHistoryPanel();this.closeModeMenu();
+      this.mobileFloating=true;this.popupMode=false;
+      this.$win.classList.remove('popup-mode');this.$win.classList.add('mobile-floating');
+      const width=Math.min(Math.max(300,window.innerWidth*.82),window.innerWidth-16);
+      const height=Math.min(Math.max(400,window.innerHeight*.72),window.innerHeight-24);
+      this.$win.style.setProperty('--tai7-w',Math.round(width)+'px');this.$win.style.setProperty('--tai7-h',Math.round(height)+'px');
+      this.centerWindow();this.$win.classList.add('open');
+    }
+    restoreMobileStandard(){
+      this.mobileFloating=false;this.popupMode=true;
+      this.$win.classList.remove('mobile-floating');this.$win.classList.add('popup-mode');
+      for(const key of ['--tai7-w','--tai7-h','--tai7-left','--tai7-top'])this.$win.style.removeProperty(key);
+      const bubble=document.querySelector('.seven-bubble');if(bubble)bubble.classList.remove('minimized');
+      const dismiss=document.querySelector('.seven-bubble-dismiss');if(dismiss)dismiss.hidden=true;
+    }
+    minimizeMobileBubble(){
+      this.mobileFloating=false;this.$win.classList.remove('open','mobile-floating');
+      this.popupMode=true;this.$win.classList.add('popup-mode');
+      document.body.classList.remove('calc-open');
+      const bubble=document.querySelector('.seven-bubble');if(bubble){bubble.hidden=false;bubble.classList.add('minimized');bubble.setAttribute('aria-expanded','false');}
+      const dismiss=document.querySelector('.seven-bubble-dismiss');if(dismiss)dismiss.hidden=false;
+      this.saveState();
+    }
     close(){ this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.$win.classList.remove('open'); this.saveState(); const remaining=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el!==this&&el.shadowRoot?.querySelector('.win.open')); const stillOpen=remaining.length>0; document.body.classList.toggle('calc-open',stillOpen); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded',String(stillOpen)); if(ACTIVE===this) ACTIVE=remaining.at(-1)||null; }
     showFirstRunGuide(){/* Kept as a compatibility hook; launch is intentionally direct. */}
-    showMobileGuide(manual=false){if(!this.mobileAppMode)return;const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!backdrop||!dialog)return;backdrop.hidden=false;dialog.hidden=false;const video=dialog.querySelector('video');if(manual&&video){video.currentTime=0;const playback=video.play();if(playback&&typeof playback.catch==='function')playback.catch(()=>{});}dialog.dataset.manual=String(manual);}
+    showMobileGuide(manual=false){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!backdrop||!dialog)return;backdrop.hidden=false;dialog.hidden=false;const video=dialog.querySelector('video');if(manual&&video){video.currentTime=0;const playback=video.play();if(playback&&typeof playback.catch==='function')playback.catch(()=>{});}dialog.dataset.manual=String(manual);}
     closeMobileGuide(){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!dialog)return;dialog.querySelector('video')?.pause();dialog.hidden=true;if(backdrop)backdrop.hidden=true;try{localStorage.setItem('stc-mobile-guide-seen','1')}catch{}}
     toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
 
@@ -2489,7 +2521,7 @@
       // Drag the floating calculator from any quiet surface area. Resize from
       // any edge/corner; interactive controls and scrollable panels keep their
       // normal click, typing and scrolling behavior.
-      let pointerAction=null, px=0, py=0, startRect=null;
+      let pointerAction=null, px=0, py=0, startRect=null, collapseRequested=false;
       const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
       const snapPixel=value=>Math.round(value*(window.devicePixelRatio||1))/(window.devicePixelRatio||1);
       const getResizeEdge=(e,rect)=>{
@@ -2512,9 +2544,9 @@
         const rect=this.$win.getBoundingClientRect(),edge=getResizeEdge(e,rect);
         const grip=e.target.closest('[data-resize]');
         if(grip)pointerAction='resize-se';
-        else if(edge)pointerAction='resize';
+        else if(edge)pointerAction=edge;
         else pointerAction='drag';
-        px=e.clientX;py=e.clientY;startRect=rect;
+        px=e.clientX;py=e.clientY;startRect=rect;collapseRequested=false;
         this.$win.setPointerCapture(e.pointerId);
         e.preventDefault();
       });
@@ -2536,16 +2568,18 @@
         }
         const edge=pointerAction==='resize-se'?'se':pointerAction;
         const maxW=Math.max(1,Math.min(620,window.innerWidth-24)),maxH=Math.max(1,Math.min(860,window.innerHeight-24));
-        const minW=Math.min(340,maxW),minH=Math.min(440,maxH);
+        const minW=Math.min(this.mobileFloating?260:340,maxW),minH=Math.min(this.mobileFloating?480:440,maxH);
         const west=edge.includes('w'),east=edge.includes('e'),north=edge.includes('n'),south=edge.includes('s');
-        const width=clamp(r.width+(east?dx:west?-dx:0),minW,Math.min(maxW,west?r.right-12:window.innerWidth-r.left-12));
-        const height=clamp(r.height+(south?dy:north?-dy:0),minH,Math.min(maxH,north?r.bottom-12:window.innerHeight-r.top-12));
+        const requestedWidth=r.width+(east?dx:west?-dx:0),requestedHeight=r.height+(south?dy:north?-dy:0);
+        collapseRequested=this.mobileFloating&&(requestedWidth<260||requestedHeight<minH);
+        const width=clamp(requestedWidth,minW,Math.min(maxW,west?r.right-12:window.innerWidth-r.left-12));
+        const height=clamp(requestedHeight,minH,Math.min(maxH,north?r.bottom-12:window.innerHeight-r.top-12));
         this.$win.style.setProperty('--tai7-w',snapPixel(width)+'px');
         this.$win.style.setProperty('--tai7-h',snapPixel(height)+'px');
         if(west)this.$win.style.setProperty('--tai7-left',snapPixel(Math.max(0,r.right-width))+'px');
         if(north)this.$win.style.setProperty('--tai7-top',snapPixel(Math.max(0,r.bottom-height))+'px');
       });
-      const finishPointer=()=>{if(!pointerAction)return;pointerAction=null;startRect=null;this.$win.style.removeProperty('cursor');this.saveState();};
+      const finishPointer=()=>{if(!pointerAction)return;const resized=pointerAction!=='drag';pointerAction=null;startRect=null;this.$win.style.removeProperty('cursor');if(this.mobileFloating&&resized&&collapseRequested){this.minimizeMobileBubble();return;}this.saveState();};
       this.$win.addEventListener('pointerup',finishPointer);
       this.$win.addEventListener('pointercancel',finishPointer);
 
@@ -2709,7 +2743,7 @@
         case 'preview-floating':
           if(this.nativeAppMode && this.overlayMode && window.SevenTaskNative?.minimizeFloatingCalculator){window.SevenTaskNative.minimizeFloatingCalculator();break;}
           if(this.nativeAppMode && window.SevenTaskNative?.openFloatingCalculator){window.SevenTaskNative.openFloatingCalculator();break;}
-          if(this.mobileAppMode){this.close();break;}
+          if(this.mobileAppMode){if(this.mobileFloating)this.minimizeMobileBubble();else this.enterMobileFloating();break;}
           this.popupMode=!this.popupMode; this.$win.classList.toggle('popup-mode',this.popupMode); if(!this.popupMode)this.centerWindow(); break;
         case 'duplicate': this.duplicate(); break;
         case 'modesel-toggle': this.$modeMenu.classList.contains('open') ? this.closeModeMenu() : this.openModeMenu(); break;
@@ -3498,9 +3532,11 @@
 window.addEventListener('message',event=>{if(event.source!==window.parent||event.origin!==location.origin)return;const data=event.data;if(!data||typeof data.feature!=='string'||!/^[a-z0-9-]+$/.test(data.feature))return;if(data.type==='seventask:open-feature'){window.TaskAI7Calculator.openFeature(data.feature);return}if(data.type!=='seventask:showcase-feature')return;const el=window.TaskAI7Calculator._el();el.selectFeature(data.feature);el.open();setTimeout(()=>{switch(data.action){case'library':el.openModeMenu();break;case'search':el.openModeMenu();el.$modeSearch?.focus({preventScroll:true});break;case'history':el.openHistoryPanel();break;case'shortcuts':el.openInfoPanel();el.toggleShortcutGuide();break;case'edit':el.expr='';el.render();for(const key of'42+7')el.insert(key);break;default:break}},120)});
 })();
 </script>
-<script>(()=>{const button=document.querySelector(".seven-bubble");if(!button||button.dataset.openHandlerBound)return;button.dataset.openHandlerBound="true";const openCalculator=()=>{const calculator=document.querySelector("#tai7-calc");if(calculator&&typeof calculator.open==="function"){calculator.open();try{calculator.selectFeature("basic")}catch(error){console.error("Could not select basic calculator",error)}return}window.TaskAI7Calculator?.home?.()};customElements.whenDefined("taskai7-calculator").then(()=>{button.hidden=false}).catch(error=>console.error("SevenTask Calculator failed to initialize",error));button.addEventListener("click",event=>{event.preventDefault();if(customElements.get("taskai7-calculator"))openCalculator();else customElements.whenDefined("taskai7-calculator").then(openCalculator).catch(error=>console.error("SevenTask Calculator failed to open",error))})})();</script>
+<script>(()=>{const button=document.querySelector(".seven-bubble");if(!button||button.dataset.openHandlerBound)return;button.dataset.openHandlerBound="true";const openCalculator=()=>{const calculator=document.querySelector("#tai7-calc");if(calculator&&typeof calculator.open==="function"){const wasMinimized=button.classList.contains('minimized');if(wasMinimized)calculator.restoreMobileStandard();calculator.open();if(!wasMinimized)try{calculator.selectFeature("basic")}catch(error){console.error("Could not select basic calculator",error)}return}window.TaskAI7Calculator?.home?.()};customElements.whenDefined("taskai7-calculator").then(()=>{button.hidden=false}).catch(error=>console.error("SevenTask Calculator failed to initialize",error));button.addEventListener("click",event=>{event.preventDefault();if(customElements.get("taskai7-calculator"))openCalculator();else customElements.whenDefined("taskai7-calculator").then(openCalculator).catch(error=>console.error("SevenTask Calculator failed to open",error))})})();</script>
 <style>.mobile-app-install .seven-bubble{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.mobile-app-install .seven-bubble.dragging{cursor:grabbing;animation:none;transition:none}.win.mobile-app-mode[data-theme="dark"]~.mobile-guide-dialog{background:#1d2025;border-color:#525964;color:#f3f4f6}.win.mobile-app-mode[data-theme="dark"]~.mobile-guide-dialog p{color:#c4cad2}.win.mobile-app-mode[data-theme="soft"]~.mobile-guide-dialog{background:#f4f8f4;border-color:#c4d2c8}.win.mobile-app-mode[data-theme="cloud"]~.mobile-guide-dialog{background:#faf7fc;border-color:#d8cde4}</style>
 <script>(()=>{const params=new URLSearchParams(location.search),button=document.querySelector('.seven-bubble');if(!button||!params.has('mobile')||params.has('native'))return;document.documentElement.classList.add('mobile-app-install');const key='stc-mobile-pwa-bubble-position';try{const p=JSON.parse(localStorage.getItem(key)||'null');if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)){button.style.left=Math.max(0,Math.min(innerWidth-button.offsetWidth,p.x))+'px';button.style.top=Math.max(0,Math.min(innerHeight-button.offsetHeight,p.y))+'px';button.style.right='auto';button.style.bottom='auto'}}catch{}let startX=0,startY=0,originX=0,originY=0,moved=false,dragging=false;button.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;dragging=true;moved=false;startX=e.clientX;startY=e.clientY;const r=button.getBoundingClientRect();originX=r.left;originY=r.top;button.setPointerCapture?.(e.pointerId);button.classList.add('dragging')});button.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-startX,dy=e.clientY-startY;if(Math.abs(dx)+Math.abs(dy)>6)moved=true;if(!moved)return;const x=Math.max(6,Math.min(innerWidth-button.offsetWidth-6,originX+dx)),y=Math.max(6,Math.min(innerHeight-button.offsetHeight-6,originY+dy));button.style.left=x+'px';button.style.top=y+'px';button.style.right='auto';button.style.bottom='auto'});const end=e=>{if(!dragging)return;dragging=false;button.classList.remove('dragging');if(moved){try{const r=button.getBoundingClientRect();localStorage.setItem(key,JSON.stringify({x:r.left,y:r.top}))}catch{}button.dataset.suppressClick='1';setTimeout(()=>delete button.dataset.suppressClick,250)}if(e.pointerId!==undefined&&button.hasPointerCapture?.(e.pointerId))button.releasePointerCapture(e.pointerId)};button.addEventListener('pointerup',end);button.addEventListener('pointercancel',end);button.addEventListener('click',e=>{if(button.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation()}},true);addEventListener('resize',()=>{if(button.style.left){const r=button.getBoundingClientRect();button.style.left=Math.max(6,Math.min(innerWidth-r.width-6,r.left))+'px';button.style.top=Math.max(6,Math.min(innerHeight-r.height-6,r.top))+'px'}})})();</script>
+<style>.mobile-app-install .seven-bubble.minimized{width:68px;height:68px;padding:10px;justify-content:center;animation:none;box-shadow:0 10px 28px #0003}.mobile-app-install .seven-bubble.minimized img{width:46px;height:46px;animation:none}.mobile-app-install .seven-bubble.minimized .brand-title-line{display:none}.seven-bubble-dismiss:not([hidden]){position:fixed;z-index:1000002;display:grid;place-items:center;width:26px;height:26px;border:1px solid #111114;border-radius:50%;background:#fff;color:#111114;font:20px/1 system-ui;cursor:pointer}</style>
+<script>(()=>{const bubble=document.querySelector('.seven-bubble'),dismiss=document.querySelector('.seven-bubble-dismiss');if(!bubble||!dismiss)return;const positionDismiss=()=>{if(dismiss.hidden)return;const r=bubble.getBoundingClientRect();dismiss.style.left=Math.max(0,Math.min(innerWidth-26,r.right-13))+'px';dismiss.style.top=Math.max(0,Math.min(innerHeight-26,r.top-8))+'px'};bubble.addEventListener('pointermove',positionDismiss);bubble.addEventListener('pointerup',positionDismiss);addEventListener('resize',positionDismiss);new MutationObserver(positionDismiss).observe(dismiss,{attributes:true,attributeFilter:['hidden']});dismiss.addEventListener('click',()=>{dismiss.hidden=true;bubble.hidden=true;bubble.classList.remove('minimized');const calculator=document.querySelector('#tai7-calc');calculator?.restoreMobileStandard?.();});})();</script>
 <script>if("serviceWorker" in navigator && location.protocol !== "file:"){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script>
 <style>
 #st-ad-break[hidden]{display:none!important}#st-ad-break{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:#111114a8;backdrop-filter:blur(8px);font:14px/1.55 "DM Sans",system-ui,sans-serif;color:#111114}#st-ad-break .ad-card{position:relative;width:min(520px,100%);overflow:hidden;border:1px solid #e3e4e7;border-radius:24px;background:#fff;box-shadow:0 28px 90px #0005}#st-ad-break .ad-top{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 19px;border-bottom:1px solid #ececef;color:#676a71;font-size:10px;font-weight:800;letter-spacing:.12em}#st-ad-break .ad-top span:last-child{padding:4px 8px;border:1px solid #e5e6e9;border-radius:99px;color:#777980;font-size:9px;letter-spacing:.08em}#st-ad-break .ad-content{min-height:210px;padding:30px 27px 20px;background:radial-gradient(ellipse at 86% 5%,#f2f4f8,transparent 55%),linear-gradient(145deg,#fff,#fafbfc)}#st-ad-break .ad-index{color:#868991;font-size:10px;font-weight:750;letter-spacing:.12em}#st-ad-break h2{max-width:430px;margin:12px 0 9px;font:800 clamp(27px,6vw,39px)/1.05 "Segoe UI",Arial,sans-serif;letter-spacing:-.065em}#st-ad-break p{max-width:430px;margin:0;color:#686b73;font-size:13px}#st-ad-break .ad-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 19px;border-top:1px solid #ececef}#st-ad-break .ad-dots{display:flex;align-items:center;gap:6px}#st-ad-break .ad-dot{width:7px;height:7px;padding:0;border:0;border-radius:99px;background:#d6d8dd;cursor:pointer;transition:width .18s,background .18s}#st-ad-break .ad-dot[aria-current=true]{width:20px;background:#111114}#st-ad-break .ad-actions{display:flex;align-items:center;gap:8px}#st-ad-break .ad-continue,#st-ad-break .ad-link{min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #111114;border-radius:11px;background:#111114;color:#fff;text-decoration:none;font:700 11px "DM Sans",system-ui,sans-serif;cursor:pointer}#st-ad-break .ad-link{background:#fff;color:#111114}#st-ad-break .ad-continue:hover,#st-ad-break .ad-link:hover{transform:translateY(-1px)}@media(max-width:480px){#st-ad-break{padding:13px}#st-ad-break .ad-card{border-radius:19px}#st-ad-break .ad-content{min-height:190px;padding:24px 20px 18px}#st-ad-break .ad-footer{padding:13px 15px;flex-wrap:wrap}#st-ad-break .ad-continue,#st-ad-break .ad-link{min-height:36px;padding-inline:10px}}@media(prefers-reduced-motion:reduce){#st-ad-break .ad-dot,#st-ad-break .ad-continue,#st-ad-break .ad-link{transition:none}}
