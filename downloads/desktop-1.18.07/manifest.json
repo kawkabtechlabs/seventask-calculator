@@ -1,83 +1,83 @@
 {
   "filename": "SevenTask-Calculator-Setup-1.18.07.exe",
-  "bytes": 120245728,
+  "bytes": 120246414,
   "version": "1.18.07",
   "parts": [
     {
       "file": "part-01.bin",
       "bytes": 8388608,
-      "sha256": "6734a23658426e527fc963ce7abecc10c9240df118dcd0946462ae615584dc18"
+      "sha256": "5f0ca5d546535e42415eab2083c02358a08d3282f4610fa4c418101119934765"
     },
     {
       "file": "part-02.bin",
       "bytes": 8388608,
-      "sha256": "4080896e1380bf8ccc720881dec1cb7f9672fcd8aa12121fb98a04ebf5d035f6"
+      "sha256": "609c41a913198e78d96159112d7589fe1eb16fbe5562e5dd7845513b0c929f3c"
     },
     {
       "file": "part-03.bin",
       "bytes": 8388608,
-      "sha256": "98f0d47f8778ad48603da5ba634890333df75a53ffe5e1b66ec6fa6858af1209"
+      "sha256": "fc68d50c964f9caabcf124196b17f303cdb3a258fda078bb066da6a29100c81b"
     },
     {
       "file": "part-04.bin",
       "bytes": 8388608,
-      "sha256": "57c203ce73aff408f81327d7433a9061b707d5d92fa769f446b1ceb7aaabf40b"
+      "sha256": "d264417645cd0dfcd9d26ae5b0fd9d67307f213f6e2110321e790a57422a3f17"
     },
     {
       "file": "part-05.bin",
       "bytes": 8388608,
-      "sha256": "66963547d52e8b76266c1d87088954903076e6f1b4befe7629b49080f9011dd4"
+      "sha256": "05567bcb1461da71835b0526bf5fa6a878c57757251cf85abba8ecc5b3026cc1"
     },
     {
       "file": "part-06.bin",
       "bytes": 8388608,
-      "sha256": "364cdb7561b70f0b4b3f28930834bead1a1afd09e94b7410295c743b3f7e6417"
+      "sha256": "d1130407d78975aff9bdfa9fa7d189be6bbb41e6dc75455b75c8a913daac78e5"
     },
     {
       "file": "part-07.bin",
       "bytes": 8388608,
-      "sha256": "d063b963d275478154337bb630ba821bfc4fd99ebe3657583b8636debc9ad056"
+      "sha256": "49aa37baea7e5cb12f5bb14ccdc3976f399cfc3ffd96cbdcba6d5aae2d68bdec"
     },
     {
       "file": "part-08.bin",
       "bytes": 8388608,
-      "sha256": "c41119709d237de50711193c85a6d4a9564513915499d31685d00742ef320070"
+      "sha256": "8b59bcb43f580166c686bc20aeac2fbee3d518d3078049990fd6b0234b1388fa"
     },
     {
       "file": "part-09.bin",
       "bytes": 8388608,
-      "sha256": "064fd9d7ee856b5e4797af899faaa45e3c0eb386722082025e49303f69cb34a7"
+      "sha256": "5b449e63a6de9c5ecb3b24efb91d62a11b7c434f4576e5d56233be9df9f06a02"
     },
     {
       "file": "part-10.bin",
       "bytes": 8388608,
-      "sha256": "165f2a36980ac84a8dc4e6c918e422ad599b3017ff9335916eec00c4d274efc3"
+      "sha256": "43a18a86ad05797c6805ed8f080aa4a529964b105dccdd7e6db60feb476bfb1d"
     },
     {
       "file": "part-11.bin",
       "bytes": 8388608,
-      "sha256": "523edfafcfb3249a95e10ddd23a7c5479c6c29aca29f15930f80a83037628e2d"
+      "sha256": "66453b88d0de43f5bddd2f46eab455dc2cfbd8d5cf7e8627393f4e25bdf8e6ae"
     },
     {
       "file": "part-12.bin",
       "bytes": 8388608,
-      "sha256": "a531d4e58364ef4d3dd7b5cc16639c4927d5f3520f5e23751c846028a5ec40e5"
+      "sha256": "0518121cf7704ed4e74603af5a6726d0c5273b4c106b0360c2af84a4dcee70fc"
     },
     {
       "file": "part-13.bin",
       "bytes": 8388608,
-      "sha256": "78dc9012a34087c1f62664c5ce72ade6e80113bc34038169509a00251e66ad95"
+      "sha256": "0981422ea2dfc56d1916310cb66b725def95b4f6a523fc57529e28608d5e67e4"
     },
     {
       "file": "part-14.bin",
       "bytes": 8388608,
-      "sha256": "a3a9dd9ebe64381b0f035e1784bf60a60ebc40a0f3f43df0cfa4d78cac60f8e0"
+      "sha256": "b156611b3e2323d2976bb3b49097869d69627abe87def377bf168bb75cf07488"
     },
     {
       "file": "part-15.bin",
-      "bytes": 2805216,
-      "sha256": "5962474a7be04c6d952886b03deef1771b1357a9a76558840d1cdaf69faf7d71"
+      "bytes": 2805902,
+      "sha256": "377cd860c1bf21401401f76c34143b7cf5d0dc9ef95b0be5b8c2daed8dfc2717"
     }
   ],
-  "sha256": "5da0827dcf31a7ab0037af98d01ef4f721912988903b517255605a62c5a54376"
+  "sha256": "a739eb8fc8d9e1e142c3b801951990f87cd1ec1ea2040cb73cd9cb1293359b91"
 }

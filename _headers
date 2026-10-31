@@ -5,4 +5,7 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 /sw.js
-  Cache-Control: no-cache
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/sw-v103.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
