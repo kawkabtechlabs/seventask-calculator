@@ -3,7 +3,7 @@
   "name": "SevenTask Calculator",
   "short_name": "SevenTask",
   "description": "A beautifully capable calculator for everyday math, money, science and work.",
-  "start_url": "./calculator",
+  "start_url": "./calculator?mobile=1",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
