@@ -1,0 +1,25 @@
+name: Sync release version
+on:
+  push:
+    branches: [main]
+    paths: [release.json]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/sync-release.cjs
+      - name: Commit synchronized version labels
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "Sync release version labels"
+            git push
+          fi
