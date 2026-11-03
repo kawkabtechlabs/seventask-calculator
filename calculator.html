@@ -1811,6 +1811,8 @@
     @media(prefers-reduced-motion:reduce){.win[data-theme] .modemenu,.win[data-theme] button.btn{animation:none!important;transition:none!important}}
 
         .f input,.f select,.app-select,.pickerbtn,.cal-select,.select-popover,.select-search,.currency-swap,.time-custom,.time-custom input{border-color:#BFC2C8}.rrow{border-bottom-color:#D1D3D8}.rtable td{border-top-color:#D1D3D8}.win[data-theme="dark"] .results{border-top-color:#9AA1AB}.win[data-theme="dark"] .results::before{color:#F2F4F6}.win[data-theme="dark"] .rrow{border-bottom-color:#454A52}.win[data-theme="dark"] .rtable td{border-top-color:#454A52}.win[data-theme="dark"] .f input,.win[data-theme="dark"] .f select,.win[data-theme="dark"] .app-select,.win[data-theme="dark"] .pickerbtn,.win[data-theme="dark"] .cal-select,.win[data-theme="dark"] .select-popover,.win[data-theme="dark"] .select-search,.win[data-theme="dark"] .currency-swap,.win[data-theme="dark"] .time-custom,.win[data-theme="dark"] .time-custom input{border-color:#626975}
+
+    .win:not(.mobile-app-mode) .title-float-btn{display:none!important}
     .win.mobile-floating{position:fixed!important;top:var(--tai7-top)!important;left:var(--tai7-left)!important;width:var(--tai7-w)!important;height:var(--tai7-h)!important;min-width:min(260px,calc(100vw - 16px))!important;min-height:min(480px,calc(100dvh - 24px))!important;max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 24px)!important;border:2px solid #111114!important;border-radius:18px!important;box-shadow:0 20px 45px #0005!important;z-index:1000001}
     .win.mobile-floating .titlebar{border-bottom:1px solid #111114!important}
     @container (max-width: 350px){.win.mobile-floating .brand-home .title{display:none}.win.mobile-floating .brand-home .logobtn,.win.mobile-floating .brand-home .ticon{width:30px;height:30px}.win.mobile-floating .brand-home{flex:1 1 auto;min-width:30px}}
@@ -1818,8 +1820,18 @@
     .win.mobile-floating .grip{display:block;touch-action:none}
     .win.mobile-floating [data-action="close"]{display:inline-flex}
     .win.mobile-app-mode.popup-mode:not(.open){visibility:hidden;opacity:0;pointer-events:none}
-    .win.popup-mode:not(.mobile-app-mode){border:2px solid #111114!important}
-  </style>
+    .win.popup-mode:not(.mobile-app-mode){border:2px solid #111114!important;border-radius:0!important;box-sizing:border-box}
+      /* Consistent medium-dark dividers: distinct from the frame, crisp while resizing. */
+    .win{--ui-divider:#858a91}
+    .win :is(.titlebar,.toolbar,.display,.sci,.infobrand,.infosection:not(:last-child),.theme-choice,.infomade,.mobile-guide-entry,.mobile-feedback-entry,.menuspecial,.modecat:not(:first-child),.histrow,.histclear,.progdisplay,.progbases,.results,.rrow,.rtable td){border-color:var(--ui-divider)!important}
+    .win :is(.titlebar,.toolbar,.display,.sci,.infobrand,.infosection:not(:last-child),.theme-choice,.infomade,.mobile-guide-entry,.mobile-feedback-entry,.menuspecial,.modecat:not(:first-child),.histrow,.histclear,.progdisplay,.progbases,.results,.rrow,.rtable td){border-width:1.5px!important}
+    .win .infopanel{border-right:1.5px solid var(--ui-divider)!important}
+    .win[data-theme="dark"]{--ui-divider:#737a84}
+    .win[data-theme="soft"]{--ui-divider:#77847c}
+    .win[data-theme="cloud"]{--ui-divider:#817888}
+    .win[data-theme="blue"]{--ui-divider:#74858d}
+    .win[data-theme="rose"]{--ui-divider:#887c82}
+    .win[data-theme="sand"]{--ui-divider:#898276}</style>
 
   <div class="win" part="window">
     <div class="titlebar" data-drag>
@@ -2110,6 +2122,7 @@
       this.mobileAppMode=launchParams.has('mobile');
       this.nativeAppMode=this.mobileAppMode && launchParams.has('native');
       this.overlayMode=this.mobileAppMode && launchParams.has('overlay');
+      this.nativeCopyMode=this.nativeAppMode && launchParams.has('copy');
       if(this.mobileAppMode)this.$win.classList.add('mobile-app-mode');
       const requestedFeature=launchParams.get('feature');
       if(desktopMode&&requestedFeature&&(requestedFeature==='scientific'||requestedFeature==='casio'||requestedFeature==='programmer'||requestedFeature==='unitconverter'||CALC_MAP[requestedFeature])) this.feature=requestedFeature;
@@ -2122,7 +2135,8 @@
       if((launchParams.has('mobile-preview') && !this.hasAttribute('preview-copy')) || this.hasAttribute('popup') || (!desktopMode&&launchParams.has('embed')&&!roomyDemo) || (!desktopMode&&!roomyDemo&&window.matchMedia('(max-width: 719px)').matches)){
         this.$win.classList.add('popup-mode');
         this.popupMode = true;
-        const duplicateButton=this.$win.querySelector('[data-action="duplicate"]'); if(duplicateButton && !launchParams.has('mobile-preview')) duplicateButton.hidden=true;
+        const duplicateButton=this.$win.querySelector('[data-action="duplicate"]'); if(duplicateButton && !launchParams.has('mobile-preview') && !this.nativeAppMode) duplicateButton.hidden=true;
+        if(duplicateButton && this.nativeCopyMode) duplicateButton.hidden=true;
       }
 
       this.loadState();
@@ -2334,6 +2348,7 @@
     toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
 
     duplicate(){
+      if(this.nativeAppMode && window.SevenTaskNative?.duplicateFloatingCalculator){window.SevenTaskNative.duplicateFloatingCalculator();return;}
       if(this.popupMode && new URLSearchParams(location.search).has('mobile-preview')){this.popupMode=false;this.$win.classList.remove('popup-mode');this.centerWindow();}
       if(this.popupMode) return;
       if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature).then(ok=>{if(!ok)this.showToast('You can open up to 7 calculators at once.');}).catch(()=>this.showToast('Could not open another calculator.'));return;}
@@ -2743,7 +2758,7 @@
     }
     handleAction(action){
       switch(action){
-        case 'close': if(this.nativeAppMode&&this.overlayMode&&window.SevenTaskNative?.closeFloatingCalculator)window.SevenTaskNative.closeFloatingCalculator();else this.close(); break;
+        case 'close': if(this.nativeCopyMode&&window.SevenTaskNative?.closeCopyCalculator)window.SevenTaskNative.closeCopyCalculator();else if(this.nativeAppMode&&window.SevenTaskNative?.closeFloatingCalculator)window.SevenTaskNative.closeFloatingCalculator();else this.close(); break;
         case 'preview-floating':
           if(this.nativeAppMode && this.overlayMode && window.SevenTaskNative?.minimizeFloatingCalculator){window.SevenTaskNative.minimizeFloatingCalculator();break;}
           if(this.nativeAppMode && window.SevenTaskNative?.openFloatingCalculator){window.SevenTaskNative.openFloatingCalculator();break;}
