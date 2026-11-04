@@ -1,7 +1,7 @@
 {
   "id": "/",
   "name": "SevenTask Calculator",
-  "short_name": "SevenTask",
+  "short_name": "SevenTask Calculator",
   "description": "A beautifully capable calculator for everyday math, money, science and work.",
   "start_url": "./calculator?mobile=1",
   "scope": "./",

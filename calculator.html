@@ -2147,8 +2147,12 @@
       this.renderHistory();
       const standaloneCalculatorRoute=/\/calculator(?:\.html)?\/?$/.test(location.pathname);
       if(this.popupMode || roomyDemo || desktopMode || standaloneCalculatorRoute) this.open();
-      // Mobile launches should land on the calculator immediately. The guide
-      // remains available on demand from the app menu so it never delays entry.
+      // Show onboarding once for an installed PWA. The native Android shell
+      // owns its own first-run guide; ordinary web visits open directly.
+      if(this.mobileAppMode && !this.nativeAppMode && !this.overlayMode && !this.nativeCopyMode &&
+         (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true)) {
+        setTimeout(()=>this.showFirstRunGuide(),0);
+      }
       this.historyExpiryTimer=setInterval(()=>{if(this.pruneHistory()){this.renderHistory();if(this.$historyPanel.classList.contains("open"))this.renderHistoryPanel();this.saveState();}},5*60*1000);
       const warmMenu=()=>this.ensureMenuBuilt();
       if('requestIdleCallback' in window) requestIdleCallback(warmMenu,{timeout:1200});
@@ -2342,7 +2346,10 @@
       this.saveState();
     }
     close(){ this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.$win.classList.remove('open'); this.saveState(); const remaining=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el!==this&&el.shadowRoot?.querySelector('.win.open')); const stillOpen=remaining.length>0; document.body.classList.toggle('calc-open',stillOpen); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded',String(stillOpen)); if(ACTIVE===this) ACTIVE=remaining.at(-1)||null; }
-    showFirstRunGuide(){/* Kept as a compatibility hook; launch is intentionally direct. */}
+    showFirstRunGuide(){
+      try { if(localStorage.getItem('stc-mobile-guide-seen') === '1') return; } catch {}
+      this.showMobileGuide(false);
+    }
     showMobileGuide(manual=false){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!backdrop||!dialog)return;backdrop.hidden=false;dialog.hidden=false;const video=dialog.querySelector('video');if(manual&&video){video.currentTime=0;const playback=video.play();if(playback&&typeof playback.catch==='function')playback.catch(()=>{});}dialog.dataset.manual=String(manual);}
     closeMobileGuide(){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!dialog)return;dialog.querySelector('video')?.pause();dialog.hidden=true;if(backdrop)backdrop.hidden=true;try{localStorage.setItem('stc-mobile-guide-seen','1')}catch{}}
     toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
@@ -2796,7 +2803,7 @@
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.07/SevenTask-Calculator-Android-1.18.07.apk';
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.07/SevenTask-Calculator-Android-1.18.07.apk?build=24';
       const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.07):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;

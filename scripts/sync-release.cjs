@@ -41,7 +41,7 @@ const updateFile = path.join(root, 'mobile-update.json');
 const update = JSON.parse(fs.readFileSync(updateFile, 'utf8'));
 update.versionName = version;
 update.versionCode = release.androidVersionCode;
-update.apkUrl = `https://seventaskcalculator.in/downloads/mobile-${version}/SevenTask-Calculator-Android-${version}.apk`;
+update.apkUrl = `https://seventaskcalculator.in/downloads/mobile-${version}/SevenTask-Calculator-Android-${version}.apk?build=${release.androidVersionCode}`;
 const updateEol = fs.readFileSync(updateFile, 'utf8').includes('\r\n') ? '\r\n' : '\n';
 sync(updateFile, JSON.stringify(update, null, 2).replace(/\n/g, updateEol) + updateEol);
 
