@@ -33,6 +33,10 @@ for (const relative of siteFiles) {
   if (!fs.existsSync(file)) continue;
   const current = fs.readFileSync(file, 'utf8');
   let next = current.split(previous).join(version);
+  if (relative === 'install.html' || relative === 'calculator.html') {
+    next = next.replace(/(SevenTask-Calculator-Android-[0-9.]+\.apk\?build=)\d+/g,
+      (_, url) => url + release.androidVersionCode);
+  }
   if (relative === 'README.md') next = next.replace(/versionCode \d+/, `versionCode ${release.androidVersionCode}`);
   sync(file, next);
 }

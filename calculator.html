@@ -2124,6 +2124,7 @@
       this.overlayMode=this.mobileAppMode && launchParams.has('overlay');
       this.nativeCopyMode=this.nativeAppMode && launchParams.has('copy');
       if(this.mobileAppMode)this.$win.classList.add('mobile-app-mode');
+      if(this.nativeCopyMode)this.$win.querySelector('.title-float-btn').hidden=true;
       const requestedFeature=launchParams.get('feature');
       if(desktopMode&&requestedFeature&&(requestedFeature==='scientific'||requestedFeature==='casio'||requestedFeature==='programmer'||requestedFeature==='unitconverter'||CALC_MAP[requestedFeature])) this.feature=requestedFeature;
       const roomyDemo=launchParams.has('demo') && window.innerWidth>=680;
@@ -2767,8 +2768,14 @@
       switch(action){
         case 'close': if(this.nativeCopyMode&&window.SevenTaskNative?.closeCopyCalculator)window.SevenTaskNative.closeCopyCalculator();else if(this.nativeAppMode&&window.SevenTaskNative?.closeFloatingCalculator)window.SevenTaskNative.closeFloatingCalculator();else this.close(); break;
         case 'preview-floating':
-          if(this.nativeAppMode && this.overlayMode && window.SevenTaskNative?.minimizeFloatingCalculator){window.SevenTaskNative.minimizeFloatingCalculator();break;}
-          if(this.nativeAppMode && window.SevenTaskNative?.openFloatingCalculator){window.SevenTaskNative.openFloatingCalculator();break;}
+          if(this.nativeAppMode){
+            const bridge=window.SevenTaskNative;
+            if(this.overlayMode && bridge?.restoreFullScreen)bridge.restoreFullScreen();
+            else if(this.overlayMode && bridge?.minimizeFloatingCalculator)bridge.minimizeFloatingCalculator();
+            else if(bridge?.openFloatingCalculator)bridge.openFloatingCalculator();
+            else alert('Open the installed SevenTask Android app to use the floating calculator over other apps.');
+            break;
+          }
           if(this.mobileAppMode){if(this.mobileFloating)this.minimizeMobileBubble();else this.enterMobileFloating();break;}
           this.popupMode=!this.popupMode; this.$win.classList.toggle('popup-mode',this.popupMode); if(!this.popupMode)this.centerWindow(); break;
         case 'duplicate': this.duplicate(); break;
@@ -2803,7 +2810,7 @@
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.07/SevenTask-Calculator-Android-1.18.07.apk?build=24';
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.07/SevenTask-Calculator-Android-1.18.07.apk?build=25';
       const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.07):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;
