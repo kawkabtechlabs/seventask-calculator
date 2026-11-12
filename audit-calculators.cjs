@@ -85,6 +85,12 @@ const injectedChecks = `
   expect(!Number.isFinite(xirrCalc([{amount:0,date:new Date('2024-01-01')},{amount:100,date:new Date('2025-01-01')}])) , 'invalid XIRR input is rejected');
   const xirrTool = CATEGORIES.flatMap(category => category.items).find(tool => tool.id === 'xirr');
   expect(xirrTool.compute({amt1:100,amt2:121,date1:'2025-01-01',date2:'2024-01-01'})[0].value.includes('final date after investment'), 'XIRR rejects reversed dates');
+  expect(evalCustomFormula('(A+B)*C',{a:-2.5,b:4,c:3})===4.5, 'custom formula handles negatives and decimals');
+  expect(evalCustomFormula('pow(A,2)+sqrt(B)',{a:3,b:16})===13, 'custom formula supports bounded math functions');
+  for(const payload of ['globalThis.alert(1)','constructor.constructor(1)','A;alert(1)','A[0]']) {
+    let rejected=false;try{evalCustomFormula(payload,{a:1});}catch{rejected=true;}
+    expect(rejected, 'custom formula rejects JavaScript syntax: '+payload);
+  }
   const converter = CATEGORIES.flatMap(category => category.items).find(tool => tool.id === 'unitconverter');
   let conversionPairs = 0;
   for (const [category, table] of Object.entries(UNITS)) for (const from of Object.keys(table)) for (const to of Object.keys(table)) {
@@ -97,7 +103,7 @@ const injectedChecks = `
     expect(!/NaN|undefined/.test(result), 'temperature conversion ' + from + ' → ' + to);
   }
   if (audit.failures.length) throw new Error(audit.failures.join('\\n'));
-  console.log(JSON.stringify({catalogTools: audit.total, defaultRunsPassed: audit.total, populatedRunsPassed: audit.total, zeroBoundaryRunsPassed: audit.total, conversionPairs, temperaturePairs: 16, targetedChecks: 13, failures: audit.failures.length}));
+  console.log(JSON.stringify({catalogTools: audit.total, defaultRunsPassed: audit.total, populatedRunsPassed: audit.total, zeroBoundaryRunsPassed: audit.total, conversionPairs, temperaturePairs: 16, targetedChecks: 19, failures: audit.failures.length}));
 `;
 
 const source = core.replace(marker, injectedChecks + '\n  ' + marker);

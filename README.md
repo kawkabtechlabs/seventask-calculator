@@ -11,4 +11,4 @@ Static website and PWA for SevenTask Calculator, published on Cloudflare Pages.
 
 Run the calculator audit with `node audit-calculators.cjs`. Deploy the contents of this repository root to Cloudflare Pages.
 
-`release.json` holds the active public version and Android build number. Changing it on `main` runs the GitHub Action that synchronizes current web labels, PWA references, and `mobile-update.json`. For local native sources, run `node scripts/sync-release.cjs` from this repository before building the new APK and installer. Keep old release folders intact; publish newly built binaries under the new version paths before linking them for download.
+`release.json` holds the current web version and the Android build number last recorded here. `node scripts/sync-release.cjs` synchronizes web version labels and service-worker cache names only. It does not build native apps, change native version numbers, or update `mobile-update.json`. Change native download metadata only after building and verifying the corresponding APK or installer. Keep old release folders intact; publish newly built binaries under new version paths before linking them for download.
