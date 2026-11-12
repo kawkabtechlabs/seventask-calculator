@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 
 const html = fs.readFileSync(path.join(__dirname, 'calculator.html'), 'utf8');
 const marker = "window.addEventListener('message',event=>";
-const match = [...html.matchAll(/<script>\s*([\s\S]*?)<\/script>/gi)].find(([, source]) => source.includes(marker) && source.includes('const CATEGORIES = ['));
-assert.ok(match, 'calculator logic script exists');
+const core = fs.readFileSync(path.join(__dirname, 'calculator-core.js'), 'utf8');
+assert.ok(html.includes('src="calculator-core.js"') && core.includes(marker) && core.includes('const CATEGORIES = ['), 'calculator logic script exists');
 
 const injectedChecks = `
   const expect = (condition, message) => { if (!condition) throw new Error(message); };
@@ -100,7 +100,7 @@ const injectedChecks = `
   console.log(JSON.stringify({catalogTools: audit.total, defaultRunsPassed: audit.total, populatedRunsPassed: audit.total, zeroBoundaryRunsPassed: audit.total, conversionPairs, temperaturePairs: 16, targetedChecks: 13, failures: audit.failures.length}));
 `;
 
-const source = match[1].replace(marker, injectedChecks + '\n  ' + marker);
+const source = core.replace(marker, injectedChecks + '\n  ' + marker);
 const context = {
   HTMLElement: class {},
   customElements: { get: () => undefined, define: () => {} },

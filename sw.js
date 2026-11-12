@@ -1,5 +1,5 @@
-const CACHE = "seventask-calculator-shell-1.18.15";
-const CORE = ["./", "./calculator", "./mobile-settings.js", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
+const CACHE = "seventask-calculator-shell-1.18.17";
+const CORE = ["./", "./calculator", "./calculator-core.js", "./mobile-settings.js", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
 const SHELL_PREFIX = "seventask-calculator-shell-";
 
 self.addEventListener("install", event => {
@@ -28,6 +28,17 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/downloads/") || /\/(?:release|mobile-update)\.json$/.test(url.pathname)) return;
+  if (request.destination === "font" || request.destination === "image") {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok) event.waitUntil(cache.put(request, response.clone()).catch(() => {}));
+      return response;
+    })());
+    return;
+  }
   event.respondWith((async () => {
     try {
       const response = await fetch(request, { cache: "no-store" });

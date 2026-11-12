@@ -72,17 +72,17 @@
     root.appendChild(style);
     const section=document.createElement('section'); section.className='st-settings'; section.setAttribute('aria-label','App settings');
     section.innerHTML=`<button class="st-settings-toggle" type="button" aria-expanded="false" aria-controls="st-settings-body"><span class="st-settings-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.5 2.2c.6.2 1.2.4 1.7.7l2-1.1 2.8 2.8-1.1 2c.3.5.5 1.1.7 1.7L22 10v4l-2.2.5c-.2.6-.4 1.2-.7 1.7l1.1 2-2.8 2.8-2-1.1c-.5.3-1.1.5-1.7.7L14 22h-4l-.5-2.2c-.6-.2-1.2-.4-1.7-.7l-2 1.1-2.8-2.8 1.1-2c-.3-.5-.5-1.1-.7-1.7L2 14v-4l2.2-.5c.2-.6.4-1.2.7-1.7l-1.1-2L6.6 3l2 1.1c.5-.3 1.1-.5 1.7-.7L10 2Z"/></svg><span>Settings</span></span><svg class="st-settings-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg></button><div class="st-settings-body" id="st-settings-body" hidden>
-      <div class="st-settings-row"><label class="st-settings-label" for="st-dropdown-size">Dropdown Size</label><span class="st-size-control"><input id="st-dropdown-size" type="range" min="0" max="2" step="1" value="1" aria-label="Dropdown size"><span class="st-size-labels" aria-hidden="true"><span>S</span><span>M</span><span>L</span></span></span></div>
+      <div class="st-settings-row"><label class="st-settings-label" for="st-dropdown-size">Dropdown Size</label><span class="st-size-control"><input id="st-dropdown-size" type="range" min="0" max="2" step="1" value="2" aria-label="Dropdown size"><span class="st-size-labels" aria-hidden="true"><span>S</span><span>M</span><span>L</span></span></span></div>
       <div class="st-settings-row"><span class="st-settings-label">Notifications</span><button class="st-switch" type="button" role="switch" aria-label="Notifications" data-st-notifications aria-checked="false"></button></div>
       <div class="st-settings-row"><span class="st-settings-label">Vibration</span><button class="st-switch" type="button" role="switch" aria-label="Vibration" data-st-vibration aria-checked="true"></button></div>
       <div class="st-settings-row"><span class="st-settings-label">Undo/Redo (History)</span><button type="button" data-st-clear-undo aria-label="Clear undo and redo history">Clear</button></div></div>`;
     section.querySelector('[data-st-clear-undo]').addEventListener('click',()=>{ panel.getRootNode().host?.clearUndoRedoHistory?.(); });
     const alignment=section.querySelector('#st-dropdown-size'),win=root.querySelector('.win');
-    let dropdownSize='medium';try{const saved=localStorage.getItem('stc-dropdown-size')||localStorage.getItem('stc-dropdown-align');dropdownSize=saved==='small'||saved==='medium'||saved==='large'?saved:saved==='left'||saved==='right'||saved==='wide'?'large':'medium'}catch{}
+    let dropdownSize='large';try{const saved=localStorage.getItem('stc-dropdown-size')||localStorage.getItem('stc-dropdown-align');dropdownSize=saved==='small'||saved==='medium'||saved==='large'?saved:saved==='left'||saved==='right'||saved==='wide'?'large':'large'}catch{}
     const sizes=['small','medium','large'];
     const applyDropdownSize=size=>{win.dataset.dropdownSize=size;alignment.value=String(sizes.indexOf(size));alignment.setAttribute('aria-valuetext',size[0].toUpperCase()+size.slice(1))};
     applyDropdownSize(dropdownSize);
-    alignment.addEventListener('input',()=>{dropdownSize=sizes[Number(alignment.value)]||'medium';applyDropdownSize(dropdownSize);try{localStorage.setItem('stc-dropdown-size',dropdownSize)}catch{}});
+    alignment.addEventListener('input',()=>{dropdownSize=sizes[Number(alignment.value)]||'large';applyDropdownSize(dropdownSize);try{localStorage.setItem('stc-dropdown-size',dropdownSize)}catch{}});
     const theme=panel.querySelector('.theme-choice');
     if(theme)theme.after(section); else panel.appendChild(section);
     if(theme)section.querySelector('.st-settings-body').prepend(theme);

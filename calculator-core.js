@@ -1,0 +1,3575 @@
+(function(){
+  if (customElements.get('taskai7-calculator')) return;
+
+  /* ===================== helpers ===================== */
+  const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+  const fmtNum = n => !isFinite(n) ? '—' : (Math.round(n*100)/100).toLocaleString('en-IN',{maximumFractionDigits:2});
+  const fmtCur = n => !isFinite(n) ? '—' : '₹' + fmtNum(n);
+  const fmtPct = n => !isFinite(n) ? '—' : fmtNum(n) + '%';
+  const fmtMeasure = n => { if(!Number.isFinite(n)) return '—'; if(n===0) return '0'; const a=Math.abs(n); return (a<1e-6 || a>=1e12) ? n.toExponential(6) : Number(n.toPrecision(8)).toLocaleString('en-IN',{maximumSignificantDigits:8}); };
+
+  const emiCalc = (P, annualRate, months) => {
+    const r = annualRate/12/100;
+    if(months<=0) return 0;
+    if(r===0) return P/months;
+    const pw = Math.pow(1+r, months);
+    return P*r*pw/(pw-1);
+  };
+  const tenureFromEmi = (P, annualRate, EMI) => {
+    const r = annualRate/12/100;
+    if(r===0) return EMI>0 ? P/EMI : 0;
+    if(EMI<=P*r) return Infinity;
+    return Math.log(EMI/(EMI-P*r)) / Math.log(1+r);
+  };
+  const rateFromEmi = (P, EMI, n) => {
+    let lo=0, hi=0.08;
+    for(let i=0;i<60;i++){
+      const mid=(lo+hi)/2;
+      const e = mid===0 ? P/n : P*mid*Math.pow(1+mid,n)/(Math.pow(1+mid,n)-1);
+      if(e>EMI) hi=mid; else lo=mid;
+    }
+    return ((lo+hi)/2)*12*100;
+  };
+  const amortSummary = (P, annualRate, months) => {
+    const r = annualRate/12/100;
+    const emi = emiCalc(P, annualRate, months);
+    let bal=P, rows=[], yp=0, yi=0;
+    for(let m=1; m<=months; m++){
+      const interest = bal*r;
+      const principal = emi - interest;
+      bal = Math.max(0, bal - principal);
+      yp += principal; yi += interest;
+      if(m % 12 === 0 || m === months){
+        rows.push({ year: Math.ceil(m/12), principal: yp, interest: yi, balance: bal });
+        yp=0; yi=0;
+      }
+    }
+    return rows;
+  };
+  const xirrCalc = (flows) => {
+    if(!Array.isArray(flows) || flows.length !== 2) return NaN;
+    const ordered = [...flows].sort((a,b)=>a.date-b.date);
+    const [start,end] = ordered;
+    const days = (end.date-start.date)/(24*60*60*1000);
+    if(!Number.isFinite(days) || days <= 0 || !Number.isFinite(start.amount) || !Number.isFinite(end.amount) || start.amount*end.amount >= 0 || start.amount === 0 || end.amount === 0) return NaN;
+    const growth = -end.amount/start.amount;
+    if(!(growth > 0)) return NaN;
+    return (Math.pow(growth,365/days)-1)*100;
+  };
+  const UNITS = {
+    Length:{'mm':0.001,'cm':0.01,'m':1,'km':1000,'inch':0.0254,'ft':0.3048,'yd':0.9144,'mile':1609.344,'nautical mile':1852,'micrometre':1e-6,'nanometre':1e-9},
+    Area:{'mm²':1e-6,'cm²':1e-4,'m²':1,'km²':1e6,'hectare':10000,'acre':4046.8564224,'in²':0.00064516,'ft²':0.09290304,'yd²':0.83612736,'mile²':2589988.110336},
+    Volume:{'mL':1e-6,'L':0.001,'m³':1,'cm³':1e-6,'US tsp':4.92892159375e-6,'US tbsp':1.478676478125e-5,'US cup':0.0002365882365,'metric cup':0.00025,'US fl oz':2.95735295625e-5,'US pint':0.000473176473,'US quart':0.000946352946,'US gallon':0.003785411784,'UK gallon':0.00454609,'in³':1.6387064e-5,'ft³':0.028316846592,'yd³':0.764554857984},
+    Mass:{'µg':1e-9,'mg':1e-6,'g':0.001,'kg':1,'tonne':1000,'grain':0.00006479891,'oz':0.028349523125,'lb':0.45359237,'stone':6.35029318,'US ton':907.18474,'UK ton':1016.0469088},
+    Time:{'ns':1e-9,'µs':1e-6,'ms':0.001,'s':1,'min':60,'h':3600,'day':86400,'week':604800,'average month':2629800,'average year':31557600},
+    Speed:{'m/s':1,'km/h':1/3.6,'mph':0.44704,'ft/s':0.3048,'knot':0.514444444444,'cm/s':0.01,'Mach (20°C)':343,'speed of light':299792458},
+    Energy:{'J':1,'kJ':1000,'cal':4.184,'kcal':4184,'Wh':3600,'kWh':3600000,'eV':1.602176634e-19,'BTU (IT)':1055.05585262,'US therm':105505585.257},
+    Pressure:{'Pa':1,'kPa':1000,'MPa':1e6,'bar':100000,'mbar':100,'atm':101325,'torr':101325/760,'mmHg':133.322387415,'psi':6894.757293168,'inH₂O':249.08891},
+    Power:{'W':1,'mW':0.001,'kW':1000,'MW':1e6,'mechanical hp':745.699871582,'metric hp':735.49875,'BTU/h':0.29307107,'ft·lbf/s':1.3558179483314},
+    'Digital Storage':{'bit':1,'byte (B)':8,'kB (1000 B)':8000,'MB (1000 kB)':8e6,'GB (1000 MB)':8e9,'TB (1000 GB)':8e12,'KiB (1024 B)':8192,'MiB (1024 KiB)':8388608,'GiB (1024 MiB)':8589934592,'TiB (1024 GiB)':8796093022208},
+    Angle:{'radian':1,'degree':Math.PI/180,'gradian':Math.PI/200,'arcminute':Math.PI/10800,'arcsecond':Math.PI/648000,'turn':2*Math.PI,'milliradian':0.001},
+    Force:{'N':1,'kN':1000,'dyn':1e-5,'kgf':9.80665,'lbf':4.4482216152605,'poundal':0.138254954376},
+    Frequency:{'Hz':1,'kHz':1000,'MHz':1e6,'GHz':1e9,'rpm':1/60,'revolutions/s':1,'beats/min':1/60},
+    Density:{'kg/m³':1,'g/cm³':1000,'g/mL':1000,'kg/L':1000,'lb/ft³':16.01846337,'lb/US gal':119.8264273},
+    Torque:{'N·m':1,'N·cm':0.01,'kgf·m':9.80665,'lbf·ft':1.3558179483314,'lbf·in':0.1129848290276},
+    'Fuel Economy':{'km/L':1,'mpg (US)':0.425143707,'mpg (UK)':0.354006043,'L/100 km':1},
+    'Data Rate':{'bit/s':1,'kbit/s':1000,'Mbit/s':1e6,'Gbit/s':1e9,'B/s':8,'kB/s':8000,'MB/s':8e6,'KiB/s':8192,'MiB/s':8388608},
+    'Electric Charge':{'C':1,'mC':0.001,'µC':1e-6,'Ah':3600,'mAh':3.6,'µAh':0.0036,'elementary charge':1.602176634e-19},
+    Voltage:{'V':1,'mV':0.001,'µV':1e-6,'kV':1000,'MV':1e6},
+    Current:{'A':1,'mA':0.001,'µA':1e-6,'kA':1000},
+    Resistance:{'Ω':1,'mΩ':0.001,'kΩ':1000,'MΩ':1e6,'GΩ':1e9},
+    Capacitance:{'F':1,'mF':0.001,'µF':1e-6,'nF':1e-9,'pF':1e-12},
+    Inductance:{'H':1,'mH':0.001,'µH':1e-6,'nH':1e-9},
+    'Flow Rate':{'m³/s':1,'m³/h':1/3600,'L/s':0.001,'L/min':1/60000,'mL/s':1e-6,'US gal/min':0.003785411784/60,'UK gal/min':0.00454609/60},
+    Illuminance:{'lx':1,'klx':1000,'foot-candle':10.7639104167,'phot':10000},
+    Radioactivity:{'Bq':1,'kBq':1000,'MBq':1e6,'GBq':1e9,'Ci':3.7e10,'mCi':3.7e7,'µCi':37000},
+    'Amount of Substance':{'mol':1,'mmol':0.001,'µmol':1e-6,'nmol':1e-9,'kmol':1000,'particles':1/6.02214076e23},
+    Acceleration:{'m/s²':1,'cm/s²':0.01,'ft/s²':0.3048,'standard gravity (g)':9.80665},
+    'Magnetic Field':{'tesla (T)':1,'millitesla (mT)':0.001,'microtesla (µT)':1e-6,'gauss (G)':1e-4,'milligauss (mG)':1e-7},
+    'Magnetic Flux':{'weber (Wb)':1,'milliweber (mWb)':0.001,'microweber (µWb)':1e-6,'maxwell (Mx)':1e-8},
+    'Radiation Dose':{'gray (Gy)':1,'milligray (mGy)':0.001,'sievert (Sv)':1,'millisievert (mSv)':0.001,'rem':0.01,'rad':0.01},
+    Luminance:{'cd/m²':1,'stilb (sb)':10000,'nit':1,'foot-lambert (fL)':3.4262591},
+    'Dynamic Viscosity':{'Pa·s':1,'mPa·s':0.001,'poise (P)':0.1,'centipoise (cP)':0.001},
+    'Kinematic Viscosity':{'m²/s':1,'cm²/s':0.0001,'stokes (St)':0.0001,'centistokes (cSt)':1e-6},
+  };
+  const CURRENCY_API='https://api.frankfurter.dev/v2';
+  const fetchWithTimeout=(url,options={})=>{const controller=new AbortController();const timeout=window.setTimeout(()=>controller.abort(),8000);return fetch(url,{...options,signal:controller.signal}).finally(()=>window.clearTimeout(timeout));};
+  const CURRENCY_SEED=['USD','INR','EUR','GBP','JPY','CAD','AUD','CHF','CNY'];
+  let CURRENCY_CODES=CURRENCY_SEED.slice(), CURRENCY_NAMES={}, currencyListPromise=null, CURRENCY_READY=false;
+  const currencyLabel=code=>{ try{return `${code} — ${new Intl.DisplayNames(['en'],{type:'currency'}).of(code)}`;}catch(e){return code;} };
+  async function loadCurrencyCodes(){
+    if(currencyListPromise) return currencyListPromise;
+    currencyListPromise=(async()=>{
+      try{
+        const cached=JSON.parse(localStorage.getItem('kawkab_currency_codes')||'null');
+        if(Array.isArray(cached)&&cached.length){CURRENCY_CODES=[...new Set([...CURRENCY_SEED,...cached.filter(c=>/^[A-Z]{3}$/.test(c))])].sort();}
+      }catch(e){}
+      try{
+        const res=await fetchWithTimeout(`${CURRENCY_API}/currencies`,{headers:{Accept:'application/json'}});
+        if(!res.ok) throw new Error('Currency list unavailable');
+        const rows=await res.json();
+        const codes=rows.map(x=>String(x.iso_code||x.code||x.currency||'').toUpperCase()).filter(c=>/^[A-Z]{3}$/.test(c));
+        if(codes.length){CURRENCY_CODES=[...new Set([...CURRENCY_SEED,...codes])].sort();try{localStorage.setItem('kawkab_currency_codes',JSON.stringify(codes));}catch(e){}}
+      }catch(e){}
+      CURRENCY_READY=true;return CURRENCY_CODES;
+    })();
+    return currencyListPromise;
+  }
+  function currencyOptions(){return CURRENCY_CODES.map(code=>({value:code,label:currencyLabel(code)}));}
+  async function getCurrencyRate(from,to){
+    if(!/^[A-Z]{3}$/.test(from)||!/^[A-Z]{3}$/.test(to))throw new Error('Choose valid ISO currency codes.');
+    if(from===to)return {rate:1,date:new Date().toISOString().slice(0,10),cached:false};
+    const key=`kawkab_fx_${from}_${to}`;
+    let old=null;try{old=JSON.parse(localStorage.getItem(key)||'null');if(old&&Number.isFinite(old.rate)&&Date.now()-old.savedAt<86400000)return {...old,cached:true};}catch(e){}
+    try{
+      const res=await fetchWithTimeout(`${CURRENCY_API}/rate/${encodeURIComponent(from.toLowerCase())}/${encodeURIComponent(to.toLowerCase())}`,{headers:{Accept:'application/json'}});
+      if(!res.ok)throw new Error(res.status===404||res.status===422?'A daily reference rate is not available for this currency pair.':'Could not load the exchange rate.');
+      const data=await res.json(),rate=Number(data.rate);
+      if(!Number.isFinite(rate)||rate<=0)throw new Error('The rate provider returned an invalid value.');
+      const saved={rate,date:data.date,savedAt:Date.now()};try{localStorage.setItem(key,JSON.stringify(saved));}catch(e){}
+      return {...saved,cached:false};
+    }catch(e){if(old&&Number.isFinite(old.rate))return {...old,cached:true,stale:true};throw e;}
+  }
+
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  function evalCustomFormula(source, values){
+    const text=String(source||'').trim(); if(!text||text.length>180) throw new Error('Enter a formula under 180 characters.');
+    const tokens=[]; const re=/\s*(?:(\d+(?:\.\d*)?|\.\d+)|([A-Za-z]+)|([()+\-*/%^,]))/gy; let pos=0,m;
+    while(pos<text.length){re.lastIndex=pos;m=re.exec(text);if(!m)throw new Error('Use numbers, A–H, + − × ÷ ^ %, parentheses or supported functions.');tokens.push(m[1]!==undefined?{type:'number',value:Number(m[1])}:m[2]!==undefined?{type:'word',value:m[2].toUpperCase()}:{type:m[3],value:m[3]});pos=re.lastIndex;}
+    let i=0;const peek=()=>tokens[i],take=()=>tokens[i++];
+    function primary(){const t=take();if(!t)throw new Error('Formula is incomplete.');if(t.type==='number')return t.value;if(t.type==='('){const x=expr();if(take()?.type!==')')throw new Error('Add a closing parenthesis.');return x;}if(t.type==='word'){const name=t.value;if('ABCDEFGH'.includes(name)&&name.length===1)return num(values[name.toLowerCase()]);if(name==='PI')return Math.PI;if(name==='E')return Math.E;if(take()?.type!=='(')throw new Error('Functions need parentheses, for example sqrt(A).');const a=expr();let b;if(peek()?.type===','){take();b=expr();}if(take()?.type!==')')throw new Error('Add a closing parenthesis.');const f={SQRT:()=>Math.sqrt(a),SIN:()=>Math.sin(a),COS:()=>Math.cos(a),TAN:()=>Math.tan(a),LOG:()=>Math.log10(a),LN:()=>Math.log(a),ABS:()=>Math.abs(a),POW:()=>Math.pow(a,b)}[name];if(!f||((name==='POW')!==(b!==undefined)))throw new Error('Supported functions: sqrt, sin, cos, tan, log, ln, abs, pow.');return f();}throw new Error('Expected a number, variable or parenthesized expression.');}
+    function unary(){if(peek()?.type==='+'){take();return unary();}if(peek()?.type==='-'){take();return -unary();}return primary();}
+    function power(){let a=unary();if(peek()?.type==='^'){take();a=Math.pow(a,power());}return a;}
+    function term(){let a=power();while(['*','/','%'].includes(peek()?.type)){const op=take().type,b=power();a=op==='*'?a*b:op==='/'?a/b:a%b;}return a;}
+    function expr(){let a=term();while(['+','-'].includes(peek()?.type)){const op=take().type,b=term();a=op==='+'?a+b:a-b;}return a;}
+    const result=expr();if(i!==tokens.length)throw new Error('Check the formula syntax.');if(!Number.isFinite(result))throw new Error('This formula has no finite result.');return result;
+  }
+  /* ===================== calculator catalog ===================== */
+  const CATEGORIES = [
+  { name:'Utility', items:[
+    { id:'percentage', name:'Percentage', fields:[
+        {key:'a', label:'Percent %', type:'number', default:''},
+        {key:'b', label:'Of value', type:'number', default:''},
+      ], compute:v=>{ const a=num(v.a), b=num(v.b);
+        return [ {label:'Result', value:fmtNum(a*b/100), emphasis:true}, {label:`${a||0} is what % of ${b||0}`, value: b? fmtPct(a/b*100):'—'} ];
+      }},
+    { id:'discount', name:'Discount & Savings', fields:[
+        {key:'price', label:'Original price', type:'number', default:''},
+        {key:'discount', label:'Discount %', type:'number', default:''},
+        {key:'tax', label:'Tax %', type:'number', default:0},
+      ], compute:v=>{ const price=Math.max(0,num(v.price)), pct=Math.min(100,Math.max(0,num(v.discount))), tax=Math.max(0,num(v.tax)); const savings=price*pct/100, discounted=price-savings, taxAmount=discounted*tax/100; return [ {label:'You save',value:fmtCur(savings)}, {label:'Price after discount',value:fmtCur(discounted)}, {label:'Tax',value:fmtCur(taxAmount)}, {label:'Final price',value:fmtCur(discounted+taxAmount),emphasis:true} ]; }},
+    { id:'unitprice', name:'Unit Price', fields:[
+        {key:'price', label:'Total price', type:'number', default:''},
+        {key:'quantity', label:'Quantity', type:'number', default:''},
+        {key:'unit', label:'Unit', type:'select', options:['items','kg','g','L','m'], default:'items'},
+      ], compute:v=>{ const q=num(v.quantity); return [{label:'Price per '+(v.unit||'unit'),value:q>0?fmtCur(num(v.price)/q):'Enter a quantity above zero',emphasis:true}]; }},
+    { id:'splitbill', name:'Split bill', fields:[
+        {key:'total', label:'Total amount', type:'number', default:''},
+        {key:'people', label:'Number of people', type:'number', default:2},
+        {key:'tip', label:'Tip %', type:'number', default:0},
+      ], compute:v=>{ const total=num(v.total), people=Math.max(1,num(v.people)), tip=num(v.tip);
+        const withTip = total*(1+tip/100);
+        return [ {label:'Total with tip', value:fmtCur(withTip)}, {label:'Per person', value:fmtCur(withTip/people), emphasis:true} ];
+      }},
+    { id:'age', name:'Age calculator', fields:[ {key:'dob', label:'Date of birth', type:'date', default:''} ],
+      compute:v=>{ if(!v.dob) return [{label:'Age', value:'—', emphasis:true}];
+        const dob=new Date(v.dob), now=new Date();
+        let y=now.getFullYear()-dob.getFullYear(), m=now.getMonth()-dob.getMonth(), d=now.getDate()-dob.getDate();
+        if(d<0){ m--; d+=new Date(now.getFullYear(),now.getMonth(),0).getDate(); }
+        if(m<0){ y--; m+=12; }
+        return [{label:'Age', value:`${y}y ${m}m ${d}d`, emphasis:true}];
+      }},
+    { id:'time', name:'Time calculator', fields:[
+        {key:'t1', label:'Start time', type:'time', default:''},
+        {key:'t2', label:'End time', type:'time', default:''},
+      ], compute:v=>{ if(!v.t1||!v.t2) return [{label:'Difference', value:'—', emphasis:true}];
+        const [h1,m1]=v.t1.split(':').map(Number), [h2,m2]=v.t2.split(':').map(Number);
+        let mins=(h2*60+m2)-(h1*60+m1); if(mins<0) mins+=24*60;
+        return [{label:'Difference', value:`${Math.floor(mins/60)}h ${mins%60}m`, emphasis:true}];
+      }},
+    { id:'unitconverter', name:'Complete Unit & Currency Converter', fields:[
+        {key:'cat', label:'Measurement', type:'select', options:[...Object.keys(UNITS),'Temperature','Currency'], default:'Length'},
+        {key:'from', label:'From', type:'select', options:v=>v.cat==='Temperature'?['°C','°F','K','°R']:v.cat==='Currency'?currencyOptions():Object.keys(UNITS[v.cat||'Length']), default:v=>v.cat==='Temperature'?'°C':v.cat==='Currency'?'USD':Object.keys(UNITS[v.cat||'Length'])[0]},
+        {key:'to', label:'To', type:'select', options:v=>v.cat==='Temperature'?['°C','°F','K','°R']:v.cat==='Currency'?currencyOptions():Object.keys(UNITS[v.cat||'Length']), default:v=>v.cat==='Temperature'?'°F':v.cat==='Currency'?'INR':(Object.keys(UNITS[v.cat||'Length'])[1]||Object.keys(UNITS[v.cat||'Length'])[0])},
+        {key:'value', label:'Value', type:'number', default:1},
+      ], compute:v=>{ const val=num(v.value); let out;
+        if(v.cat==='Temperature'){
+          const c=v.from==='°C'?val:v.from==='°F'?(val-32)*5/9:v.from==='K'?val-273.15:val*5/9-273.15;
+          out=v.to==='°C'?c:v.to==='°F'?c*9/5+32:v.to==='K'?c+273.15:(c+273.15)*9/5;
+        } else if(v.cat==='Fuel Economy'){
+          if(val<=0 && (v.from==='L/100 km'||v.to==='L/100 km')) return [{label:'Result',value:'Enter a value above zero',emphasis:true}];
+          const kml=v.from==='L/100 km'?100/val:val*UNITS[v.cat][v.from];
+          out=v.to==='L/100 km'?100/kml:kml/UNITS[v.cat][v.to];
+        } else {
+          const table=UNITS[v.cat]||UNITS.Length;
+          out=val*table[v.from]/table[v.to];
+        }
+        return [{label:`${val} ${v.from} =`,value:`${fmtMeasure(out)} ${v.to}`,emphasis:true}];
+      }},
+  ]},
+  { name:'Loan & EMI', items:[
+    { id:'emi', name:'EMI Calculator', fields:[
+        {key:'principal', label:'Loan amount', type:'number', default:''},
+        {key:'rate', label:'Interest rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const P=num(v.principal), months=Math.round(num(v.years)*12);
+        if(months>1200) return [{label:'Tenure',value:'Enter a tenure of 100 years or less.'}];
+        const emi=emiCalc(P,num(v.rate),months), total=emi*months, interest=total-P;
+        return [ {label:'Monthly EMI', value:fmtCur(emi), emphasis:true}, {label:'Total interest', value:fmtCur(interest)}, {label:'Total payment', value:fmtCur(total)},
+          {type:'table', title:'Yearly breakup', rows:amortSummary(P,num(v.rate),months)} ];
+      }},
+    { id:'personalloan', name:'Personal Loan', fields:[
+        {key:'amount', label:'Loan amount', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'months', label:'Tenure (months)', type:'number', default:''},
+      ], compute:v=>{ const P=num(v.amount), months=num(v.months);
+        const emi=emiCalc(P,num(v.rate),months), total=emi*months;
+        return [ {label:'EMI', value:fmtCur(emi), emphasis:true}, {label:'Total cost', value:fmtCur(total)}, {label:'Total interest', value:fmtCur(total-P)} ];
+      }},
+    { id:'homeloan', name:'Home Loan', fields:[
+        {key:'propertyValue', label:'Property value', type:'number', default:''},
+        {key:'downPayment', label:'Down payment', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const P=Math.max(0,num(v.propertyValue)-num(v.downPayment)), months=Math.round(num(v.years)*12);
+        const emi=emiCalc(P,num(v.rate),months), total=emi*months;
+        return [ {label:'Loan amount', value:fmtCur(P)}, {label:'EMI', value:fmtCur(emi), emphasis:true}, {label:'Total interest', value:fmtCur(total-P)} ];
+      }},
+    { id:'carloan', name:'Car Loan', fields:[
+        {key:'carPrice', label:'Car price', type:'number', default:''},
+        {key:'downPayment', label:'Down payment', type:'number', default:''},
+        {key:'tradeIn', label:'Trade-in allowance', type:'number', default:0},
+        {key:'taxPct', label:'Sales tax %', type:'number', default:0},
+        {key:'fees', label:'Title / registration fees', type:'number', default:0},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const price=Math.max(0,num(v.carPrice)), tax=price*Math.max(0,num(v.taxPct))/100, fees=Math.max(0,num(v.fees));
+        const onRoad=price+tax+fees, down=Math.min(onRoad,Math.max(0,num(v.downPayment))), tradeIn=Math.min(onRoad-down,Math.max(0,num(v.tradeIn)));
+        const P=Math.max(0,onRoad-down-tradeIn), months=Math.max(0,Math.round(num(v.years)*12)), rate=Math.max(0,num(v.rate));
+        const emi=emiCalc(P,rate,months), total=emi*months, interest=Math.max(0,total-P);
+        return [ {label:'Car price', value:fmtCur(price)}, {label:'Sales tax', value:fmtCur(tax)}, {label:'Title / registration fees', value:fmtCur(fees)},
+          {label:'Down payment', value:fmtCur(down)}, {label:'Trade-in credit', value:fmtCur(tradeIn)}, {label:'Amount financed', value:fmtCur(P)},
+          {label:'Monthly EMI', value:fmtCur(emi), emphasis:true}, {label:'Total interest', value:fmtCur(interest)},
+          {label:'Total of loan payments', value:fmtCur(total)}, {label:'Total cost incl. down payment & trade-in', value:fmtCur(total+down+tradeIn)} ];
+      }},
+    { id:'loaneligibility', name:'Loan Eligibility', fields:[
+        {key:'income', label:'Monthly income', type:'number', default:''},
+        {key:'existingEmi', label:'Existing EMI', type:'number', default:0},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const maxEmi=Math.max(0,num(v.income)*0.5-num(v.existingEmi)), months=Math.round(num(v.years)*12);
+        const r=num(v.rate)/12/100, pw=Math.pow(1+r,months);
+        const eligible = r===0 ? maxEmi*months : maxEmi*(pw-1)/(r*pw);
+        return [ {label:'Max affordable EMI', value:fmtCur(maxEmi)}, {label:'Estimated eligibility', value:fmtCur(eligible), emphasis:true} ];
+      }},
+    { id:'loantenure', name:'Loan Tenure', fields:[
+        {key:'principal', label:'Loan amount', type:'number', default:''},
+        {key:'emi', label:'EMI', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+      ], compute:v=>{ const months=tenureFromEmi(num(v.principal),num(v.rate),num(v.emi));
+        return [{label:'Required tenure', value: isFinite(months)? `${Math.ceil(months)} months (~${(months/12).toFixed(1)} yrs)` : 'EMI too low', emphasis:true}];
+      }},
+    { id:'interestrate', name:'Interest Rate', fields:[
+        {key:'principal', label:'Loan amount', type:'number', default:''},
+        {key:'emi', label:'EMI', type:'number', default:''},
+        {key:'months', label:'Tenure (months)', type:'number', default:''},
+      ], compute:v=>{ const rate=rateFromEmi(num(v.principal),num(v.emi),num(v.months));
+        return [{label:'Estimated interest rate', value:fmtPct(rate), emphasis:true}];
+      }},
+    { id:'loanprepayment', name:'Loan Prepayment', fields:[
+        {key:'outstanding', label:'Outstanding principal', type:'number', default:''},
+        {key:'currentEmi', label:'Current EMI', type:'number', default:''},
+        {key:'prepayment', label:'Prepayment amount', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+      ], compute:v=>{ const outstanding=num(v.outstanding), emi=num(v.currentEmi), rate=num(v.rate);
+        const newP=Math.max(0,outstanding-num(v.prepayment));
+        const oldM=tenureFromEmi(outstanding,rate,emi), newM=tenureFromEmi(newP,rate,emi);
+        const oldInt=oldM*emi-outstanding, newInt=newM*emi-newP;
+        return [ {label:'New tenure', value: isFinite(newM)?`${Math.ceil(newM)} months`:'—', emphasis:true},
+          {label:'Tenure reduced by', value: (isFinite(oldM)&&isFinite(newM))?`${Math.max(0,Math.ceil(oldM-newM))} months`:'—'},
+          {label:'Approx. interest saved', value:(isFinite(oldInt)&&isFinite(newInt))?fmtCur(oldInt-newInt):'—'} ];
+      }},
+    { id:'amortization', name:'Amortization', fields:[
+        {key:'principal', label:'Loan amount', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const P=num(v.principal), months=Math.round(num(v.years)*12);
+        if(months>1200) return [{label:'Tenure',value:'Enter a tenure of 100 years or less.'}];
+        return [ {label:'Monthly EMI', value:fmtCur(emiCalc(P,num(v.rate),months)), emphasis:true},
+          {type:'table', title:'Yearly breakup', rows:amortSummary(P,num(v.rate),months)} ];
+      }},
+  ]},
+  { name:'Investment', items:[
+    { id:'sip', name:'SIP', fields:[
+        {key:'monthly', label:'Monthly investment', type:'number', default:''},
+        {key:'years', label:'Duration (years)', type:'number', default:''},
+        {key:'returnRate', label:'Expected return % p.a.', type:'number', default:''},
+      ], compute:v=>{ const M=num(v.monthly), months=Math.round(num(v.years)*12), i=num(v.returnRate)/12/100;
+        const invested=M*months, fv = i===0? M*months : M*((Math.pow(1+i,months)-1)/i)*(1+i);
+        return [ {label:'Invested amount', value:fmtCur(invested)}, {label:'Estimated return', value:fmtCur(fv-invested)}, {label:'Final value', value:fmtCur(fv), emphasis:true} ];
+      }},
+    { id:'lumpsum', name:'Lumpsum', fields:[
+        {key:'investment', label:'Investment', type:'number', default:''},
+        {key:'years', label:'Duration (years)', type:'number', default:''},
+        {key:'returnRate', label:'Return % p.a.', type:'number', default:''},
+      ], compute:v=>{ const P=num(v.investment), fv=P*Math.pow(1+num(v.returnRate)/100,num(v.years));
+        return [ {label:'Final value', value:fmtCur(fv), emphasis:true}, {label:'Profit', value:fmtCur(fv-P)} ];
+      }},
+    { id:'cagr', name:'CAGR', fields:[
+        {key:'initial', label:'Initial value', type:'number', default:''},
+        {key:'final', label:'Final value', type:'number', default:''},
+        {key:'years', label:'Period (years)', type:'number', default:''},
+      ], compute:v=>{ const i=num(v.initial), f=num(v.final), y=num(v.years);
+        const cagr = (i>0 && y>0) ? (Math.pow(f/i,1/y)-1)*100 : NaN;
+        return [{label:'CAGR', value:fmtPct(cagr), emphasis:true}];
+      }},
+    { id:'xirr', name:'XIRR', fields:[
+        {key:'amt1', label:'Investment amount', type:'number', default:''},
+        {key:'date1', label:'Investment date', type:'date', default:''},
+        {key:'amt2', label:'Final value', type:'number', default:''},
+        {key:'date2', label:'Final date', type:'date', default:''},
+      ], compute:v=>{ if(!v.date1||!v.date2) return [{label:'XIRR', value:'—', emphasis:true}];
+        if(num(v.amt1)<=0||num(v.amt2)<=0||new Date(v.date2)<=new Date(v.date1)) return [{label:'XIRR', value:'Use positive amounts and set the final date after investment', emphasis:true}];
+        const flows=[{amount:-num(v.amt1), date:new Date(v.date1)}, {amount:num(v.amt2), date:new Date(v.date2)}];
+        const result=xirrCalc(flows);
+        return [{label:'XIRR', value:Number.isFinite(result)?fmtPct(result):'Enter opposite-sign amounts and a later date', emphasis:true}];
+      }},
+    { id:'roi', name:'ROI', fields:[
+        {key:'cost', label:'Investment cost', type:'number', default:''},
+        {key:'currentValue', label:'Current value', type:'number', default:''},
+      ], compute:v=>{ const c=num(v.cost), cv=num(v.currentValue), p=cv-c;
+        return [ {label:'Profit / Loss', value:fmtCur(p)}, {label:'ROI', value: c? fmtPct(p/c*100):'—', emphasis:true} ];
+      }},
+    { id:'compoundinterest', name:'Compound Interest', fields:[
+        {key:'principal', label:'Principal', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Time (years)', type:'number', default:''},
+        {key:'freq', label:'Compounding', type:'select', options:[{value:1,label:'Yearly'},{value:2,label:'Half-yearly'},{value:4,label:'Quarterly'},{value:12,label:'Monthly'}], default:1},
+      ], compute:v=>{ const P=num(v.principal), r=num(v.rate), t=num(v.years), n=num(v.freq)||1;
+        const A=P*Math.pow(1+r/100/n, n*t);
+        return [ {label:'Interest', value:fmtCur(A-P)}, {label:'Final amount', value:fmtCur(A), emphasis:true} ];
+      }},
+    { id:'simpleinterest', name:'Simple Interest', fields:[
+        {key:'principal', label:'Principal', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Time (years)', type:'number', default:''},
+      ], compute:v=>{ const P=num(v.principal), si=P*num(v.rate)*num(v.years)/100;
+        return [ {label:'Interest', value:fmtCur(si)}, {label:'Final amount', value:fmtCur(P+si), emphasis:true} ];
+      }},
+  ]},
+  { name:'Tax', items:[
+    { id:'incometax', name:'Income Tax', fields:[
+        {key:'income', label:'Taxable annual income (after eligible deductions)', type:'number', default:''},
+        {key:'regime', label:'Regime', type:'pills', options:['New','Old'], default:'New'},
+        {key:'residency', label:'Residential status', type:'pills', options:['Resident','Non-resident'], default:'Resident'},
+      ], compute:v=>{ const inc=Math.max(0,num(v.income)); let tax=0; const slabs=v.regime==='New'
+          ? [[400000,0],[800000,.05],[1200000,.1],[1600000,.15],[2000000,.2],[2400000,.25],[Infinity,.3]]
+          : [[250000,0],[500000,.05],[1000000,.2],[Infinity,.3]];
+        let prev=0; for(const [limit,rate] of slabs){ if(inc>prev){ tax += (Math.min(inc,limit)-prev)*rate; prev=limit; } }
+        const rebateLimit=v.regime==='New'?1200000:500000, rebateCap=v.regime==='New'?60000:12500;
+        const rebate=v.residency==='Resident'&&inc<=rebateLimit?Math.min(tax,rebateCap):0;
+        tax=Math.max(0,tax-rebate);
+        if(v.residency==='Resident'&&inc>rebateLimit) tax=Math.min(tax,inc-rebateLimit);
+        const cess=tax*0.04;
+        return [ {label:'Tax after rebate / threshold relief', value:fmtCur(tax)}, {label:'Health & edu. cess (4%)', value:fmtCur(cess)}, {label:'Estimated total', value:fmtCur(tax+cess), emphasis:true}, {label:'Assessment year', value:`AY 2026–27 · ${v.residency.toLowerCase()} individual under 60 · surcharge excluded`} ];
+      }},
+    { id:'gst', name:'GST', fields:[
+        {key:'amount', label:'Amount', type:'number', default:''},
+        {key:'rate', label:'GST rate', type:'select', options:[5,12,18,28], default:18},
+        {key:'type', label:'Type', type:'pills', options:['Exclusive','Inclusive'], default:'Exclusive'},
+      ], compute:v=>{ const amt=num(v.amount), rate=num(v.rate); let base,gstAmt,total;
+        if(v.type==='Inclusive'){ total=amt; base=amt/(1+rate/100); gstAmt=amt-base; } else { base=amt; gstAmt=amt*rate/100; total=amt+gstAmt; }
+        return [ {label:'CGST', value:fmtCur(gstAmt/2)}, {label:'SGST', value:fmtCur(gstAmt/2)}, {label:'Total GST', value:fmtCur(gstAmt)}, {label:'Total amount', value:fmtCur(total), emphasis:true} ];
+      }},
+    { id:'capitalgains', name:'Capital Gains', fields:[
+        {key:'purchase', label:'Purchase price', type:'number', default:''},
+        {key:'sale', label:'Sale price', type:'number', default:''},
+        {key:'holding', label:'Holding period', type:'pills', options:['Short-term','Long-term'], default:'Short-term'},
+      ], compute:v=>{ const gain=num(v.sale)-num(v.purchase), rate=v.holding==='Long-term'?12.5:20;
+        return [ {label:'Gain', value:fmtCur(gain)}, {label:'Applicable tax (approx.)', value: gain>0?fmtCur(gain*rate/100):fmtCur(0), emphasis:true} ];
+      }},
+    { id:'hra', name:'HRA', fields:[
+        {key:'basic', label:'Basic salary (monthly)', type:'number', default:''},
+        {key:'hra', label:'HRA received (monthly)', type:'number', default:''},
+        {key:'rent', label:'Rent paid (monthly)', type:'number', default:''},
+        {key:'city', label:'City type', type:'pills', options:['Metro','Non-metro'], default:'Metro'},
+      ], compute:v=>{ const basic=num(v.basic), hra=num(v.hra), rent=num(v.rent), pct=v.city==='Metro'?0.5:0.4;
+        const exemption=Math.max(0,Math.min(hra, rent-0.1*basic, basic*pct));
+        return [ {label:'HRA exemption', value:fmtCur(exemption), emphasis:true}, {label:'Taxable HRA', value:fmtCur(Math.max(0,hra-exemption))} ];
+      }},
+    { id:'tds', name:'TDS', fields:[
+        {key:'amount', label:'Payment amount', type:'number', default:''},
+        {key:'rate', label:'TDS rate %', type:'number', default:10},
+      ], compute:v=>{ const amt=num(v.amount), tds=amt*num(v.rate)/100;
+        return [ {label:'TDS amount', value:fmtCur(tds), emphasis:true}, {label:'Net amount', value:fmtCur(amt-tds)} ];
+      }},
+    { id:'taxsavings', name:'Tax Savings', fields:[
+        {key:'deductions', label:'Investments / deductions', type:'number', default:''},
+        {key:'slab', label:'Tax slab', type:'select', options:[5,20,30], default:30},
+      ], compute:v=>{ const saving=num(v.deductions)*num(v.slab)/100;
+        return [{label:'Estimated tax saving', value:fmtCur(saving), emphasis:true}];
+      }},
+  ]},
+  { name:'Retirement', items:[
+    { id:'retirementcorpus', name:'Retirement Corpus', fields:[
+        {key:'currentAge', label:'Current age', type:'number', default:''},
+        {key:'retireAge', label:'Retirement age', type:'number', default:60},
+        {key:'monthlyExpense', label:'Current monthly expenses', type:'number', default:''},
+        {key:'inflation', label:'Inflation % p.a.', type:'number', default:6},
+        {key:'returnRate', label:'Post-retirement return % p.a.', type:'number', default:8},
+      ], compute:v=>{ const years=Math.max(0,num(v.retireAge)-num(v.currentAge));
+        const futureMonthly=num(v.monthlyExpense)*Math.pow(1+num(v.inflation)/100, years);
+        const annual=futureMonthly*12, real=(num(v.returnRate)-num(v.inflation))/100;
+        const corpus = real>0.001 ? annual/real : annual*25;
+        return [ {label:'Future monthly expense', value:fmtCur(futureMonthly)}, {label:'Required corpus', value:fmtCur(corpus), emphasis:true} ];
+      }},
+    { id:'retirementsip', name:'Retirement SIP', fields:[
+        {key:'target', label:'Target corpus', type:'number', default:''},
+        {key:'current', label:'Current savings', type:'number', default:0},
+        {key:'years', label:'Years to retirement', type:'number', default:''},
+        {key:'returnRate', label:'Expected return % p.a.', type:'number', default:''},
+      ], compute:v=>{ const months=Math.round(num(v.years)*12), i=num(v.returnRate)/12/100;
+        const grown=num(v.current)*Math.pow(1+num(v.returnRate)/100,num(v.years));
+        const need=Math.max(0,num(v.target)-grown);
+        const req = i===0 ? need/months : need/(((Math.pow(1+i,months)-1)/i)*(1+i));
+        return [{label:'Required monthly SIP', value:fmtCur(req), emphasis:true}];
+      }},
+    { id:'pension', name:'Pension', fields:[
+        {key:'corpus', label:'Retirement corpus', type:'number', default:''},
+        {key:'withdrawalRate', label:'Annual withdrawal rate %', type:'number', default:4},
+      ], compute:v=>{ const annual=num(v.corpus)*num(v.withdrawalRate)/100;
+        return [ {label:'Annual pension', value:fmtCur(annual)}, {label:'Monthly pension', value:fmtCur(annual/12), emphasis:true} ];
+      }},
+    { id:'annuity', name:'Annuity', fields:[
+        {key:'investment', label:'Investment', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Payout period (years)', type:'number', default:''},
+      ], compute:v=>{ const i=num(v.rate)/100, n=num(v.years), P=num(v.investment);
+        const payment = i===0 ? P/n : P*i/(1-Math.pow(1+i,-n));
+        return [{label:'Annual payout', value:fmtCur(payment), emphasis:true}];
+      }},
+    { id:'retirementinflation', name:'Retirement Inflation', fields:[
+        {key:'currentExpense', label:'Current annual expense', type:'number', default:''},
+        {key:'inflation', label:'Inflation % p.a.', type:'number', default:6},
+        {key:'years', label:'Years', type:'number', default:''},
+      ], compute:v=>{ const fut=num(v.currentExpense)*Math.pow(1+num(v.inflation)/100,num(v.years));
+        return [{label:'Future expense', value:fmtCur(fut), emphasis:true}];
+      }},
+  ]},
+  { name:'Savings', items:[
+    { id:'savingsgoal', name:'Savings Goal', fields:[
+        {key:'goal', label:'Goal amount', type:'number', default:''},
+        {key:'current', label:'Current savings', type:'number', default:0},
+        {key:'years', label:'Time (years)', type:'number', default:''},
+        {key:'returnRate', label:'Expected return % p.a.', type:'number', default:0},
+      ], compute:v=>{ const months=Math.round(num(v.years)*12), i=num(v.returnRate)/12/100;
+        const grown=num(v.current)*Math.pow(1+num(v.returnRate)/100,num(v.years));
+        const need=Math.max(0,num(v.goal)-grown);
+        const req = i===0 ? need/months : need/(((Math.pow(1+i,months)-1)/i)*(1+i));
+        return [{label:'Required monthly saving', value:fmtCur(req), emphasis:true}];
+      }},
+    { id:'fd', name:'FD', fields:[
+        {key:'principal', label:'Principal', type:'number', default:''},
+        {key:'rate', label:'Interest rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+        {key:'freq', label:'Compounding', type:'select', options:[{value:1,label:'Yearly'},{value:4,label:'Quarterly'},{value:12,label:'Monthly'}], default:4},
+      ], compute:v=>{ const P=num(v.principal), n=num(v.freq)||1, maturity=P*Math.pow(1+num(v.rate)/100/n, n*num(v.years));
+        return [ {label:'Maturity amount', value:fmtCur(maturity), emphasis:true}, {label:'Interest earned', value:fmtCur(maturity-P)} ];
+      }},
+    { id:'rd', name:'RD', fields:[
+        {key:'monthly', label:'Monthly deposit', type:'number', default:''},
+        {key:'rate', label:'Interest rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const M=num(v.monthly), months=Math.round(num(v.years)*12), i=num(v.rate)/12/100;
+        const maturity = i===0 ? M*months : M*((Math.pow(1+i,months)-1)/i)*(1+i);
+        const invested=M*months;
+        return [ {label:'Total deposited', value:fmtCur(invested)}, {label:'Maturity value', value:fmtCur(maturity), emphasis:true} ];
+      }},
+    { id:'emergencyfund', name:'Emergency Fund', fields:[
+        {key:'monthlyExpenses', label:'Monthly expenses', type:'number', default:''},
+        {key:'targetMonths', label:'Target months', type:'number', default:6},
+      ], compute:v=>[{label:'Required fund', value:fmtCur(num(v.monthlyExpenses)*num(v.targetMonths)), emphasis:true}] },
+    { id:'inflation', name:'Inflation', fields:[
+        {key:'currentCost', label:'Current cost', type:'number', default:''},
+        {key:'rate', label:'Inflation rate % p.a.', type:'number', default:6},
+        {key:'years', label:'Years', type:'number', default:''},
+      ], compute:v=>[{label:'Future cost', value:fmtCur(num(v.currentCost)*Math.pow(1+num(v.rate)/100,num(v.years))), emphasis:true}] },
+  ]},
+  { name:'Debt & Credit', items:[
+    { id:'creditcardinterest', name:'Credit Card Interest', fields:[
+        {key:'outstanding', label:'Outstanding amount', type:'number', default:''},
+        {key:'monthlyRate', label:'Monthly interest rate %', type:'number', default:3.5},
+      ], compute:v=>[{label:'Interest cost', value:fmtCur(num(v.outstanding)*num(v.monthlyRate)/100), emphasis:true}] },
+    { id:'minimumpayment', name:'Minimum Payment', fields:[
+        {key:'balance', label:'Outstanding balance', type:'number', default:''},
+        {key:'minPct', label:'Minimum %', type:'number', default:5},
+      ], compute:v=>[{label:'Minimum payment', value:fmtCur(num(v.balance)*num(v.minPct)/100), emphasis:true}] },
+    { id:'debtpayoff', name:'Debt Payoff', fields:[
+        {key:'balance', label:'Balance', type:'number', default:''},
+        {key:'rate', label:'Interest rate % p.a.', type:'number', default:''},
+        {key:'payment', label:'Monthly payment', type:'number', default:''},
+      ], compute:v=>{ const P=num(v.balance), r=num(v.rate)/12/100, pay=num(v.payment);
+        if(pay<=P*r) return [{label:'Payoff time', value:'Payment too low to cover interest', emphasis:true}];
+        const months = r===0 ? P/pay : -Math.log(1-(P*r)/pay)/Math.log(1+r);
+        return [{label:'Months to pay off', value:`${Math.ceil(months)} months`, emphasis:true}];
+      }},
+    { id:'debttoincome', name:'Debt-to-Income', fields:[
+        {key:'monthlyDebt', label:'Monthly debt payments', type:'number', default:''},
+        {key:'monthlyIncome', label:'Monthly income', type:'number', default:''},
+      ], compute:v=>{ const inc=num(v.monthlyIncome); return [{label:'DTI ratio', value: inc? fmtPct(num(v.monthlyDebt)/inc*100):'—', emphasis:true}]; }},
+    { id:'debtconsolidation', name:'Debt Consolidation', fields:[
+        {key:'totalDebt', label:'Total existing debt', type:'number', default:''},
+        {key:'newRate', label:'New rate % p.a.', type:'number', default:''},
+        {key:'newMonths', label:'New tenure (months)', type:'number', default:''},
+      ], compute:v=>[{label:'New consolidated EMI', value:fmtCur(emiCalc(num(v.totalDebt),num(v.newRate),num(v.newMonths))), emphasis:true}] },
+  ]},
+  { name:'Property', items:[
+    { id:'rentvsbuy', name:'Rent vs Buy', fields:[
+        {key:'price', label:'Property price', type:'number', default:''},
+        {key:'rent', label:'Monthly rent', type:'number', default:''},
+        {key:'downPct', label:'Down payment %', type:'number', default:20},
+        {key:'rate', label:'Loan rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Horizon (years)', type:'number', default:''},
+        {key:'investReturn', label:'Alt. investment return % p.a.', type:'number', default:10},
+      ], compute:v=>{ const price=num(v.price), down=price*num(v.downPct)/100, loan=price-down;
+        const emi=emiCalc(loan,num(v.rate),num(v.years)*12);
+        const buyCost = emi*num(v.years)*12;
+        const rentCost = num(v.rent)*num(v.years)*12;
+        const opportunity = down*Math.pow(1+num(v.investReturn)/100,num(v.years)) - down;
+        const netBuy = buyCost + opportunity;
+        return [ {label:'Total EMI paid', value:fmtCur(buyCost)}, {label:'Total rent paid', value:fmtCur(rentCost)},
+          {label:'Cheaper option', value: netBuy<rentCost?'Buying':'Renting', emphasis:true} ];
+      }},
+    { id:'downpayment', name:'Down Payment', fields:[
+        {key:'price', label:'Property price', type:'number', default:''},
+        {key:'pct', label:'Down payment %', type:'number', default:20},
+      ], compute:v=>{ const price=num(v.price), amt=price*num(v.pct)/100;
+        return [ {label:'Down payment', value:fmtCur(amt), emphasis:true}, {label:'Loan needed', value:fmtCur(price-amt)} ];
+      }},
+    { id:'propertyappreciation', name:'Property Appreciation', fields:[
+        {key:'purchase', label:'Purchase price', type:'number', default:''},
+        {key:'current', label:'Current value', type:'number', default:''},
+        {key:'years', label:'Period (years)', type:'number', default:''},
+      ], compute:v=>{ const p=num(v.purchase), c=num(v.current), y=num(v.years);
+        return [ {label:'Total appreciation', value: p? fmtPct((c-p)/p*100):'—'}, {label:'CAGR', value:(p>0&&y>0)?fmtPct((Math.pow(c/p,1/y)-1)*100):'—', emphasis:true} ];
+      }},
+    { id:'stampduty', name:'Stamp Duty', fields:[
+        {key:'value', label:'Property value', type:'number', default:''},
+        {key:'rate', label:'Stamp duty %', type:'number', default:5},
+      ], compute:v=>[ {label:'Estimated stamp duty', value:fmtCur(num(v.value)*num(v.rate)/100), emphasis:true}, {label:'Note', value:'Rate varies by state — adjust %'} ]},
+    { id:'homeloancost', name:'Home Loan Cost', fields:[
+        {key:'propertyPrice', label:'Property price', type:'number', default:''},
+        {key:'loanAmount', label:'Loan amount', type:'number', default:''},
+        {key:'rate', label:'Rate % p.a.', type:'number', default:''},
+        {key:'years', label:'Tenure (years)', type:'number', default:''},
+      ], compute:v=>{ const L=num(v.loanAmount), emi=emiCalc(L,num(v.rate),num(v.years)*12), total=emi*num(v.years)*12;
+        return [ {label:'EMI', value:fmtCur(emi)}, {label:'Total interest', value:fmtCur(total-L)}, {label:'Total cost of ownership', value:fmtCur(num(v.propertyPrice)-L+total), emphasis:true} ];
+      }},
+  ]},
+  { name:'Business', items:[
+    { id:'profitmargin', name:'Profit Margin', fields:[
+        {key:'revenue', label:'Revenue', type:'number', default:''},
+        {key:'cost', label:'Cost', type:'number', default:''},
+      ], compute:v=>{ const r=num(v.revenue), p=r-num(v.cost); return [ {label:'Profit', value:fmtCur(p)}, {label:'Margin', value: r? fmtPct(p/r*100):'—', emphasis:true} ]; }},
+    { id:'grossmargin', name:'Gross Margin', fields:[
+        {key:'revenue', label:'Revenue', type:'number', default:''},
+        {key:'cogs', label:'COGS', type:'number', default:''},
+      ], compute:v=>{ const r=num(v.revenue), gp=r-num(v.cogs); return [ {label:'Gross profit', value:fmtCur(gp)}, {label:'Gross margin', value: r? fmtPct(gp/r*100):'—', emphasis:true} ]; }},
+    { id:'netmargin', name:'Net Margin', fields:[
+        {key:'revenue', label:'Revenue', type:'number', default:''},
+        {key:'expenses', label:'Expenses', type:'number', default:''},
+      ], compute:v=>{ const r=num(v.revenue), np=r-num(v.expenses); return [ {label:'Net profit', value:fmtCur(np)}, {label:'Net margin', value: r? fmtPct(np/r*100):'—', emphasis:true} ]; }},
+    { id:'markup', name:'Markup', fields:[
+        {key:'cost', label:'Cost', type:'number', default:''},
+        {key:'markupPct', label:'Markup %', type:'number', default:''},
+      ], compute:v=>{ const c=num(v.cost), sp=c*(1+num(v.markupPct)/100); return [ {label:'Selling price', value:fmtCur(sp), emphasis:true}, {label:'Profit', value:fmtCur(sp-c)} ]; }},
+    { id:'breakeven', name:'Break-even', fields:[
+        {key:'fixedCost', label:'Fixed cost', type:'number', default:''},
+        {key:'price', label:'Selling price / unit', type:'number', default:''},
+        {key:'variableCost', label:'Variable cost / unit', type:'number', default:''},
+      ], compute:v=>{ const d=num(v.price)-num(v.variableCost); return [{label:'Break-even units', value: d>0? fmtNum(num(v.fixedCost)/d):'—', emphasis:true}]; }},
+    { id:'cashflow', name:'Cash Flow', fields:[
+        {key:'income', label:'Income', type:'number', default:''},
+        {key:'expenses', label:'Expenses', type:'number', default:''},
+      ], compute:v=>[{label:'Net cash flow', value:fmtCur(num(v.income)-num(v.expenses)), emphasis:true}] },
+    { id:'businessroi', name:'Business ROI', fields:[
+        {key:'investment', label:'Investment', type:'number', default:''},
+        {key:'profit', label:'Profit', type:'number', default:''},
+      ], compute:v=>{ const inv=num(v.investment); return [{label:'ROI', value: inv? fmtPct(num(v.profit)/inv*100):'—', emphasis:true}]; }},
+  ]},
+  { name:'Market & Stock', items:[
+    { id:'stockaverageprice', name:'Stock Average Price', fields:[
+        {key:'existingShares', label:'Existing shares', type:'number', default:''},
+        {key:'existingPrice', label:'Existing avg price', type:'number', default:''},
+        {key:'newShares', label:'New shares', type:'number', default:''},
+        {key:'newPrice', label:'New price', type:'number', default:''},
+      ], compute:v=>{ const es=num(v.existingShares), ep=num(v.existingPrice), ns=num(v.newShares), np=num(v.newPrice);
+        const totalShares=es+ns; const avg = totalShares? (es*ep+ns*np)/totalShares : 0;
+        return [{label:'New average price', value:fmtCur(avg), emphasis:true}];
+      }},
+    { id:'stockreturn', name:'Stock Return', fields:[
+        {key:'buy', label:'Buy price', type:'number', default:''},
+        {key:'sell', label:'Sell price', type:'number', default:''},
+        {key:'qty', label:'Quantity', type:'number', default:1},
+      ], compute:v=>{ const buy=num(v.buy), sell=num(v.sell), qty=num(v.qty);
+        return [ {label:'Profit / Loss', value:fmtCur((sell-buy)*qty)}, {label:'Return', value: buy? fmtPct((sell-buy)/buy*100):'—', emphasis:true} ];
+      }},
+    { id:'dividendyield', name:'Dividend Yield', fields:[
+        {key:'dividend', label:'Dividend / share', type:'number', default:''},
+        {key:'price', label:'Stock price', type:'number', default:''},
+      ], compute:v=>{ const price=num(v.price); return [{label:'Dividend yield', value: price? fmtPct(num(v.dividend)/price*100):'—', emphasis:true}]; }},
+    { id:'portfolioreturn', name:'Portfolio Return', fields:[
+        {key:'invested', label:'Invested amount', type:'number', default:''},
+        {key:'current', label:'Current value', type:'number', default:''},
+      ], compute:v=>{ const inv=num(v.invested), cur=num(v.current), gain=cur-inv;
+        return [ {label:'Gain / Loss', value:fmtCur(gain)}, {label:'Return', value: inv? fmtPct(gain/inv*100):'—', emphasis:true} ];
+      }},
+  ]},
+  { name:'Currency', items:[
+    { id:'currency', name:'Currency Converter', fields:[
+        {key:'from', label:'From currency', type:'select', options:currencyOptions, default:'USD'},
+        {key:'to', label:'To currency', type:'select', options:currencyOptions, default:'INR'},
+        {key:'value', label:'Amount', type:'number', default:1},
+      ], compute:v=>[ {label:'Currency conversion', value:'Uses the latest available daily reference rate', emphasis:true} ] },
+    { id:'forexgainloss', name:'Forex Gain/Loss', fields:[
+        {key:'buyRate', label:'Buy rate', type:'number', default:''},
+        {key:'sellRate', label:'Sell rate', type:'number', default:''},
+        {key:'amount', label:'Amount', type:'number', default:''},
+      ], compute:v=>[{label:'Gain / Loss', value:fmtCur((num(v.sellRate)-num(v.buyRate))*num(v.amount)), emphasis:true}] },
+  ]},
+  { name:'Basic Math', items:[
+    { id:'fraction', name:'Fraction Calculator', fields:[
+        {key:'a1', label:'Numerator 1', type:'number', default:''},
+        {key:'b1', label:'Denominator 1', type:'number', default:1},
+        {key:'op', label:'Operation', type:'pills', options:['+','−','×','÷'], default:'+'},
+        {key:'a2', label:'Numerator 2', type:'number', default:''},
+        {key:'b2', label:'Denominator 2', type:'number', default:1},
+      ], compute:v=>{ const a1=num(v.a1), b1=num(v.b1)||1, a2=num(v.a2), b2=num(v.b2)||1;
+        let n,d;
+        if(v.op==='+'){ n=a1*b2+a2*b1; d=b1*b2; } else if(v.op==='−'){ n=a1*b2-a2*b1; d=b1*b2; }
+        else if(v.op==='×'){ n=a1*a2; d=b1*b2; } else { n=a1*b2; d=b1*a2; }
+        const g = (function gcd(x,y){ x=Math.abs(x); y=Math.abs(y); while(y){ [x,y]=[y,x%y]; } return x||1; })(n,d);
+        return [ {label:'Result', value:`${n/g}/${d/g}`, emphasis:true}, {label:'Decimal', value:fmtNum(n/d)} ];
+      }},
+    { id:'ratio', name:'Ratio & Proportion', fields:[
+        {key:'a', label:'A', type:'number', default:''},
+        {key:'b', label:'B (A : B)', type:'number', default:''},
+        {key:'c', label:'C (find x in A:B = C:x)', type:'number', default:''},
+      ], compute:v=>{ const a=num(v.a), b=num(v.b), c=num(v.c);
+        const g = (function gcd(x,y){ x=Math.abs(x); y=Math.abs(y); while(y){ [x,y]=[y,x%y]; } return x||1; })(a,b);
+        return [ {label:'Simplified ratio', value:`${a/g} : ${b/g}`}, {label:'Missing value (x)', value: a? fmtNum((b*c)/a):'—', emphasis:true} ];
+      }},
+    { id:'average', name:'Average Calculator', fields:[
+        {key:'v1', label:'Value 1', type:'number', default:''}, {key:'v2', label:'Value 2', type:'number', default:''},
+        {key:'v3', label:'Value 3', type:'number', default:''}, {key:'v4', label:'Value 4', type:'number', default:''},
+        {key:'v5', label:'Value 5', type:'number', default:''},
+      ], compute:v=>{ const vals=[v.v1,v.v2,v.v3,v.v4,v.v5].filter(x=>x!==''&&x!==undefined).map(Number);
+        if(!vals.length) return [{label:'Mean', value:'—', emphasis:true}];
+        const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+        const sorted=[...vals].sort((a,b)=>a-b), mid=Math.floor(sorted.length/2);
+        const median = sorted.length%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+        return [ {label:'Mean', value:fmtNum(mean), emphasis:true}, {label:'Median', value:fmtNum(median)}, {label:'Count', value:String(vals.length)} ];
+      }},
+    { id:'rounding', name:'Rounding Calculator', fields:[
+        {key:'value', label:'Value', type:'number', default:''},
+        {key:'decimals', label:'Decimal places', type:'select', options:[0,1,2,3,4], default:2},
+      ], compute:v=>{ const d=num(v.decimals), f=Math.pow(10,d);
+        return [{label:'Rounded value', value: fmtNum(Math.round(num(v.value)*f)/f), emphasis:true}];
+      }},
+    { id:'powerroot', name:'Power / Root Calculator', fields:[
+        {key:'base', label:'Base', type:'number', default:''},
+        {key:'exp', label:'Exponent / Root degree', type:'number', default:2},
+        {key:'type', label:'Type', type:'pills', options:['Power','Root'], default:'Power'},
+      ], compute:v=>{ const b=num(v.base), e=num(v.exp)||1;
+        const result = v.type==='Power' ? Math.pow(b,e) : Math.pow(b,1/e);
+        return [{label:'Result', value:fmtNum(result), emphasis:true}];
+      }},
+    { id:'lcmhcf', name:'LCM / HCF Calculator', fields:[
+        {key:'a', label:'Number A', type:'number', default:''},
+        {key:'b', label:'Number B', type:'number', default:''},
+      ], compute:v=>{ const a=Math.round(num(v.a)), b=Math.round(num(v.b));
+        const hcf = (function gcd(x,y){ x=Math.abs(x); y=Math.abs(y); while(y){ [x,y]=[y,x%y]; } return x||1; })(a,b);
+        const lcm = a && b ? Math.abs(a*b)/hcf : 0;
+        return [ {label:'HCF (GCD)', value:String(hcf)}, {label:'LCM', value:String(lcm), emphasis:true} ];
+      }},
+    { id:'npr_ncr', name:'Permutation / Combination', fields:[
+        {key:'n', label:'n', type:'number', default:''},
+        {key:'r', label:'r', type:'number', default:''},
+        {key:'type', label:'Type', type:'pills', options:['nPr','nCr'], default:'nCr'},
+      ], compute:v=>{ const n=Math.round(num(v.n)), r=Math.round(num(v.r));
+        const fact=x=>{ if(x<0 || Number.isNaN(x)) return NaN; if(x>170) return Infinity; let f=1; for(let i=2;i<=x;i++) f*=i; return f; };
+        if(r>n || r<0) return [{label:'Result', value:'r must be ≤ n', emphasis:true}];
+        const result = v.type==='nPr' ? fact(n)/fact(n-r) : fact(n)/(fact(r)*fact(n-r));
+        return [{label:v.type, value:fmtNum(result), emphasis:true}];
+      }},
+  ]},
+  { name:'Algebra & Geometry', items:[
+    { id:'linearequation', name:'Linear Equation Solver', fields:[
+        {key:'a', label:'a (in ax + b = c)', type:'number', default:''},
+        {key:'b', label:'b', type:'number', default:''},
+        {key:'c', label:'c', type:'number', default:''},
+      ], compute:v=>{ const a=num(v.a); return [{label:'x =', value: a? fmtNum((num(v.c)-num(v.b))/a):'a cannot be 0', emphasis:true}]; }},
+    { id:'quadraticequation', name:'Quadratic Equation Solver', fields:[
+        {key:'a', label:'a (in ax² + bx + c = 0)', type:'number', default:''},
+        {key:'b', label:'b', type:'number', default:''},
+        {key:'c', label:'c', type:'number', default:''},
+      ], compute:v=>{ const a=num(v.a), b=num(v.b), c=num(v.c);
+        if(!a) return [{label:'Roots', value:'a cannot be 0', emphasis:true}];
+        const D=b*b-4*a*c;
+        if(D>=0){ const r1=(-b+Math.sqrt(D))/(2*a), r2=(-b-Math.sqrt(D))/(2*a);
+          return [ {label:'Discriminant', value:fmtNum(D)}, {label:'x1', value:fmtNum(r1), emphasis:true}, {label:'x2', value:fmtNum(r2), emphasis:true} ]; }
+        const re=(-b/(2*a)), im=Math.sqrt(-D)/(2*a);
+        return [ {label:'Discriminant', value:fmtNum(D)}, {label:'x1', value:`${fmtNum(re)} + ${fmtNum(im)}i`, emphasis:true}, {label:'x2', value:`${fmtNum(re)} − ${fmtNum(im)}i`, emphasis:true} ];
+      }},
+    { id:'trianglesolver', name:'Triangle Solver (SSS)', fields:[
+        {key:'a', label:'Side a', type:'number', default:''},
+        {key:'b', label:'Side b', type:'number', default:''},
+        {key:'c', label:'Side c', type:'number', default:''},
+      ], compute:v=>{ const a=num(v.a), b=num(v.b), c=num(v.c);
+        if(a+b<=c || b+c<=a || a+c<=b) return [{label:'Result', value:'Not a valid triangle', emphasis:true}];
+        const toDeg=r=>r*180/Math.PI;
+        const A=toDeg(Math.acos((b*b+c*c-a*a)/(2*b*c))), B=toDeg(Math.acos((a*a+c*c-b*b)/(2*a*c))), C=180-A-B;
+        const s=(a+b+c)/2, area=Math.sqrt(s*(s-a)*(s-b)*(s-c));
+        return [ {label:'Angle A', value:fmtNum(A)+'°'}, {label:'Angle B', value:fmtNum(B)+'°'}, {label:'Angle C', value:fmtNum(C)+'°'}, {label:'Area', value:fmtNum(area), emphasis:true} ];
+      }},
+    { id:'circlecalc', name:'Circle Calculator', fields:[ {key:'radius', label:'Radius', type:'number', default:''} ],
+      compute:v=>{ const r=num(v.radius);
+        return [ {label:'Area', value:fmtNum(Math.PI*r*r), emphasis:true}, {label:'Circumference', value:fmtNum(2*Math.PI*r)}, {label:'Diameter', value:fmtNum(2*r)} ];
+      }},
+    { id:'spherecalc', name:'Sphere Calculator', fields:[ {key:'radius', label:'Radius', type:'number', default:''} ],
+      compute:v=>{ const r=num(v.radius);
+        return [ {label:'Volume', value:fmtNum((4/3)*Math.PI*r*r*r), emphasis:true}, {label:'Surface area', value:fmtNum(4*Math.PI*r*r)} ];
+      }},
+    { id:'cylindercalc', name:'Cylinder Calculator', fields:[
+        {key:'radius', label:'Radius', type:'number', default:''}, {key:'height', label:'Height', type:'number', default:''},
+      ], compute:v=>{ const r=num(v.radius), h=num(v.height);
+        return [ {label:'Volume', value:fmtNum(Math.PI*r*r*h), emphasis:true}, {label:'Surface area', value:fmtNum(2*Math.PI*r*(r+h))} ];
+      }},
+    { id:'conecalc', name:'Cone Calculator', fields:[
+        {key:'radius', label:'Radius', type:'number', default:''}, {key:'height', label:'Height', type:'number', default:''},
+      ], compute:v=>{ const r=num(v.radius), h=num(v.height), slant=Math.sqrt(r*r+h*h);
+        return [ {label:'Volume', value:fmtNum((1/3)*Math.PI*r*r*h), emphasis:true}, {label:'Surface area', value:fmtNum(Math.PI*r*(r+slant))} ];
+      }},
+    { id:'standarddeviation', name:'Standard Deviation', fields:[
+        {key:'v1', label:'Value 1', type:'number', default:''}, {key:'v2', label:'Value 2', type:'number', default:''},
+        {key:'v3', label:'Value 3', type:'number', default:''}, {key:'v4', label:'Value 4', type:'number', default:''},
+        {key:'v5', label:'Value 5', type:'number', default:''},
+      ], compute:v=>{ const vals=[v.v1,v.v2,v.v3,v.v4,v.v5].filter(x=>x!==''&&x!==undefined).map(Number);
+        if(vals.length<2) return [{label:'SD', value:'Need at least 2 values', emphasis:true}];
+        const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+        const variance=vals.reduce((a,b)=>a+Math.pow(b-mean,2),0)/vals.length;
+        return [ {label:'Mean', value:fmtNum(mean)}, {label:'Variance', value:fmtNum(variance)}, {label:'Standard deviation', value:fmtNum(Math.sqrt(variance)), emphasis:true} ];
+      }},
+    { id:'probabilitybasic', name:'Probability Calculator', fields:[
+        {key:'favorable', label:'Favorable outcomes', type:'number', default:''},
+        {key:'total', label:'Total outcomes', type:'number', default:''},
+      ], compute:v=>{ const f=num(v.favorable), t=num(v.total); return [{label:'Probability', value: t? fmtPct(f/t*100):'—', emphasis:true}]; }},
+  ]},
+  { name:'Construction', items:[
+    { id:'areacalc', name:'Area Calculator', fields:[
+        {key:'length', label:'Length', type:'number', default:''}, {key:'width', label:'Width', type:'number', default:''},
+      ], compute:v=>[{label:'Area', value:fmtNum(num(v.length)*num(v.width)), emphasis:true}] },
+    { id:'concretecalc', name:'Concrete Calculator', fields:[
+        {key:'length', label:'Length', type:'number', default:''}, {key:'width', label:'Width', type:'number', default:''}, {key:'depth', label:'Depth', type:'number', default:''},
+      ], compute:v=>[{label:'Volume needed', value:fmtNum(num(v.length)*num(v.width)*num(v.depth)), emphasis:true}] },
+    { id:'paintcalc', name:'Paint Calculator', fields:[
+        {key:'area', label:'Wall area', type:'number', default:''}, {key:'coverage', label:'Coverage per litre', type:'number', default:10},
+      ], compute:v=>{ const cov=num(v.coverage)||1; return [{label:'Litres needed', value:fmtNum(num(v.area)/cov), emphasis:true}]; }},
+    { id:'tilecalc', name:'Tile / Flooring Calculator', fields:[
+        {key:'floorArea', label:'Floor area', type:'number', default:''}, {key:'tileArea', label:'Area per tile', type:'number', default:''}, {key:'wastage', label:'Wastage %', type:'number', default:10},
+      ], compute:v=>{ const ta=num(v.tileArea)||1; const tiles=Math.ceil((num(v.floorArea)/ta)*(1+num(v.wastage)/100));
+        return [{label:'Tiles needed', value:String(tiles), emphasis:true}];
+      }},
+  ]},
+  { name:'Engineering', items:[
+    { id:'ohmslaw', name:"Ohm's Law", fields:[
+        {key:'voltage', label:'Voltage (V)', type:'number', default:''}, {key:'current', label:'Current (A)', type:'number', default:''},
+      ], compute:v=>{ const V=num(v.voltage), I=num(v.current)||1e-9;
+        return [ {label:'Resistance (Ω)', value:fmtNum(V/I), emphasis:true}, {label:'Power (W)', value:fmtNum(V*I)} ];
+      }},
+    { id:'electricitybill', name:'Electricity Bill', fields:[
+        {key:'units', label:'Units consumed (kWh)', type:'number', default:''}, {key:'rate', label:'Rate per unit', type:'number', default:''}, {key:'fixed', label:'Fixed charges', type:'number', default:0},
+      ], compute:v=>[{label:'Estimated bill', value:fmtCur(num(v.units)*num(v.rate)+num(v.fixed)), emphasis:true}] },
+    { id:'batterybackup', name:'Battery Backup', fields:[
+        {key:'load', label:'Load (W)', type:'number', default:''}, {key:'voltage', label:'Battery voltage (V)', type:'number', default:12}, {key:'ah', label:'Battery capacity (Ah)', type:'number', default:''}, {key:'efficiency', label:'Efficiency %', type:'number', default:80},
+      ], compute:v=>{ const load=num(v.load)||1; const runtime=(num(v.voltage)*num(v.ah)*num(v.efficiency)/100)/load;
+        return [{label:'Backup time', value:fmtNum(runtime)+' hrs', emphasis:true}];
+      }},
+  ]},
+  { name:'Health & Fitness', items:[
+    { id:'bmi', name:'BMI Calculator', fields:[
+        {key:'weight', label:'Weight (kg)', type:'number', default:''}, {key:'height', label:'Height (cm)', type:'number', default:''},
+      ], compute:v=>{ const h=num(v.height)/100||1, bmi=num(v.weight)/(h*h);
+        let cat = bmi<18.5?'Underweight': bmi<25?'Normal': bmi<30?'Overweight':'Obese';
+        return [ {label:'BMI', value:fmtNum(bmi), emphasis:true}, {label:'Category', value:cat} ];
+      }},
+    { id:'bmr', name:'BMR Calculator', fields:[
+        {key:'weight', label:'Weight (kg)', type:'number', default:''}, {key:'height', label:'Height (cm)', type:'number', default:''},
+        {key:'age', label:'Age', type:'number', default:''}, {key:'sex', label:'Sex', type:'pills', options:['Male','Female'], default:'Male'},
+      ], compute:v=>{ const base=10*num(v.weight)+6.25*num(v.height)-5*num(v.age);
+        const bmr = v.sex==='Male'? base+5 : base-161;
+        return [{label:'BMR', value:fmtNum(bmr)+' kcal/day', emphasis:true}];
+      }},
+    { id:'tdee', name:'TDEE Calculator', fields:[
+        {key:'bmr', label:'BMR (kcal)', type:'number', default:''},
+        {key:'activity', label:'Activity level', type:'select', options:[{value:1.2,label:'Sedentary'},{value:1.375,label:'Light'},{value:1.55,label:'Moderate'},{value:1.725,label:'Active'},{value:1.9,label:'Very active'}], default:1.375},
+      ], compute:v=>[{label:'TDEE', value:fmtNum(num(v.bmr)*num(v.activity))+' kcal/day', emphasis:true}] },
+    { id:'calorietarget', name:'Calorie Calculator', fields:[
+        {key:'tdee', label:'TDEE (kcal)', type:'number', default:''}, {key:'goal', label:'Goal', type:'pills', options:['Lose','Maintain','Gain'], default:'Maintain'},
+      ], compute:v=>{ const adj = v.goal==='Lose'?-500: v.goal==='Gain'?500:0;
+        return [{label:'Daily target', value:fmtNum(num(v.tdee)+adj)+' kcal', emphasis:true}];
+      }},
+    { id:'bodyfat', name:'Body Fat Calculator', fields:[
+        {key:'bmi', label:'BMI', type:'number', default:''}, {key:'age', label:'Age', type:'number', default:''}, {key:'sex', label:'Sex', type:'pills', options:['Male','Female'], default:'Male'},
+      ], compute:v=>{ const g=v.sex==='Male'?1:0; const bf=(1.20*num(v.bmi))+(0.23*num(v.age))-(10.8*g)-5.4;
+        return [{label:'Estimated body fat %', value:fmtPct(bf), emphasis:true}];
+      }},
+    { id:'macro', name:'Macro Calculator', fields:[
+        {key:'calories', label:'Daily calories', type:'number', default:''}, {key:'goal', label:'Diet type', type:'pills', options:['Balanced','Low-carb','High-protein'], default:'Balanced'},
+      ], compute:v=>{ const cal=num(v.calories); const splits={ 'Balanced':[.3,.4,.3], 'Low-carb':[.35,.2,.45], 'High-protein':[.4,.35,.25] };
+        const [p,c,f]=splits[v.goal]||splits.Balanced;
+        return [ {label:'Protein', value:fmtNum(cal*p/4)+' g'}, {label:'Carbs', value:fmtNum(cal*c/4)+' g'}, {label:'Fat', value:fmtNum(cal*f/9)+' g', emphasis:true} ];
+      }},
+    { id:'protein', name:'Protein Calculator', fields:[
+        {key:'weight', label:'Weight (kg)', type:'number', default:''}, {key:'activity', label:'Activity', type:'pills', options:['Sedentary','Active','Athlete'], default:'Active'},
+      ], compute:v=>{ const f = v.activity==='Sedentary'?0.8 : v.activity==='Athlete'?1.8:1.2;
+        return [{label:'Daily protein', value:fmtNum(num(v.weight)*f)+' g', emphasis:true}];
+      }},
+    { id:'waterintake', name:'Water Intake', fields:[
+        {key:'weight', label:'Weight (kg)', type:'number', default:''}, {key:'activityMin', label:'Exercise (min/day)', type:'number', default:0},
+      ], compute:v=>[{label:'Daily water target', value:fmtNum(num(v.weight)*0.033+num(v.activityMin)/30*0.35)+' L', emphasis:true}] },
+    { id:'pace', name:'Pace Calculator', fields:[
+        {key:'distance', label:'Distance (km)', type:'number', default:''}, {key:'time', label:'Time (minutes)', type:'number', default:''},
+      ], compute:v=>{ const d=num(v.distance)||1; return [ {label:'Pace', value:fmtNum(num(v.time)/d)+' min/km', emphasis:true}, {label:'Speed', value:fmtNum(d/(num(v.time)/60))+' km/h'} ]; }},
+    { id:'heartratezone', name:'Heart Rate Zone', fields:[
+        {key:'age', label:'Age', type:'number', default:''}, {key:'resting', label:'Resting HR', type:'number', default:''},
+      ], compute:v=>{ const maxHR=220-num(v.age), rhr=num(v.resting), reserve=maxHR-rhr;
+        const zone=p=>Math.round(rhr+reserve*p);
+        return [ {label:'Max HR', value:String(maxHR)}, {label:'Fat burn (60-70%)', value:`${zone(.6)}-${zone(.7)} bpm`}, {label:'Cardio (70-85%)', value:`${zone(.7)}-${zone(.85)} bpm`, emphasis:true}, {label:'Peak (85-95%)', value:`${zone(.85)}-${zone(.95)} bpm`} ];
+      }},
+  ]},
+  { name:'Date & Travel', items:[
+    { id:'datedifference', name:'Date Difference', fields:[
+        {key:'date1', label:'Start date', type:'date', default:''}, {key:'date2', label:'End date', type:'date', default:''},
+      ], compute:v=>{ if(!v.date1||!v.date2) return [{label:'Difference', value:'—', emphasis:true}];
+        const d1=new Date(v.date1), d2=new Date(v.date2), days=Math.round((d2-d1)/86400000);
+      return [ {label:'Days', value:String(days), emphasis:true}, {label:'Weeks', value:fmtNum(days/7)}, {label:'Months (approx)', value:fmtNum(days/30.44)}, {label:'Years (approx)', value:fmtNum(days/365.2425)} ];
+      }},
+    { id:'workingdays', name:'Working Days', fields:[
+        {key:'date1', label:'Start date', type:'date', default:''}, {key:'date2', label:'End date', type:'date', default:''},
+      ], compute:v=>{ if(!v.date1||!v.date2) return [{label:'Working days', value:'—', emphasis:true}];
+        let d=new Date(v.date1); const end=new Date(v.date2); let count=0;
+        while(d<=end){ const day=d.getDay(); if(day!==0&&day!==6) count++; d.setDate(d.getDate()+1); }
+        return [{label:'Working days', value:String(count), emphasis:true}];
+      }},
+    { id:'countdown', name:'Countdown', fields:[ {key:'targetDate', label:'Target date', type:'date', default:''} ],
+      compute:v=>{ if(!v.targetDate) return [{label:'Remaining', value:'—', emphasis:true}];
+        const now=new Date(), target=new Date(v.targetDate); const days=Math.ceil((target-now)/86400000);
+        return [{label:'Days remaining', value:String(days), emphasis:true}];
+      }},
+    { id:'fuelcost', name:'Fuel Cost', fields:[
+        {key:'distance', label:'Distance (km)', type:'number', default:''}, {key:'mileage', label:'Mileage (km/L)', type:'number', default:''}, {key:'price', label:'Fuel price / L', type:'number', default:''},
+      ], compute:v=>{ const m=num(v.mileage)||1; return [{label:'Trip fuel cost', value:fmtCur((num(v.distance)/m)*num(v.price)), emphasis:true}]; }},
+    { id:'tripbudget', name:'Trip Budget', fields:[
+        {key:'transport', label:'Transport', type:'number', default:0}, {key:'stay', label:'Stay (total)', type:'number', default:0},
+        {key:'food', label:'Food (total)', type:'number', default:0}, {key:'activities', label:'Activities', type:'number', default:0}, {key:'days', label:'Number of days', type:'number', default:1},
+      ], compute:v=>{ const total=num(v.transport)+num(v.stay)+num(v.food)+num(v.activities), days=Math.max(1,num(v.days));
+        return [ {label:'Total budget', value:fmtCur(total), emphasis:true}, {label:'Per day', value:fmtCur(total/days)} ];
+      }},
+  ]},
+  { name:'Science', items:[
+    { id:'density', name:'Density Calculator', fields:[
+        {key:'mass', label:'Mass (kg)', type:'number', default:''}, {key:'volume', label:'Volume (m³)', type:'number', default:''},
+      ], compute:v=>{ const vol=num(v.volume)||1; return [{label:'Density', value:fmtNum(num(v.mass)/vol)+' kg/m³', emphasis:true}]; }},
+    { id:'kinematics', name:'Kinematics', fields:[
+        {key:'u', label:'Initial velocity (m/s)', type:'number', default:0}, {key:'a', label:'Acceleration (m/s²)', type:'number', default:''}, {key:'t', label:'Time (s)', type:'number', default:''},
+      ], compute:v=>{ const u=num(v.u), a=num(v.a), t=num(v.t);
+        return [ {label:'Final velocity', value:fmtNum(u+a*t)+' m/s', emphasis:true}, {label:'Distance', value:fmtNum(u*t+0.5*a*t*t)+' m'} ];
+      }},
+    { id:'phcalc', name:'pH Calculator', fields:[ {key:'h', label:'H⁺ concentration (mol/L)', type:'number', default:''} ],
+      compute:v=>{ const h=num(v.h); return [{label:'pH', value: h>0? fmtNum(-Math.log10(h)):'—', emphasis:true}]; }},
+  ]},
+  { name:'Technology', items:[
+    { id:'datastorage', name:'Data Storage Converter', fields:[
+        {key:'value', label:'Value', type:'number', default:1},
+        {key:'from', label:'From', type:'select', options:['B','KB','MB','GB','TB'], default:'GB'},
+        {key:'to', label:'To', type:'select', options:['B','KB','MB','GB','TB'], default:'MB'},
+      ], compute:v=>{ const order=['B','KB','MB','GB','TB']; const p=order.indexOf(v.from)-order.indexOf(v.to);
+        return [{label:'Converted value', value:fmtNum(num(v.value)*Math.pow(1024,p))+' '+v.to, emphasis:true}];
+      }},
+    { id:'downloadtime', name:'Download Time', fields:[
+        {key:'sizeMB', label:'File size (MB)', type:'number', default:''}, {key:'speedMbps', label:'Speed (Mbps)', type:'number', default:''},
+      ], compute:v=>{ const speed=num(v.speedMbps)||1; const seconds=(num(v.sizeMB)*8)/speed;
+        return [{label:'Download time', value:`${Math.floor(seconds/60)}m ${Math.round(seconds%60)}s`, emphasis:true}];
+      }},
+    { id:'passwordentropy', name:'Password Entropy', fields:[
+        {key:'length', label:'Password length', type:'number', default:12},
+        {key:'charset', label:'Character set', type:'select', options:[{value:26,label:'Lowercase only'},{value:52,label:'Upper + lower'},{value:62,label:'Alphanumeric'},{value:94,label:'All characters'}], default:94},
+      ], compute:v=>{ const bits=num(v.length)*Math.log2(num(v.charset));
+        return [{label:'Entropy', value:fmtNum(bits)+' bits', emphasis:true}, {label:'Strength', value: bits<40?'Weak': bits<60?'Fair': bits<80?'Strong':'Very strong'}];
+      }},
+    { id:'aitokencost', name:'AI Token Cost', fields:[
+        {key:'inputTokens', label:'Input tokens', type:'number', default:''}, {key:'outputTokens', label:'Output tokens', type:'number', default:''},
+        {key:'inputPrice', label:'Input price / 1K', type:'number', default:''}, {key:'outputPrice', label:'Output price / 1K', type:'number', default:''},
+      ], compute:v=>{ const cost=(num(v.inputTokens)/1000)*num(v.inputPrice)+(num(v.outputTokens)/1000)*num(v.outputPrice);
+        return [{label:'Estimated cost', value:fmtCur(cost), emphasis:true}];
+      }},
+  ]},
+  { name:'Agriculture & EV', items:[
+    { id:'farmyield', name:'Farm Yield', fields:[
+        {key:'area', label:'Area (acres)', type:'number', default:''}, {key:'yieldPerAcre', label:'Yield per acre', type:'number', default:''},
+      ], compute:v=>[{label:'Total production', value:fmtNum(num(v.area)*num(v.yieldPerAcre)), emphasis:true}] },
+    { id:'evrange', name:'EV Range', fields:[
+        {key:'battery', label:'Battery capacity (kWh)', type:'number', default:''}, {key:'efficiency', label:'Efficiency (kWh/km)', type:'number', default:0.15},
+      ], compute:v=>{ const eff=num(v.efficiency)||0.15; return [{label:'Estimated range', value:fmtNum(num(v.battery)/eff)+' km', emphasis:true}]; }},
+    { id:'evchargingcost', name:'EV Charging Cost', fields:[
+        {key:'battery', label:'Battery capacity (kWh)', type:'number', default:''}, {key:'tariff', label:'Tariff / kWh', type:'number', default:''},
+      ], compute:v=>[{label:'Charging cost', value:fmtCur(num(v.battery)*num(v.tariff)), emphasis:true}] },
+    { id:'carbonfootprint', name:'Carbon Footprint', fields:[
+        {key:'electricity', label:'Electricity (kWh/month)', type:'number', default:0}, {key:'carKm', label:'Car travel (km/month)', type:'number', default:0}, {key:'flightHours', label:'Flight hours/month', type:'number', default:0},
+      ], compute:v=>{ const co2=num(v.electricity)*0.82+num(v.carKm)*0.12+num(v.flightHours)*90;
+        return [{label:'Estimated CO2e', value:fmtNum(co2)+' kg/month', emphasis:true}];
+      }},
+  ]},
+  { name:'Business & Shops', items:[
+    {id:'milkledger',name:'Milk Dairy · Date, Litre & Price',fields:[{key:'startDate',label:'Period start date',type:'date',default:''},{key:'endDate',label:'Period end date',type:'date',default:''},{key:'litres',label:'Milk sold per day (L)',type:'number',default:''},{key:'sellRate',label:'Selling price / L',type:'number',default:''},{key:'buyRate',label:'Purchase cost / L',type:'number',default:''},{key:'waste',label:'Spillage / returns (L/day)',type:'number',default:0},{key:'expenses',label:'Other daily expenses',type:'number',default:0}],compute:v=>{const sold=Math.max(0,num(v.litres)-num(v.waste)),daily=sold*num(v.sellRate),cost=num(v.litres)*num(v.buyRate)+num(v.expenses),profit=daily-cost;let days=30;if(v.startDate&&v.endDate){days=Math.max(0,Math.floor((new Date(v.endDate+'T00:00:00')-new Date(v.startDate+'T00:00:00'))/86400000)+1);}return[{label:'Period days',value:String(days)},{label:'Net litres sold / day',value:fmtNum(sold)+' L'},{label:'Daily sales',value:fmtCur(daily)},{label:'Daily profit',value:fmtCur(profit),emphasis:true},{label:'Period sales',value:fmtCur(daily*days)},{label:'Period profit',value:fmtCur(profit*days)}] }},
+    {id:'kiranainvoice',name:'Kirana · Multi-item Bill',fields:[{key:'q1',label:'Item 1 quantity',type:'number',default:0},{key:'p1',label:'Item 1 price / unit',type:'number',default:0},{key:'q2',label:'Item 2 quantity',type:'number',default:0},{key:'p2',label:'Item 2 price / unit',type:'number',default:0},{key:'q3',label:'Item 3 quantity',type:'number',default:0},{key:'p3',label:'Item 3 price / unit',type:'number',default:0},{key:'q4',label:'Item 4 quantity',type:'number',default:0},{key:'p4',label:'Item 4 price / unit',type:'number',default:0},{key:'q5',label:'Item 5 quantity',type:'number',default:0},{key:'p5',label:'Item 5 price / unit',type:'number',default:0},{key:'discount',label:'Bill discount %',type:'number',default:0},{key:'tax',label:'Tax % (if applicable)',type:'number',default:0},{key:'paid',label:'Amount received',type:'number',default:0}],compute:v=>{const sub=[1,2,3,4,5].reduce((a,i)=>a+Math.max(0,num(v['q'+i]))*Math.max(0,num(v['p'+i])),0),disc=sub*Math.min(100,Math.max(0,num(v.discount)))/100,tax=(sub-disc)*Math.max(0,num(v.tax))/100,total=sub-disc+tax;return[{label:'Items subtotal',value:fmtCur(sub)},{label:'Discount',value:'− '+fmtCur(disc)},{label:'Tax',value:fmtCur(tax)},{label:'Customer total',value:fmtCur(total),emphasis:true},{label:'Change due',value:fmtCur(Math.max(0,num(v.paid)-total))}]}},
+    {id:'retailmargin',name:'Retail Shop · Price & Margin',fields:[{key:'qty',label:'Units sold',type:'number',default:1},{key:'cost',label:'Cost per unit',type:'number',default:''},{key:'price',label:'Selling price / unit',type:'number',default:''},{key:'discount',label:'Customer discount %',type:'number',default:0},{key:'tax',label:'Tax %',type:'number',default:0}],compute:v=>{const q=Math.max(0,num(v.qty)),cost=Math.max(0,num(v.cost)),price=Math.max(0,num(v.price)),gross=q*price,disc=gross*Math.min(100,Math.max(0,num(v.discount)))/100,tax=(gross-disc)*Math.max(0,num(v.tax))/100,net=gross-disc+tax,profit=gross-disc-q*cost;return[{label:'Customer pays (incl. tax)',value:fmtCur(net),emphasis:true},{label:'Net sales before tax',value:fmtCur(gross-disc)},{label:'Gross profit',value:fmtCur(profit)},{label:'Margin on net sales',value:fmtPct(gross-disc?(profit/(gross-disc))*100:0)}]}},
+    {id:'wholesaleretail',name:'Wholesaler ↔ Retailer Margin',fields:[{key:'cost',label:'Your purchase cost / unit',type:'number',default:''},{key:'wholesale',label:'Wholesale price / unit',type:'number',default:''},{key:'retail',label:'Retail price / unit',type:'number',default:''},{key:'qty',label:'Quantity',type:'number',default:1}],compute:v=>{const q=Math.max(0,num(v.qty)),c=num(v.cost),w=num(v.wholesale),r=num(v.retail);return[{label:'Your wholesale profit',value:fmtCur((w-c)*q),emphasis:true},{label:'Wholesaler margin',value:fmtPct(w?(w-c)/w*100:0)},{label:'Retailer gross profit',value:fmtCur((r-w)*q)},{label:'Retailer margin',value:fmtPct(r?(r-w)/r*100:0)},{label:'End-customer value',value:fmtCur(r*q)}]}},
+    {id:'shopinvoice',name:'Shop · Quick Invoice & Change',fields:[{key:'qty',label:'Quantity',type:'number',default:1},{key:'price',label:'Price per item',type:'number',default:''},{key:'discount',label:'Discount %',type:'number',default:0},{key:'tax',label:'Tax %',type:'number',default:0},{key:'paid',label:'Cash received',type:'number',default:0}],compute:v=>{const sub=Math.max(0,num(v.qty))*Math.max(0,num(v.price)),disc=sub*Math.min(100,Math.max(0,num(v.discount)))/100,tax=(sub-disc)*Math.max(0,num(v.tax))/100,total=sub-disc+tax;return[{label:'Subtotal',value:fmtCur(sub)},{label:'Discount',value:fmtCur(disc)},{label:'Tax',value:fmtCur(tax)},{label:'Total due',value:fmtCur(total),emphasis:true},{label:'Change to return',value:fmtCur(Math.max(0,num(v.paid)-total))}]}},
+    {id:'sweetbatch',name:'Sweets · Batch Cost & Selling',fields:[{key:'yield',label:'Sellable pieces / kg',type:'number',default:''},{key:'batch',label:'Batch output (kg)',type:'number',default:''},{key:'ingredients',label:'Ingredients cost',type:'number',default:''},{key:'labor',label:'Labour cost',type:'number',default:0},{key:'fuel',label:'Fuel & overhead',type:'number',default:0},{key:'packaging',label:'Packaging cost',type:'number',default:0},{key:'price',label:'Selling price per piece',type:'number',default:''}],compute:v=>{const qty=Math.max(0,num(v.yield)*num(v.batch)),cost=num(v.ingredients)+num(v.labor)+num(v.fuel)+num(v.packaging),sales=qty*num(v.price);return[{label:'Pieces to sell',value:fmtNum(qty)},{label:'Cost per piece',value:fmtCur(qty?cost/qty:0)},{label:'Batch cost',value:fmtCur(cost)},{label:'Expected sales',value:fmtCur(sales)},{label:'Batch gross profit',value:fmtCur(sales-cost),emphasis:true}]}},
+    {id:'salonservice',name:'Salon · Service & Staff Earnings',fields:[{key:'services',label:'Services per day',type:'number',default:''},{key:'ticket',label:'Average service price',type:'number',default:''},{key:'commission',label:'Staff commission %',type:'number',default:0},{key:'products',label:'Product sales / day',type:'number',default:0},{key:'expenses',label:'Daily shop expenses',type:'number',default:0},{key:'days',label:'Open days per month',type:'number',default:26}],compute:v=>{const daily=num(v.services)*num(v.ticket)+num(v.products),staff=daily*Math.min(100,Math.max(0,num(v.commission)))/100,net=daily-staff-num(v.expenses);return[{label:'Daily revenue',value:fmtCur(daily)},{label:'Staff commission',value:fmtCur(staff)},{label:'Shop net / day',value:fmtCur(net),emphasis:true},{label:'Estimated monthly net',value:fmtCur(net*Math.max(0,num(v.days)))}]}},
+  ]},
+  { name:'Trade & Materials', items:[
+    {id:'steelweight',name:'Iron & Steel · Weight & Quote',fields:[{key:'shape',label:'Material shape',type:'select',options:['Round bar','Flat bar / plate','Sheet','Square bar'],default:'Round bar'},{key:'dimension1',label:'Diameter / width (mm)',type:'number',default:''},{key:'dimension2',label:'Thickness / second side (mm)',type:'number',default:''},{key:'length',label:'Length per piece (m)',type:'number',default:''},{key:'qty',label:'Number of pieces',type:'number',default:1},{key:'density',label:'Density (kg/m³)',type:'number',default:7850},{key:'rate',label:'Selling rate / kg',type:'number',default:''}],compute:v=>{const a=num(v.dimension1)/1000,b=num(v.dimension2)/1000,l=num(v.length),area=v.shape==='Round bar'?Math.PI*a*a/4:v.shape==='Square bar'?a*a:a*b,kg=area*l*num(v.density)*Math.max(0,num(v.qty));return[{label:'Estimated total weight',value:fmtNum(kg)+' kg',emphasis:true},{label:'Quote at entered rate',value:fmtCur(kg*num(v.rate))},{label:'Formula',value:v.shape==='Round bar'?'π × diameter² ÷ 4 × length × density':'cross-section × length × density'}]}},
+    {id:'welderquote',name:'Welder · Job Cost & Quote',fields:[{key:'material',label:'Metal & parts',type:'number',default:''},{key:'consumables',label:'Welding rods / gas',type:'number',default:0},{key:'hours',label:'Labour hours',type:'number',default:''},{key:'hourRate',label:'Labour rate / hour',type:'number',default:''},{key:'overhead',label:'Travel & overhead',type:'number',default:0},{key:'margin',label:'Profit margin %',type:'number',default:20}],compute:v=>{const cost=num(v.material)+num(v.consumables)+num(v.hours)*num(v.hourRate)+num(v.overhead),quote=cost*(1+Math.max(0,num(v.margin))/100);return[{label:'Estimated job cost',value:fmtCur(cost)},{label:'Suggested quote',value:fmtCur(quote),emphasis:true},{label:'Gross profit in quote',value:fmtCur(quote-cost)}]}},
+    {id:'metaltrade',name:'Gold · Silver · Diamond Counter',fields:[{key:'metal',label:'Counter type',type:'select',options:['Gold','Silver','Diamond'],default:'Gold'},{key:'weight',label:'Weight (g)',type:'number',default:''},{key:'purity',label:'Purity factor % (gold: 24K=100, 22K=91.67)',type:'number',default:100},{key:'rate',label:'Base market rate / g',type:'number',default:''},{key:'stones',label:'Stone / diamond value',type:'number',default:0},{key:'making',label:'Making charge %',type:'number',default:0},{key:'discount',label:'Discount %',type:'number',default:0},{key:'tax',label:'Tax % (if applicable)',type:'number',default:0}],compute:v=>{const metal=num(v.weight)*num(v.rate)*Math.max(0,num(v.purity))/100,make=metal*Math.max(0,num(v.making))/100,sub=metal+make+Math.max(0,num(v.stones)),disc=sub*Math.min(100,Math.max(0,num(v.discount)))/100,tax=(sub-disc)*Math.max(0,num(v.tax))/100,total=sub-disc+tax;return[{label:'Metal value at entered purity',value:fmtCur(metal)},{label:'Making + stone value',value:fmtCur(make+num(v.stones))},{label:'Discount',value:'− '+fmtCur(disc)},{label:'Tax',value:fmtCur(tax)},{label:'Customer total',value:fmtCur(total),emphasis:true}]}},
+    {id:'furniturejob',name:'Furniture · Build & Sell Margin',fields:[{key:'material',label:'Wood / board / hardware',type:'number',default:''},{key:'labor',label:'Carpentry labour',type:'number',default:''},{key:'finish',label:'Finishing & polish',type:'number',default:0},{key:'delivery',label:'Delivery & installation',type:'number',default:0},{key:'overhead',label:'Shop overhead',type:'number',default:0},{key:'margin',label:'Target margin %',type:'number',default:25}],compute:v=>{const cost=num(v.material)+num(v.labor)+num(v.finish)+num(v.delivery)+num(v.overhead),m=Math.min(95,Math.max(0,num(v.margin))),price=cost/(1-m/100);return[{label:'Total build cost',value:fmtCur(cost)},{label:'Suggested selling price',value:fmtCur(price),emphasis:true},{label:'Gross profit',value:fmtCur(price-cost)}]}},
+  ]},
+  { name:'Online Seller & Buyer', items:[
+    {id:'marketplaceprofit',name:'Online Seller · Net Profit',fields:[{key:'price',label:'Selling price / order',type:'number',default:''},{key:'cost',label:'Product cost / order',type:'number',default:''},{key:'fee',label:'Marketplace fee %',type:'number',default:0},{key:'shipping',label:'Shipping / order',type:'number',default:0},{key:'packing',label:'Packing cost / order',type:'number',default:0},{key:'ads',label:'Ads / order',type:'number',default:0},{key:'returns',label:'Returns allowance / order',type:'number',default:0},{key:'qty',label:'Orders',type:'number',default:1}],compute:v=>{const q=Math.max(0,num(v.qty)),p=num(v.price),fee=p*Math.max(0,num(v.fee))/100,unit=p-num(v.cost)-fee-num(v.shipping)-num(v.packing)-num(v.ads)-num(v.returns);return[{label:'Net profit / order',value:fmtCur(unit),emphasis:true},{label:'Net profit for orders',value:fmtCur(unit*q)},{label:'Net margin',value:fmtPct(p?unit/p*100:0)},{label:'Marketplace fee / order',value:fmtCur(fee)}]}},
+    {id:'onlinecompare',name:'Online Purchase · Compare Final Price',fields:[{key:'aPrice',label:'Store A item price',type:'number',default:''},{key:'aShip',label:'Store A delivery',type:'number',default:0},{key:'aTax',label:'Store A tax %',type:'number',default:0},{key:'aCoupon',label:'Store A coupon',type:'number',default:0},{key:'bPrice',label:'Store B item price',type:'number',default:''},{key:'bShip',label:'Store B delivery',type:'number',default:0},{key:'bTax',label:'Store B tax %',type:'number',default:0},{key:'bCoupon',label:'Store B coupon',type:'number',default:0}],compute:v=>{const a=Math.max(0,(num(v.aPrice)-num(v.aCoupon))*(1+num(v.aTax)/100)+num(v.aShip)),b=Math.max(0,(num(v.bPrice)-num(v.bCoupon))*(1+num(v.bTax)/100)+num(v.bShip)),d=Math.abs(a-b);return[{label:'Store A final price',value:fmtCur(a)},{label:'Store B final price',value:fmtCur(b)},{label:a===b?'Best price':'Cheaper option',value:a===b?'Same total':a<b?'Store A · save '+fmtCur(d):'Store B · save '+fmtCur(d),emphasis:true}]}},
+    {id:'productpricing',name:'Clothes · Toys · Gift Shop Pricing',fields:[{key:'cost',label:'Purchase cost per item',type:'number',default:''},{key:'freight',label:'Freight / item',type:'number',default:0},{key:'overhead',label:'Other cost / item',type:'number',default:0},{key:'margin',label:'Target profit margin %',type:'number',default:25},{key:'qty',label:'Stock quantity',type:'number',default:1},{key:'sale',label:'Actual selling price / item',type:'number',default:''}],compute:v=>{const cost=num(v.cost)+num(v.freight)+num(v.overhead),m=Math.min(95,Math.max(0,num(v.margin))),target=cost/(1-m/100),actual=num(v.sale),profit=actual-cost,q=Math.max(0,num(v.qty));return[{label:'Landed cost / item',value:fmtCur(cost)},{label:'Suggested price at margin',value:fmtCur(target),emphasis:true},{label:'Actual profit / item',value:fmtCur(profit)},{label:'Profit on listed stock',value:fmtCur(profit*q)},{label:'Actual margin',value:fmtPct(actual?profit/actual*100:0)}]}},
+    {id:'pharmacyinvoice',name:'Medical Shop · Invoice & Margin',fields:[{key:'qty',label:'Packs sold',type:'number',default:1},{key:'cost',label:'Purchase cost / pack',type:'number',default:''},{key:'price',label:'Sale price / pack',type:'number',default:''},{key:'discount',label:'Customer discount %',type:'number',default:0},{key:'tax',label:'Tax % (confirm local rules)',type:'number',default:0}],compute:v=>{const q=Math.max(0,num(v.qty)),gross=q*num(v.price),net=gross*(1-Math.min(100,Math.max(0,num(v.discount)))/100),tax=net*Math.max(0,num(v.tax))/100,profit=net-q*num(v.cost);return[{label:'Customer total incl. entered tax',value:fmtCur(net+tax),emphasis:true},{label:'Sales before tax',value:fmtCur(net)},{label:'Gross profit estimate',value:fmtCur(profit)},{label:'Margin estimate',value:fmtPct(net?profit/net*100:0)}]}},
+  ]},
+  { name:'Expenses & Personal Finance', items:[
+    {id:'monthlybudget',name:'Personal Monthly Budget',fields:[
+      {key:'income',label:'Monthly take-home income',type:'number',default:0},{key:'housing',label:'Rent / housing',type:'number',default:0},{key:'food',label:'Food & groceries',type:'number',default:0},{key:'transport',label:'Transport',type:'number',default:0},{key:'utilities',label:'Utilities & phone',type:'number',default:0},{key:'health',label:'Health & insurance',type:'number',default:0},{key:'education',label:'Education & family',type:'number',default:0},{key:'emi',label:'Debt / EMI payments',type:'number',default:0},{key:'subscriptions',label:'Subscriptions & recurring bills',type:'number',default:0},{key:'other',label:'Other planned spending',type:'number',default:0},{key:'savings',label:'Planned savings contribution',type:'number',default:0},{key:'days',label:'Days in budget period',type:'number',default:30}
+    ],compute:v=>{const income=Math.max(0,num(v.income)),expenses=['housing','food','transport','utilities','health','education','emi','subscriptions','other'].reduce((s,k)=>s+Math.max(0,num(v[k])),0),saving=Math.max(0,num(v.savings)),remaining=income-expenses-saving,days=Math.max(1,Math.floor(num(v.days)||30));return[{label:'Monthly income',value:fmtCur(income)},{label:'Planned expenses',value:fmtCur(expenses)},{label:'Planned savings',value:fmtCur(saving)},{label:'Unallocated / shortfall',value:fmtCur(remaining),emphasis:true},{label:'Savings rate',value:income?fmtPct(saving/income*100):'—'},{label:remaining>=0?'Daily amount available':'Average daily shortfall',value:fmtCur(Math.abs(remaining)/days)}] }},
+    {id:'incomesummary',name:'Income & Expense Summary',fields:[
+      {key:'opening',label:'Starting balance',type:'number',default:0},{key:'salary',label:'Salary / regular income',type:'number',default:0},{key:'business',label:'Business / freelance income',type:'number',default:0},{key:'otherIncome',label:'Other income',type:'number',default:0},{key:'housing',label:'Housing',type:'number',default:0},{key:'food',label:'Food & groceries',type:'number',default:0},{key:'transport',label:'Transport',type:'number',default:0},{key:'utilities',label:'Utilities & phone',type:'number',default:0},{key:'health',label:'Health & education',type:'number',default:0},{key:'emi',label:'Debt / EMI',type:'number',default:0},{key:'recurring',label:'Subscriptions & recurring bills',type:'number',default:0},{key:'otherExpense',label:'Other expenses',type:'number',default:0},{key:'days',label:'Period length (days)',type:'number',default:30}
+    ],compute:v=>{const income=['salary','business','otherIncome'].reduce((s,k)=>s+Math.max(0,num(v[k])),0),expenses=['housing','food','transport','utilities','health','emi','recurring','otherExpense'].reduce((s,k)=>s+Math.max(0,num(v[k])),0),net=income-expenses,opening=num(v.opening),days=Math.max(1,Math.floor(num(v.days)||30));return[{label:'Total income',value:fmtCur(income)},{label:'Total expenses',value:fmtCur(expenses)},{label:'Net cash flow',value:fmtCur(net),emphasis:true},{label:'Estimated closing balance',value:fmtCur(opening+net)},{label:'Net cash-flow rate',value:income?fmtPct(net/income*100):'—'},{label:'Average daily net',value:fmtCur(net/days)}] }},
+    {id:'dailyspend',name:'Safe-to-Spend Planner',fields:[{key:'cash',label:'Available money until next income',type:'number',default:''},{key:'bills',label:'Bills & EMI due first',type:'number',default:0},{key:'buffer',label:'Keep-aside emergency buffer',type:'number',default:0},{key:'days',label:'Days until next income',type:'number',default:30}],compute:v=>{const cash=Math.max(0,num(v.cash)),bills=Math.max(0,num(v.bills)),buffer=Math.max(0,num(v.buffer)),days=Math.max(1,Math.floor(num(v.days))),available=cash-bills-buffer;return[{label:'After bills & buffer',value:fmtCur(available),emphasis:true},{label:'Daily safe-to-spend',value:fmtCur(Math.max(0,available)/days)},{label:available<0?'Shortfall to cover':'Unassigned after daily allowance',value:available<0?fmtCur(-available):fmtCur(0)}] }},
+    {id:'savingsgoalplan',name:'Savings Goal Planner',fields:[{key:'target',label:'Target amount',type:'number',default:''},{key:'current',label:'Already saved',type:'number',default:0},{key:'months',label:'Months to reach goal',type:'number',default:''},{key:'monthly',label:'Your planned monthly saving',type:'number',default:0}],compute:v=>{const target=Math.max(0,num(v.target)),current=Math.max(0,num(v.current)),gap=Math.max(0,target-current),months=Math.max(0,Math.floor(num(v.months))),monthly=Math.max(0,num(v.monthly)),required=months?gap/months:0,finish=monthly?Math.ceil(gap/monthly):Infinity;return[{label:'Amount remaining',value:fmtCur(gap)},{label:'Monthly saving needed',value:months?fmtCur(required):'Enter a goal timeline',emphasis:true},{label:'At your planned saving',value:Number.isFinite(finish)?(finish===0?'Goal reached':`${finish} month${finish===1?'':'s'}`):'Enter a monthly amount'},{label:'Progress',value:target?fmtPct(Math.min(100,current/target*100)):'—'}] }},
+    {id:'emergencyfundplan',name:'Emergency Fund Planner',fields:[{key:'housing',label:'Essential housing / rent per month',type:'number',default:0},{key:'food',label:'Essential food per month',type:'number',default:0},{key:'utilities',label:'Utilities & transport per month',type:'number',default:0},{key:'health',label:'Health & insurance per month',type:'number',default:0},{key:'minimumDebt',label:'Minimum debt payments per month',type:'number',default:0},{key:'months',label:'Months of essential costs to cover',type:'number',default:6},{key:'current',label:'Emergency savings already set aside',type:'number',default:0},{key:'monthly',label:'Monthly contribution',type:'number',default:0}],compute:v=>{const essential=['housing','food','utilities','health','minimumDebt'].reduce((s,k)=>s+Math.max(0,num(v[k])),0),months=Math.min(36,Math.max(1,Math.floor(num(v.months)||6))),target=essential*months,current=Math.max(0,num(v.current)),gap=Math.max(0,target-current),monthly=Math.max(0,num(v.monthly)),time=monthly?Math.ceil(gap/monthly):Infinity;return[{label:'Essential monthly costs',value:fmtCur(essential)},{label:`${months}-month fund target`,value:fmtCur(target),emphasis:true},{label:'Remaining to save',value:fmtCur(gap)},{label:'Time at planned contribution',value:Number.isFinite(time)?`${time} month${time===1?'':'s'}`:'Enter a monthly contribution'}] }},
+    {id:'networth',name:'Personal Net Worth Snapshot',fields:[{key:'cash',label:'Cash & bank balances',type:'number',default:0},{key:'investments',label:'Investments & deposits',type:'number',default:0},{key:'property',label:'Property / vehicle current value',type:'number',default:0},{key:'otherAssets',label:'Other assets',type:'number',default:0},{key:'cards',label:'Credit card balances',type:'number',default:0},{key:'loans',label:'Home / vehicle / personal loans',type:'number',default:0},{key:'otherDebt',label:'Other debts',type:'number',default:0}],compute:v=>{const assets=['cash','investments','property','otherAssets'].reduce((s,k)=>s+Math.max(0,num(v[k])),0),debts=['cards','loans','otherDebt'].reduce((s,k)=>s+Math.max(0,num(v[k])),0);return[{label:'Total assets',value:fmtCur(assets)},{label:'Total liabilities',value:fmtCur(debts)},{label:'Estimated net worth',value:fmtCur(assets-debts),emphasis:true},{label:'Liquid cash & bank',value:fmtCur(Math.max(0,num(v.cash)))}] }},
+    {id:'debtstrategy',name:'Debt Payoff · Snowball / Avalanche',fields:[{key:'strategy',label:'Payoff order',type:'select',options:['Avalanche · highest rate first','Snowball · smallest balance first'],default:'Avalanche · highest rate first'},{key:'balance1',label:'Debt 1 balance',type:'number',default:0},{key:'rate1',label:'Debt 1 interest rate % p.a.',type:'number',default:0},{key:'min1',label:'Debt 1 minimum payment / month',type:'number',default:0},{key:'balance2',label:'Debt 2 balance',type:'number',default:0},{key:'rate2',label:'Debt 2 interest rate % p.a.',type:'number',default:0},{key:'min2',label:'Debt 2 minimum payment / month',type:'number',default:0},{key:'balance3',label:'Debt 3 balance',type:'number',default:0},{key:'rate3',label:'Debt 3 interest rate % p.a.',type:'number',default:0},{key:'min3',label:'Debt 3 minimum payment / month',type:'number',default:0},{key:'extra',label:'Extra monthly amount toward debt',type:'number',default:0}],compute:v=>{const debts=[1,2,3].map(i=>({balance:Math.round(Math.max(0,num(v['balance'+i]))*100)/100,rate:Math.max(0,num(v['rate'+i])),min:Math.max(0,num(v['min'+i]))})).filter(d=>d.balance>0.009),extra=Math.max(0,num(v.extra)),strategy=String(v.strategy||'').startsWith('Snowball')?'Snowball':'Avalanche';if(!debts.length)return[{label:'Debt payoff plan',value:'Enter at least one debt balance',emphasis:true}];let months=0,paid=0,interest=0,cleared=true;while(debts.some(d=>d.balance>0.009)&&months<1200){months++;let monthlyInterest=0,minimumPaid=0;debts.forEach(d=>{if(d.balance<=0.009){d.balance=0;return;}const charge=Math.round(d.balance*d.rate/1200*100)/100;d.balance=Math.round((d.balance+charge)*100)/100;interest+=charge;monthlyInterest+=charge;const pmt=Math.min(d.min,d.balance);d.balance=Math.round((d.balance-pmt)*100)/100;minimumPaid+=pmt;paid+=pmt;});let remaining=extra+debts.reduce((s,d)=>s+d.min,0)-minimumPaid;const order=debts.filter(d=>d.balance>0.009).sort((a,b)=>strategy==='Snowball'?(a.balance-b.balance):(b.rate-a.rate||a.balance-b.balance));for(const d of order){if(remaining<=0)break;const pmt=Math.min(d.balance,remaining);d.balance=Math.round((d.balance-pmt)*100)/100;remaining=Math.round((remaining-pmt)*100)/100;paid+=pmt;}if(debts.some(d=>d.balance>0.009)&&debts.every(d=>d.balance>0.009&&d.min<=0)&&extra<=0){cleared=false;break;}if(debts.every(d=>d.balance>0.009)&&minimumPaid+extra<=monthlyInterest+0.009){cleared=false;break;}}if(debts.some(d=>d.balance>0.009))cleared=false;return cleared?[{label:'Payoff strategy',value:strategy},{label:'Debt-free in',value:`${months} month${months===1?'':'s'}`,emphasis:true},{label:'Estimated total interest',value:fmtCur(interest)},{label:'Estimated total paid',value:fmtCur(paid)},{label:'Interest assumption',value:'Monthly rate = APR ÷ 12'}]:[{label:'Payoff estimate',value:'This payment plan does not clear the entered balances',emphasis:true},{label:'Review',value:'Increase monthly payments or check the interest rates and minimums.'}] }},
+    {id:'recurringcost',name:'Bills & Subscriptions Cost',fields:[{key:'amount1',label:'Payment 1 amount',type:'number',default:0},{key:'cycle1',label:'Payment 1 frequency',type:'select',options:['Monthly','Weekly','Quarterly','Yearly'],default:'Monthly'},{key:'amount2',label:'Payment 2 amount',type:'number',default:0},{key:'cycle2',label:'Payment 2 frequency',type:'select',options:['Monthly','Weekly','Quarterly','Yearly'],default:'Monthly'},{key:'amount3',label:'Payment 3 amount',type:'number',default:0},{key:'cycle3',label:'Payment 3 frequency',type:'select',options:['Monthly','Weekly','Quarterly','Yearly'],default:'Monthly'},{key:'amount4',label:'Payment 4 amount',type:'number',default:0},{key:'cycle4',label:'Payment 4 frequency',type:'select',options:['Monthly','Weekly','Quarterly','Yearly'],default:'Monthly'}],compute:v=>{const m={Monthly:1,Weekly:52/12,Quarterly:1/3,Yearly:1/12};const monthly=[1,2,3,4].reduce((s,i)=>s+Math.max(0,num(v['amount'+i]))*(m[v['cycle'+i]]||1),0);return[{label:'Estimated monthly cost',value:fmtCur(monthly),emphasis:true},{label:'Estimated yearly cost',value:fmtCur(monthly*12)},{label:'Average weekly cost',value:fmtCur(monthly*12/52)}] }},
+    {id:'billreserve',name:'Upcoming Bills Reserve',fields:[{key:'bill1',label:'Upcoming bill 1',type:'number',default:0},{key:'bill2',label:'Upcoming bill 2',type:'number',default:0},{key:'bill3',label:'Upcoming bill 3',type:'number',default:0},{key:'bill4',label:'Upcoming bill 4',type:'number',default:0},{key:'saved',label:'Money already reserved',type:'number',default:0},{key:'days',label:'Days until bills are due',type:'number',default:7}],compute:v=>{const total=[1,2,3,4].reduce((s,i)=>s+Math.max(0,num(v['bill'+i])),0),saved=Math.max(0,num(v.saved)),gap=Math.max(0,total-saved),days=Math.max(1,Math.floor(num(v.days)));return[{label:'Bills due',value:fmtCur(total)},{label:'Still to reserve',value:fmtCur(gap),emphasis:true},{label:'Set aside per day',value:fmtCur(gap/days)},{label:'Already covered',value:fmtCur(Math.min(total,saved))}] }},
+    {id:'khataamount',name:'Khata · Udhaar Balance',fields:[{key:'direction',label:'Who owes?',type:'select',options:['They owe me','I owe them'],default:'They owe me'},{key:'amount',label:'Original amount',type:'number',default:''},{key:'paid',label:'Total payments received / made',type:'number',default:0},{key:'payments',label:'Number of partial payments',type:'number',default:0}],compute:v=>{const amount=Math.max(0,num(v.amount)),paid=Math.max(0,num(v.paid)),direction=v.direction||'They owe me';return[{label:'Direction',value:direction},{label:'Outstanding balance',value:fmtCur(Math.max(0,amount-paid)),emphasis:true},{label:'Payments recorded',value:fmtNum(Math.max(0,Math.floor(num(v.payments))))},{label:'Overpaid / credit',value:fmtCur(Math.max(0,paid-amount))}] }},
+    {id:'splitsettlement',name:'Shared Bill · Custom Split & Settle',fields:[{key:'total',label:'Total bill',type:'number',default:''},{key:'shareA',label:'Person A share %',type:'number',default:25},{key:'shareB',label:'Person B share %',type:'number',default:25},{key:'shareC',label:'Person C share %',type:'number',default:25},{key:'shareD',label:'Person D share %',type:'number',default:25},{key:'paidA',label:'Person A paid',type:'number',default:0},{key:'paidB',label:'Person B paid',type:'number',default:0},{key:'paidC',label:'Person C paid',type:'number',default:0},{key:'paidD',label:'Person D paid',type:'number',default:0}],compute:v=>{const total=Math.max(0,num(v.total)),shares=[1,2,3,4].map(i=>Math.max(0,num(v['share'+String.fromCharCode(64+i)]))),paid=[1,2,3,4].map(i=>Math.max(0,num(v['paid'+String.fromCharCode(64+i)]))),shareTotal=shares.reduce((s,n)=>s+n,0),paidTotal=paid.reduce((s,n)=>s+n,0);if(Math.abs(shareTotal-100)>0.01)return[{label:'Split shares must total 100%',value:`Current total: ${fmtNum(shareTotal)}%`,emphasis:true}];if(Math.abs(paidTotal-total)>0.01)return[{label:'Payments must match the bill total',value:`Bill: ${fmtCur(total)} · Paid: ${fmtCur(paidTotal)}`,emphasis:true}];const results=[{label:'Equalized bill total',value:fmtCur(total),emphasis:true}];['A','B','C','D'].forEach((person,i)=>{const balance=paid[i]-total*shares[i]/100;results.push({label:`Person ${person} share`,value:fmtCur(total*shares[i]/100)});results.push({label:`Person ${person} settlement`,value:Math.abs(balance)<0.005?'Settled':balance>0?'Gets back '+fmtCur(balance):'Owes '+fmtCur(-balance)});});return results} },
+    {id:'expensebook',name:'Business Expenses · Category & Balance',fields:[{key:'sales',label:'Sales / income',type:'number',default:0},{key:'rent',label:'Rent',type:'number',default:0},{key:'staff',label:'Staff & wages',type:'number',default:0},{key:'stock',label:'Stock / material purchases',type:'number',default:0},{key:'utility',label:'Utilities & phone',type:'number',default:0},{key:'transport',label:'Transport & delivery',type:'number',default:0},{key:'other',label:'Other expenses',type:'number',default:0},{key:'days',label:'Period length (days)',type:'number',default:30}],compute:v=>{const inc=num(v.sales),expense=num(v.rent)+num(v.staff)+num(v.stock)+num(v.utility)+num(v.transport)+num(v.other),net=inc-expense,days=Math.max(1,num(v.days));return[{label:'Total expenses',value:fmtCur(expense)},{label:'Net balance',value:fmtCur(net),emphasis:true},{label:'Average daily balance',value:fmtCur(net/days)},{label:'Expense ratio',value:fmtPct(inc?expense/inc*100:0)}]}},
+    {id:'transportquote',name:'Transport · Trip & Delivery Cost',fields:[{key:'distance',label:'Distance (km)',type:'number',default:''},{key:'mileage',label:'Vehicle mileage (km/L)',type:'number',default:''},{key:'fuel',label:'Fuel price / L',type:'number',default:''},{key:'toll',label:'Toll & permits',type:'number',default:0},{key:'driver',label:'Driver / trip',type:'number',default:0},{key:'load',label:'Load (tonnes)',type:'number',default:0},{key:'rate',label:'Charge per tonne-km',type:'number',default:0}],compute:v=>{const d=num(v.distance),m=num(v.mileage),fuel=m>0?d/m*num(v.fuel):0,other=num(v.toll)+num(v.driver),cost=fuel+other,revenue=d*num(v.load)*num(v.rate);return[{label:'Fuel estimate',value:fmtCur(fuel)},{label:'Trip operating cost',value:fmtCur(cost),emphasis:true},{label:'Freight revenue estimate',value:fmtCur(revenue)},{label:'Trip balance',value:fmtCur(revenue-cost)}]}},
+    {id:'factorybatch',name:'Small Factory · Unit Production Cost',fields:[{key:'material',label:'Raw materials / batch',type:'number',default:''},{key:'labor',label:'Direct labour / batch',type:'number',default:''},{key:'power',label:'Power & machine cost',type:'number',default:0},{key:'packaging',label:'Packaging / batch',type:'number',default:0},{key:'overhead',label:'Factory overhead / batch',type:'number',default:0},{key:'quantity',label:'Good units produced',type:'number',default:''},{key:'scrap',label:'Scrap / rejected units',type:'number',default:0},{key:'price',label:'Selling price / good unit',type:'number',default:''}],compute:v=>{const total=num(v.material)+num(v.labor)+num(v.power)+num(v.packaging)+num(v.overhead),good=Math.max(0,num(v.quantity)-num(v.scrap)),unit=good?total/good:0,sales=good*num(v.price);return[{label:'Production cost / batch',value:fmtCur(total)},{label:'Cost per good unit',value:fmtCur(unit),emphasis:true},{label:'Good units',value:fmtNum(good)},{label:'Batch gross profit estimate',value:fmtCur(sales-total)}]}},
+  ]},
+  { name:'Custom', items:[
+    {id:'customcalc',name:'Custom Calculator Builder',fields:[{key:'customName',label:'Name your calculator',type:'text',default:'My Calculator',placeholder:'e.g. Custom Quote'},{key:'formula',label:'Formula · use A–H',type:'text',default:'(A+B)*C',placeholder:'(A+B)*C'},{key:'a',label:'A · input 1',type:'number',default:0},{key:'b',label:'B · input 2',type:'number',default:0},{key:'c',label:'C · input 3',type:'number',default:1},{key:'d',label:'D · input 4',type:'number',default:0},{key:'e',label:'E · input 5',type:'number',default:0},{key:'f',label:'F · input 6',type:'number',default:0},{key:'g',label:'G · input 7',type:'number',default:0},{key:'h',label:'H · input 8',type:'number',default:0}],compute:v=>{try{return[{label:escapeHtml(v.customName||'Custom result'),value:fmtNum(evalCustomFormula(v.formula,v)),emphasis:true},{label:'Formula',value:String(v.formula||'—')}] }catch(e){return[{label:'Formula help',value:e.message,emphasis:true}]}}},
+  ]},  ];
+  // The Expenses section is a calculation catalog only. Planning and reserve
+  // workflows belong elsewhere, so keep them out of this category.
+  const expensesCategory = CATEGORIES.find(c=>c.name==='Expenses & Personal Finance');
+  expensesCategory.items = expensesCategory.items.filter(it=>!['monthlybudget','dailyspend','savingsgoalplan','emergencyfundplan','billreserve'].includes(it.id));
+  const expenseCalc = expensesCategory.items.find(it=>it.id==='incomesummary');
+  expenseCalc.name = 'Income & Expense Calculator';
+  expenseCalc.fields = [
+    {key:'opening',label:'Starting balance',type:'number',default:0},
+    {key:'salary',label:'Salary / regular income',type:'number',default:0},
+    {key:'business',label:'Business / freelance income',type:'number',default:0},
+    {key:'rental',label:'Rental / investment income',type:'number',default:0},
+    {key:'otherIncome',label:'Other income',type:'number',default:0},
+    {key:'housing',label:'Housing / rent',type:'number',default:0},
+    {key:'groceries',label:'Groceries / household',type:'number',default:0},
+    {key:'utilities',label:'Utilities / phone / internet',type:'number',default:0},
+    {key:'transport',label:'Transport / fuel',type:'number',default:0},
+    {key:'health',label:'Health / medical',type:'number',default:0},
+    {key:'education',label:'Education',type:'number',default:0},
+    {key:'emi',label:'Loan / credit payments',type:'number',default:0},
+    {key:'insurance',label:'Insurance',type:'number',default:0},
+    {key:'subscriptions',label:'Subscriptions / recurring bills',type:'number',default:0},
+    {key:'shopping',label:'Shopping / personal',type:'number',default:0},
+    {key:'dining',label:'Dining / entertainment',type:'number',default:0},
+    {key:'family',label:'Family / childcare',type:'number',default:0},
+    {key:'travel',label:'Travel / other',type:'number',default:0},
+    {key:'otherExpense',label:'Other expenses',type:'number',default:0},
+    {key:'days',label:'Period length (days)',type:'number',default:30}
+  ];
+  expenseCalc.compute = v=>{
+    const incomeKeys=['salary','business','rental','otherIncome'];
+    const categories=[['Housing / rent','housing'],['Groceries / household','groceries'],['Utilities / phone / internet','utilities'],['Transport / fuel','transport'],['Health / medical','health'],['Education','education'],['Loan / credit payments','emi'],['Insurance','insurance'],['Subscriptions / recurring bills','subscriptions'],['Shopping / personal','shopping'],['Dining / entertainment','dining'],['Family / childcare','family'],['Travel / other','travel'],['Other expenses','otherExpense']];
+    const income=incomeKeys.reduce((sum,key)=>sum+Math.max(0,num(v[key])),0);
+    const expenses=categories.reduce((sum,[,key])=>sum+Math.max(0,num(v[key])),0);
+    const net=income-expenses,opening=num(v.opening),days=Math.max(1,Math.floor(num(v.days)||30));
+    const largest=categories.map(([label,key])=>({label,value:Math.max(0,num(v[key]))})).sort((a,b)=>b.value-a.value)[0];
+    return [
+      {label:'Total income',value:fmtCur(income)},
+      {label:'Total expenses',value:fmtCur(expenses)},
+      {label:'Income after expenses',value:fmtCur(net),emphasis:true},
+      {label:'Balance after this period',value:fmtCur(opening+net)},
+      {label:'Expense-to-income ratio',value:income?fmtPct(expenses/income*100):'Enter income'},
+      {label:'Net savings rate',value:income?fmtPct(net/income*100):'Enter income'},
+      {label:'Average expense per day',value:fmtCur(expenses/days)},
+      {label:'Largest expense category',value:largest&&largest.value>0?`${largest.label} · ${fmtCur(largest.value)}`:'No expenses entered'}
+    ];
+  };
+  const netWorthCalc=expensesCategory.items.find(it=>it.id==='networth');
+  netWorthCalc.name='Assets & Net Worth Calculator';
+  netWorthCalc.fields=[
+    {key:'cash',label:'Cash on hand',type:'number',default:0},
+    {key:'bank',label:'Bank balances',type:'number',default:0},
+    {key:'deposits',label:'Fixed / recurring deposits',type:'number',default:0},
+    {key:'investments',label:'Stocks / mutual funds',type:'number',default:0},
+    {key:'retirement',label:'EPF / PPF / NPS / retirement',type:'number',default:0},
+    {key:'property',label:'Property current market value',type:'number',default:0},
+    {key:'vehicles',label:'Vehicles current resale value',type:'number',default:0},
+    {key:'businessAssets',label:'Business ownership / assets',type:'number',default:0},
+    {key:'jewellery',label:'Gold / jewellery resale value',type:'number',default:0},
+    {key:'otherAssets',label:'Other assets',type:'number',default:0},
+    {key:'homeLoan',label:'Home loan outstanding',type:'number',default:0},
+    {key:'vehicleLoan',label:'Vehicle loan outstanding',type:'number',default:0},
+    {key:'personalLoan',label:'Personal loans outstanding',type:'number',default:0},
+    {key:'educationLoan',label:'Education loan outstanding',type:'number',default:0},
+    {key:'cards',label:'Credit card balances',type:'number',default:0},
+    {key:'businessDebt',label:'Business liabilities',type:'number',default:0},
+    {key:'otherDebt',label:'Other liabilities',type:'number',default:0}
+  ];
+  netWorthCalc.compute=v=>{
+    const assetGroups=[['Cash', 'cash'],['Bank', 'bank'],['Deposits','deposits'],['Stocks / funds','investments'],['Retirement','retirement'],['Property','property'],['Vehicles','vehicles'],['Business','businessAssets'],['Gold / jewellery','jewellery'],['Other assets','otherAssets']];
+    const debtGroups=[['Home loan','homeLoan'],['Vehicle loan','vehicleLoan'],['Personal loans','personalLoan'],['Education loan','educationLoan'],['Credit cards','cards'],['Business liabilities','businessDebt'],['Other liabilities','otherDebt']];
+    const sum=groups=>groups.reduce((total,[,key])=>total+Math.max(0,num(v[key])),0);
+    const assets=sum(assetGroups),liabilities=sum(debtGroups),liquidAssets=['cash','bank','deposits','investments'].reduce((total,key)=>total+Math.max(0,num(v[key])),0);
+    const largest=assetGroups.map(([label,key])=>({label,value:Math.max(0,num(v[key]))})).sort((a,b)=>b.value-a.value)[0];
+    return [
+      {label:'Total assets',value:fmtCur(assets)},
+      {label:'Total liabilities',value:fmtCur(liabilities)},
+      {label:'Estimated net worth',value:fmtCur(assets-liabilities),emphasis:true},
+      {label:'Liquid assets',value:fmtCur(liquidAssets)},
+      {label:'Liquid net worth',value:fmtCur(liquidAssets-liabilities)},
+      {label:'Liabilities / assets',value:assets?fmtPct(liabilities/assets*100):'—'},
+      {label:'Largest asset category',value:largest&&largest.value>0?`${largest.label} · ${fmtCur(largest.value)}`:'No assets entered'}
+    ];
+  };
+  const CALC_MAP = {};
+  CATEGORIES.forEach(c=> c.items.forEach(it=> CALC_MAP[it.id]=it));
+  const PINNED_FEATURES_KEY='seventask-pinned-calculators-v1';
+  const SPECIAL_LABELS = { basic:'Just the calculator', scientific:'Scientific', casio:'Casio fx-991CW ClassWiz · Scientific', programmer:'Programmer' };
+  const baseRadix = { HEX:16, DEC:10, OCT:8, BIN:2 };
+
+  /* ===================== premium icon set ===================== */
+  const ICON = p => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const SPECIAL_ICONS = {
+    basic: ICON('<rect x="3" y="2" width="10" height="12" rx="1.6"/><path d="M5 5.3h6M5 8h1.6M9.4 8h1.6M5 10.7h1.6M9.4 10.7h1.6"/>'),
+    scientific: ICON('<path d="M4.5 3h7l-3.7 5 3.7 5h-7"/>'),
+    casio: ICON('<rect x="3" y="2" width="10" height="12" rx="1.6"/><rect x="4.6" y="3.6" width="6.8" height="2.8" rx="0.5"/>'),
+    programmer: ICON('<path d="M6 4.5L2.2 8 6 11.5M10 4.5L13.8 8 10 11.5"/>'),
+    conversion: ICON('<path d="M2 5h11m-3-3 3 3-3 3M14 11H3m3-3-3 3 3 3"/>'),
+  };
+  const CATEGORY_ICONS = {
+    'Utility': ICON('<path d="M11.2 2.3a2.8 2.8 0 00-3.6 3.6L2.3 11.2l2.5 2.5 5.3-5.3a2.8 2.8 0 003.6-3.6L12 6.5l-1.6-1.6 1.6-1.6-.8-.8z"/>'),
+    'Loan & EMI': ICON('<path d="M2 6.3L8 2.3l6 4M2 6.3h12M3 6.3v6M6.3 6.3v6M9.7 6.3v6M13 6.3v6M1.5 13h13"/>'),
+    'Investment': ICON('<path d="M2 12.5l4-4 3 3 5-6M11 5.5h3v3"/>'),
+    'Tax': ICON('<path d="M4.3 1.5h7.4v13l-1.85-1.3-1.85 1.3-1.85-1.3-1.85 1.3z"/><path d="M6 5h4M6 8h4"/>'),
+    'Retirement': ICON('<path d="M4.5 2h7M4.5 14h7M4.5 2c0 3 3.5 3.4 3.5 6s-3.5 3-3.5 6M11.5 2c0 3-3.5 3.4-3.5 6s3.5 3 3.5 6"/>'),
+    'Savings': ICON('<circle cx="8" cy="8" r="6"/><path d="M8 5.3v5.4M6.2 6.6c0-.9.8-1.3 1.8-1.3s1.8.5 1.8 1.2c0 1.5-3.6.7-3.6 2.3 0 .7.8 1.2 1.8 1.2s1.8-.5 1.8-1.3"/>'),
+    'Debt & Credit': ICON('<rect x="1.5" y="4.2" width="13" height="8.6" rx="1.5"/><path d="M1.5 7h13"/>'),
+    'Property': ICON('<path d="M2 8.3L8 3l6 5.3M4 7.3V14h8V7.3"/>'),
+    'Business': ICON('<rect x="2" y="5.5" width="12" height="8" rx="1.4"/><path d="M6 5.5V4a1.3 1.3 0 011.3-1.3h1.4A1.3 1.3 0 0110 4v1.5"/>'),
+    'Market & Stock': ICON('<path d="M3 13V8M7.3 13V4M11.6 13V9.5M2 13h12"/>'),
+    'Currency': ICON('<path d="M4 5.3h7.3l-2-2M12 10.7H4.7l2 2"/>'),
+    'Basic Math': ICON('<path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/>'),
+    'Algebra & Geometry': ICON('<path d="M3 13L8 3l5 10z"/>'),
+    'Construction': ICON('<path d="M3 13V7l5-4 5 4v6M6 13V9h4v4"/>'),
+    'Engineering': ICON('<path d="M9.2 1.8L3.3 9h4l-1 5.2L12.2 7h-4l1-5.2z"/>'),
+    'Health & Fitness': ICON('<path d="M8 13.6S2.3 10 2.3 6a3 3 0 015.7-1.7A3 3 0 0113.7 6c0 4-5.7 7.6-5.7 7.6z"/>'),
+    'Date & Travel': ICON('<rect x="2" y="3.3" width="12" height="10.7" rx="1.5"/><path d="M2 6.6h12M5 2v2.6M11 2v2.6"/>'),
+    'Science': ICON('<path d="M6.3 2h3.4v4.6l3.4 5.8a1.3 1.3 0 01-1.1 2H4a1.3 1.3 0 01-1.1-2l3.4-5.8z"/><path d="M5.5 2h5"/>'),
+    'Technology': ICON('<rect x="4" y="4" width="8" height="8" rx="1"/><path d="M6.2 1.5V4M9.8 1.5V4M6.2 12v2.5M9.8 12v2.5M1.5 6.2H4M1.5 9.8H4M12 6.2h2.5M12 9.8h2.5"/>'),
+    'Agriculture & EV': ICON('<path d="M13 3S6 3 4 8s3 6.5 3 6.5S13 12 13 3z"/><path d="M7 11l6-8"/>'),
+    'Business & Shops': ICON('<rect x="2" y="5" width="12" height="9" rx="1.5"/><path d="M5 5V3h6v2M5 8h6"/>'),
+    'Trade & Materials': ICON('<path d="M2 13h12M4 10l2-6h4l2 6M6 8h4"/>'),
+    'Online Seller & Buyer': ICON('<path d="M2 3h2l1.5 8h7L14 5H5"/><circle cx="7" cy="13" r="1"/><circle cx="12" cy="13" r="1"/>'),
+    'Expenses & Personal Finance': ICON('<path d="M3 3v10h11M5 10l2-3 2 2 3-5"/>'),
+    'Custom': ICON('<path d="M8 2v12M2 8h12M3.8 3.8l8.4 8.4m0-8.4-8.4 8.4"/>'),
+  };
+
+  /* ===================== shadow template ===================== */
+  const PIN_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 3h8v2l-1 1v5l2 2v1h-5v6l-1 1-1-1v-6H5v-1l2-2V6L6 5V3h2Z" fill="currentColor"/></svg>';
+  const TEMPLATE = `
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"><style>
+    :host{ all:initial; }
+    *{ box-sizing:border-box; }
+    .win{
+      position:fixed;
+      top: var(--tai7-top, 110px);
+      left: var(--tai7-left, calc(100vw - 400px));
+      width: var(--tai7-w, 400px);
+      height: var(--tai7-h, 560px);
+      min-width:340px; min-height:440px;
+      max-width:94vw; max-height:90vh;
+      display:flex; flex-direction:column;
+      background:#FFFFFF; border:1px solid #E4E4E7; border-radius:14px;
+      box-shadow:0 24px 60px rgba(0,0,0,0.45);
+      color:#111114;
+      font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      overflow:hidden; z-index:999999;
+      visibility:hidden; opacity:0; pointer-events:none;
+      transform:scale(.96) translateY(10px);
+      transition:opacity .18s cubic-bezier(.2,.8,.3,1), transform .2s cubic-bezier(.2,.8,.3,1), visibility 0s linear .2s;
+    }
+    .win.demo-mode{min-width:320px;}
+    .win.open{
+      visibility:visible; opacity:1; pointer-events:auto;
+      transform:scale(1) translateY(0);
+      transition:opacity .18s cubic-bezier(.2,.8,.3,1), transform .2s cubic-bezier(.2,.8,.3,1), visibility 0s linear 0s;
+    }
+
+    .titlebar{ display:flex; align-items:center; gap:6px; padding:12px 12px 12px 14px; cursor:grab; border-bottom:1px solid #EFEFF1; flex:0 0 auto; }
+    .titlebar:active{ cursor:grabbing; }
+    .ticon{ width:16px; height:16px; flex:0 0 auto; }
+    .brand-home{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer;border-radius:11px}
+    .brand-home:focus-visible{outline:2px solid #777B80;outline-offset:3px}
+    .win.mobile-app-mode .brand-home,.win.mobile-app-mode .brand-home *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+    .win.mobile-app-mode .brand-home:focus-visible{outline:none}
+    .title{ font-family:Manrope,"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:13.5px; font-weight:750; letter-spacing:-.15px; color:#111114; flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .iconbtn{ width:26px; height:26px; border-radius:7px; border:none; background:transparent; color:#8A8A8E; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:background .12s ease, color .12s ease, transform .1s cubic-bezier(.34,1.56,.64,1); }
+    .titlebar .iconbtn{color:#111114}
+    .iconbtn:hover{ background:#F2F2F3; color:#111114; }
+    .iconbtn:active{ transform:scale(.88); }
+    .iconbtn svg{ width:15px; height:15px; }
+    .logobtn{ display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; flex:0 0 auto; box-shadow:0 2px 6px rgba(17,17,20,.16); transition:transform .16s cubic-bezier(.34,1.56,.64,1); }
+    .logobtn .ticon{ width:34px; height:34px; }
+    .brand-home .logobtn{box-shadow:none}
+    .brand-home .ticon{pointer-events:auto;transform-origin:50% 50%}
+    .win.open .brand-home .ticon{animation:brand-mark-tap .55s cubic-bezier(.2,.8,.3,1) both}
+    .win.open .brand-home .ticon:hover,.win.open .brand-home .ticon:active{animation:brand-mark-interact .55s cubic-bezier(.2,.8,.3,1) both}
+    @keyframes brand-mark-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1px) scale(1.045)}}
+    @keyframes brand-mark-tap{0%{transform:scale(1)}45%{transform:rotate(-8deg) scale(1.1)}100%{transform:rotate(0) scale(1)}}
+    @keyframes brand-mark-interact{0%{transform:scale(1)}45%{transform:rotate(-8deg) scale(1.1)}100%{transform:rotate(0) scale(1)}}
+    .brand-home .title{flex:1 1 auto;min-width:0}
+    .brand-home .title small{display:block;margin-top:3px;font:500 10px/1.1 "DM Sans",system-ui,sans-serif;letter-spacing:0;color:#88898E}.brand-home .title small.brand-kawkab-straight{display:block;margin-top:3px;font:400 8px/1.5 Michroma,sans-serif;letter-spacing:.025em;color:#88898E;text-transform:none;white-space:nowrap}
+    .dotmenu{ margin-right:2px; width:34px; height:34px; flex:0 0 34px; border:1px solid #E7E7E9; border-radius:10px; background:#F7F7F8; color:#222226; }
+    .dotmenu:hover{background:#EEEEF0}.dotmenu svg{width:20px;height:20px;pointer-events:none}
+    .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn){width:34px;height:34px;flex:0 0 34px;border-radius:10px;transition:background .22s ease,color .22s ease,box-shadow .22s ease,transform .22s cubic-bezier(.2,.8,.25,1)}
+    .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn) svg{width:22px;height:22px;overflow:visible;transition:transform .26s cubic-bezier(.2,.8,.25,1)}
+    .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn):hover{background:#f0f1f2;color:#111114;box-shadow:0 3px 9px rgba(17,17,20,.13);transform:translateY(-2px) scale(1.08)}
+    .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn):active{transform:translateY(0) scale(.92)}
+    .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn):active svg{transform:scale(.9)}
+    .title-history{color:#55585e;background:transparent;border:0;border-radius:10px;width:34px;height:34px;flex:0 0 34px}.title-history:hover svg{transform:rotate(-22deg) scale(1.2)}
+    .title-float-btn:hover svg{transform:scale(1.2) rotate(-4deg)}
+    .title-duplicate-btn:hover svg{transform:translate(-1px,-2px) scale(1.2)}
+    .titlebar .iconbtn:not(.dotmenu):focus-visible{outline:2px solid #777b80;outline-offset:2px}
+    @media(prefers-reduced-motion:reduce){.titlebar .iconbtn:not(.dotmenu),.titlebar .iconbtn:not(.dotmenu) svg{transition:none!important}}
+
+    /* left info drawer: brand, notifications, version, about */
+    .infobackdrop{ position:absolute; inset:0; background:transparent; opacity:0; pointer-events:none; z-index:38; }
+    .infobackdrop.open{ opacity:1; pointer-events:auto; }
+    .infopanel{
+      position:absolute; top:0; left:0; bottom:0; width:82%; max-width:264px;
+      background:#FFFFFF; z-index:39; display:flex; flex-direction:column; gap:2px;
+      box-shadow:none; padding:16px 14px; border-right:1px solid #c4c4c8;
+      transform:translateX(-100%); transition:transform .26s cubic-bezier(.22,1,.36,1); pointer-events:none;
+      overflow-y:auto;
+    }
+    .infopanel.open{ transform:translateX(0); pointer-events:auto; }
+    @media(prefers-reduced-motion:reduce){.infopanel{transition:none}}
+    .infobrand{ display:flex; align-items:center; gap:10px; padding-bottom:14px; margin-bottom:10px; border-bottom:1px solid #c4c4c8; }
+    .infobrand .info-close-btn{width:32px;height:32px;flex:0 0 32px;border:1px solid #d8d8dc;border-radius:9px;background:#f7f7f8;color:#55585e;transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .14s ease}
+    .infobrand .info-close-btn svg{width:16px;height:16px}
+    .infobrand .info-close-btn:hover{background:#ececef;border-color:#b7b8bd;color:#111114;box-shadow:0 2px 7px #11111414}
+    .infobrand .info-close-btn:active{transform:scale(.94);box-shadow:none}
+    .infobrand .info-close-btn:focus-visible{outline:2px solid #55585e;outline-offset:2px}
+    .win[data-theme="soft"] .infobrand .info-close-btn{background:#f5f8f5;border-color:#c4d2c8;color:#496353}
+    .win[data-theme="soft"] .infobrand .info-close-btn:hover{background:#e1ebe4;border-color:#9eb4a5;color:#263e31}
+    .win[data-theme="cloud"] .infobrand .info-close-btn{background:#faf7fc;border-color:#d8cde4;color:#69537d}
+    .win[data-theme="cloud"] .infobrand .info-close-btn:hover{background:#eee6f6;border-color:#b9a6cd;color:#49365d}
+    .win[data-theme="dark"] .infobrand .info-close-btn{background:#30343a;border-color:#606772;color:#f2f4f6}
+    .win[data-theme="dark"] .infobrand .info-close-btn:hover{background:#414750;border-color:#a2aab6;color:#fff}
+    @media(prefers-reduced-motion:reduce){.infobrand .info-close-btn{transition:none!important}}
+    .infobrand svg,.infobrand img{ width:30px; height:30px; flex:0 0 auto; }
+    .infopanel.open .infobrand .info-brand-mark{animation:none;transform:none}
+    @keyframes info-brand-arrive{from{opacity:.45;transform:translateY(5px) scale(.88) rotate(-5deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+    @media(prefers-reduced-motion:reduce){.infobrand .info-brand-mark{animation:none!important;transform:none!important}}
+    .info-brand-mark,.ticon,.kawkab-brand-logo{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}.info-brand-mark,.kawkab-brand-logo{pointer-events:none}
+    .infobrandtext{ display:flex; flex-direction:column; flex:1 1 auto; min-width:0; }
+    .infobrandtext b{ font-family:Manrope,"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:14px; color:#111114; font-weight:750; letter-spacing:-.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .infobrandtext span{ font-size:10.5px; color:#77777C; }
+    .infobrandtext b.brand-title-line{display:flex;align-items:baseline;gap:4px;font-weight:400;letter-spacing:0}
+    .infobrandtext .brand-seven{font-size:14.5px;color:#111114}
+    .infobrandtext .brand-calculator{font-size:13.5px;color:#111114}
+    .infosection{ padding:11px 0; border-bottom:1px solid #d0d0d4; }
+    .infosection.version-section{display:flex;align-items:baseline;gap:8px}
+    .mobile-guide-entry,.mobile-feedback-entry{display:block}
+    .mobile-guide-entry{padding:6px 0;border-bottom:1px solid #d0d0d4}
+    .mobile-guide-entry button,.mobile-feedback-entry a{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 0;border:0;background:none;color:#111114;text-decoration:none;text-align:left;font:600 14px/1.35 "DM Sans",system-ui,sans-serif;cursor:pointer}
+    .mobile-guide-entry button:hover,.mobile-feedback-entry a:hover{text-decoration:underline;text-underline-offset:3px}
+    .mobile-feedback-entry{padding:6px 0;border-top:1px solid #d0d0d4}
+    .mobile-guide-backdrop[hidden],.mobile-guide-dialog[hidden]{display:none!important}
+    .mobile-guide-backdrop{position:fixed;inset:0;z-index:1000001;background:#1111148c;backdrop-filter:blur(5px);pointer-events:auto}
+    .mobile-guide-dialog{position:fixed;z-index:1000002;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 28px));max-height:calc(100dvh - 36px);overflow:auto;padding:20px;border:1px solid #d4d5d8;border-radius:20px;background:#fff;color:#111114;box-shadow:0 24px 80px #0005;pointer-events:auto;font:14px/1.5 "DM Sans",system-ui,sans-serif}
+    .mobile-guide-dialog header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .mobile-guide-dialog h2{margin:3px 0 0;font:750 24px/1.1 Manrope,"DM Sans",sans-serif;letter-spacing:-.04em}
+    .mobile-guide-eyebrow{font-size:9px;font-weight:800;letter-spacing:.14em;color:#777b80}
+    .mobile-guide-dialog header button{width:38px;height:38px;border:1px solid #d6d7da;border-radius:11px;background:#f7f7f8;color:#111114;font-size:23px;cursor:pointer}
+    .mobile-guide-dialog p{margin:12px 0;color:#62666d}
+    .mobile-guide-dialog video{display:block;width:100%;max-height:58dvh;border-radius:13px;background:#111;object-fit:contain}
+    .mobile-guide-done{margin-top:14px;width:100%;min-height:44px;border:0;border-radius:12px;background:#111114;color:#fff;font:700 14px "DM Sans",system-ui,sans-serif;cursor:pointer}
+    .win.mobile-app-mode .mobile-guide-entry,.win.mobile-app-mode .mobile-feedback-entry{display:block}
+    .win.mobile-app-mode .mobile-guide-entry button,.win.mobile-app-mode .mobile-feedback-entry a{font-family:Manrope,"DM Sans",system-ui,sans-serif;font-weight:650}
+    .win[data-theme="dark"] .mobile-guide-entry button,.win[data-theme="dark"] .mobile-feedback-entry a{color:#f4f5f6}
+    .win[data-theme="dark"] .mobile-guide-entry,.win[data-theme="dark"] .mobile-feedback-entry{border-color:#535963}
+    .win[data-theme="dark"]~.mobile-guide-dialog{background:#1d2025;border-color:#525964;color:#f3f4f6}
+    .win[data-theme="dark"]~.mobile-guide-dialog p{color:#c4cad2}
+    .win[data-theme="soft"]~.mobile-guide-dialog{background:#f4f8f4;border-color:#c4d2c8}
+    .win[data-theme="cloud"]~.mobile-guide-dialog{background:#faf7fc;border-color:#d8cde4}
+    @media(prefers-reduced-motion:reduce){.mobile-guide-dialog{scroll-behavior:auto}}
+    .version-section .infolabel{margin:0}
+    .version-separator{color:#77777c;font-size:12px;line-height:1}
+    .infosection:last-child{ border-bottom:none; }
+    .shortcut-intro{font-size:11px;line-height:1.45;color:#73777d;margin:0 0 8px}
+    .shortcut-section{padding:10px 0!important}.info-links .shortcut-section{padding:0!important;margin:0;border:0!important}
+    .shortcut-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border:0;background:transparent;text-align:left;cursor:pointer}
+    .shortcut-toggle .infolabel{margin:0;color:#111114}
+    .shortcut-chevron{width:15px;height:15px;flex:0 0 auto;color:#686c71;transition:transform .18s ease}
+    .shortcut-toggle[aria-expanded="true"] .shortcut-chevron{transform:rotate(180deg)}
+    .shortcut-content{padding-bottom:10px}
+    .shortcut-content[hidden]{display:none}
+    .shortcut-row{padding:8px 9px;margin-top:6px;border:1px solid #ededf0;border-radius:9px;background:#fff}
+    .shortcut-name{display:block;font-size:11.5px;line-height:1.35;font-weight:650;color:#28282c}
+    .shortcut-keys{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:6px}
+    .shortcut-os{min-width:0;color:#73777d;font-size:10px;line-height:1.45}
+    .shortcut-os span{display:block;margin-bottom:3px;font-size:9.5px;font-weight:650;color:#777980}
+    .shortcut-os kbd{display:inline-block;max-width:100%;padding:3px 6px;border:1px solid #e2e2e5;border-bottom-width:2px;border-radius:5px;background:#f7f7f8;color:#222226;font:600 10px/1.35 "DM Sans",system-ui,sans-serif;white-space:normal}
+    .infolabel{ font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#111114; margin-bottom:6px; }
+    .infoversion{ display:flex;align-items:baseline;gap:6px;color:#111114; }
+    .infoversion .version-name{font:400 10px/1 "Fjalla One","DM Sans",sans-serif;letter-spacing:.11em;color:#111114;}
+    .infoversion .version-number{font:650 17px/1 Manrope,"DM Sans",sans-serif;letter-spacing:-.045em;color:#111114;}
+    .infoabout{font:500 13px/1.6 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#111114}
+    .infomade{ margin-top:14px; padding-top:14px; border-top:1px solid #c4c4c8; font-size:12px; color:#8A8A8E; }
+    .infomade b{ color:#111114; font-weight:700; }.infomade .kawkab-brand-logo{display:inline-block;width:88px;height:28px;margin-left:-3px;object-fit:contain;object-position:left center;vertical-align:middle;opacity:.72;filter:grayscale(1)}
+
+    .toolbar{ position:relative; flex:0 0 auto; padding:10px 12px; border-bottom:1px solid #111114; display:flex; align-items:center; gap:8px; }
+    .modebtn{ flex:1 1 auto; display:flex; align-items:center; gap:6px; justify-content:space-between; background:#FFFFFF; border:1px solid #B8B8BC; border-radius:9px; padding:8px 11px; cursor:pointer; color:#111114; font-size:12.5px; font-weight:600; transition:border-color .15s ease, transform .1s ease; overflow:hidden; }
+    .modebtn:hover{ border-color:#8A8A8E; }
+    .modebtn:active{ transform:none; }
+    .modebtn .mlabel{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @keyframes tai7LabelIn{ from{ opacity:0; transform:translateY(3px); } to{ opacity:1; transform:none; } }
+    .mlabel.swap{ animation:tai7LabelIn .2s ease; display:inline-block; }
+    .modebtn svg{ width:11px; height:11px; flex:0 0 auto; color:#8A8A8E; transition:transform .15s ease; }
+    .modebtn.open svg{ transform:rotate(180deg); }
+
+    .modemenu{ position:absolute; top:calc(100% + 4px); left:12px; right:44px; max-height:400px; display:flex; flex-direction:column; background:#FFFFFF; border:1px solid #E4E4E7; border-radius:13px; padding:8px; z-index:20; box-shadow:0 20px 48px rgba(0,0,0,0.2);
+      opacity:0; transform:translateY(-4px); pointer-events:none; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.7,.2,1); transform-origin:top center; }
+    .modemenu.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+    .menusearch{ display:flex; align-items:center; gap:7px; padding:8px 10px; margin-bottom:6px; border:1px solid #E4E4E7; border-radius:10px; background:#FAFAFA; flex:0 0 auto; }
+    .menusearch svg{ width:14px; height:14px; color:#B0B0B4; flex:0 0 auto; }
+    .menusearch input{ border:none; outline:none; background:transparent; font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:12.5px; color:#111114; width:100%; }
+    .menusearch input::placeholder{ color:#B0B0B4; }
+    .menulist{ overflow-y:auto; flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    .menuempty{ padding:22px 8px; text-align:center; font-size:12.5px; color:#B0B0B4; }
+    .menuempty[hidden]{ display:none; }
+    .menuspecial{ display:flex; flex-direction:column; gap:1px; padding-bottom:6px; margin-bottom:6px; border-bottom:1px solid #EFEFF1; }
+    .mode-divider-label{display:flex;align-items:center;gap:7px;min-height:24px;padding:2px 7px 5px;color:#686c71;font:700 10px/1.2 "DM Sans",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}.mode-divider-label.pinned-divider{text-transform:none}.mode-divider-label svg{width:13px;height:13px;flex:0 0 auto}
+
+    .modecat{ display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:500; letter-spacing:.1px; color:#1C1C1F; padding:14px 6px 7px; margin-top:2px; border-top:1px solid #F2F2F3; }
+    .modecat:first-child{ border-top:none; margin-top:0; padding-top:6px; }
+    .modecat .catic{ width:24px; height:24px; border-radius:7px; background:#F2F2F3; display:flex; align-items:center; justify-content:center; color:#111114; flex:0 0 auto; }
+    .modecat .catic svg{ width:14px; height:14px; }
+    .modecat .cattext{ flex:1 1 auto; }
+    .modecat .catcount{ font-size:10.5px; font-weight:700; color:#8A8A8E; background:#F2F2F3; padding:2px 8px; border-radius:20px; flex:0 0 auto; }
+
+    .tai7-toast{position:absolute;left:50%;bottom:24px;z-index:1000001;transform:translateX(-50%);max-width:calc(100% - 32px);padding:11px 15px;border-radius:12px;background:#171717;color:#fff;box-shadow:0 8px 28px #0003;font:600 13px/1.35 system-ui,sans-serif;text-align:center}.tai7-toast[hidden]{display:none!important}.modeentry{display:flex;align-items:center;gap:2px}.modeentry>.modeitem{flex:1;min-width:0}.modepin{flex:0 0 30px;width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:#777;font-size:18px;cursor:pointer}.modepin:hover,.modepin.is-pinned{background:#f4f4f5;color:#111114}.modecat.pinned-heading{margin-top:0}.modeitem{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8.5px 8px; background:transparent; border:none; border-radius:8px; color:#26262A; font-size:13.5px; font-weight:600; letter-spacing:.05px; cursor:pointer; font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; transition:background .12s ease, color .12s ease, transform .12s ease; }
+    .modeitem svg{ width:15px; height:15px; flex:0 0 auto; color:#8A8A8E; transition:color .12s ease; }
+    .modeitem:hover{ background:#F5F5F6; color:#111114; }
+    .modeitem:hover svg{ color:#111114; }
+    .modeitem.active{ color:#111114; font-weight:700; }
+    .modeitem.active svg{ color:#111114; }
+    .modeitem.picked{ background:#111114; color:#FFFFFF; transform:scale(1.02); }
+    .modeitem.picked svg{ color:#FFFFFF; }
+    .modeitem .mitext{ flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .modeitem .tick{ opacity:0; font-size:12px; flex:0 0 auto; transition:opacity .12s ease; }
+    .modeitem.active .tick{ opacity:1; }
+    .modeitem.highlight{background:#F0F0F2;color:#111114;box-shadow:0 0 0 1px #E5E5E8 inset}
+    .modeitem.highlight svg{color:#111114}
+    .win.casio-skin .modeitem.highlight{background:#EAE5D5;box-shadow:0 0 0 1px #D8D2BC inset;color:#2B2E1F}
+    .modemenu .reveal{ animation:tai7RowIn .22s cubic-bezier(.2,.8,.3,1) both; }
+
+    .body{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+
+    @keyframes tai7ViewIn{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+    .kpview{ display:none; flex:1 1 auto; min-height:0; flex-direction:column; }
+    .kpview.show{ display:flex; animation:tai7ViewIn .16s ease; }
+
+    .display{ flex:0 0 auto; padding:14px 16px 10px; text-align:right; border-bottom:1px solid #111114; cursor:grab; touch-action:none; }
+    .history{ display:flex; flex-direction:column; gap:2px; margin-bottom:4px; max-height:34px; overflow:hidden; opacity:.6; }
+    .history[hidden]{display:none}.history[role="button"]{cursor:pointer;touch-action:manipulation}.history:focus-visible{outline:2px solid #111114;outline-offset:3px;border-radius:3px}
+    .history span{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-size:10.5px; color:#8A8A8E; cursor:pointer; }
+    .history span:hover{ color:#111114; }
+    .expr{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-size:12.5px; color:#8A8A8E; min-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    @keyframes tai7Pulse{ 0%{ transform:scale(1); } 45%{ transform:scale(1.045); } 100%{ transform:scale(1); } }
+    .result{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-weight:600; font-size:32px; color:#111114; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transform-origin:right center; }
+    .result.pulse{ animation:tai7Pulse .22s ease; }
+    .result.err{ color:#8A8A8E; font-size:19px; }
+    .edit-actions{display:flex;align-items:center;gap:5px;margin-top:5px;min-height:27px}
+    .edit-action{display:grid;place-items:center;width:30px;height:27px;padding:0;border:1px solid transparent;border-radius:8px;background:transparent;color:#696B70;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .15s}
+    .edit-action svg{width:16px;height:16px}.edit-action:hover:not(:disabled){background:#F3F3F4;border-color:#E7E7E9;color:#111114}.edit-action:active:not(:disabled){transform:scale(.94)}.edit-action:disabled{color:#C7C8CB;cursor:default;opacity:.65}.edit-action:focus-visible{outline:2px solid #777B80;outline-offset:2px}
+    button.btn.backspace{color:#66686D;background:#F7F7F8;border-color:#E8E8EA}
+    button.btn.backspace:hover{color:#17181B;background:#EEEEF0;border-color:#D9DADD}
+    button.btn.backspace svg{width:18px;height:18px;display:block}
+
+    @keyframes tai7SciIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+    .sci{ flex:0 0 auto; display:none; grid-template-columns:repeat(5,1fr); gap:6px; padding:10px 12px 4px; border-bottom:1px solid #EFEFF1; }
+    .sci.show{ display:grid; animation:tai7SciIn .16s ease; }
+    .sci .modes{ grid-column:1/-1; display:flex; gap:6px; margin-bottom:2px; }
+    .sci .modes .degrad{ flex:1; text-align:center; font-size:11px; font-weight:700; padding:6px; border-radius:8px; border:1px solid #E4E4E7; background:#FFFFFF; color:#8A8A8E; cursor:pointer; transition:.12s ease; }
+    .sci .modes .degrad.active{ background:#111114; border-color:#111114; color:#FFFFFF; }
+
+    .pad{ flex:1 1 auto; display:grid; grid-template-rows:1fr; gap:7px; padding:10px 12px 12px; min-height:0; }
+    .grid{ display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(5,1fr); gap:7px; min-height:0; }
+
+    @keyframes tai7Bubble{ 0%{ transform:scale(1); } 35%{ transform:scale(.88); } 62%{ transform:scale(1.08); } 100%{ transform:scale(1); } }
+    button.btn{
+      border:1px solid #E4E4E7; border-radius:16px; cursor:pointer;
+      font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:16px; font-weight:600; color:#111114;
+      background:linear-gradient(180deg, #FFFFFF 0%, #F2F2F4 100%);
+      box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 3px 0 #D7D7DA, 0 6px 12px rgba(17,17,20,.10);
+      transition:transform .09s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease, background .12s ease, border-color .12s ease;
+      display:flex; align-items:center; justify-content:center;
+    }
+    button.btn:hover{ background:linear-gradient(180deg,#FFFFFF,#F7F7F8); border-color:#D8D8DC; }
+    button.btn:active{ transform:translateY(3px) scale(.97); box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 0 0 #D7D7DA, 0 1px 3px rgba(17,17,20,.08); }
+    button.btn.bubble{ animation:tai7Bubble .32s cubic-bezier(.34,1.56,.64,1); }
+    button.btn.fn{ background:linear-gradient(180deg,#FFFFFF,#FAFAFB); border:1px solid #E9E9EB; color:#6B6B70; font-size:12px; box-shadow:0 2px 0 #EBEBED, 0 3px 6px rgba(17,17,20,.05); }
+    button.btn.fn:hover{ color:#111114; border-color:#C7C7CB; }
+    button.btn.fn:active{ box-shadow:0 0 0 #EBEBED; }
+    button.btn.eq{ background:linear-gradient(180deg,#1D1D21,#0A0A0C); border-color:#0A0A0C; color:#FFFFFF; font-weight:700; box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 3px 0 #000000, 0 8px 18px rgba(17,17,20,.32); }
+    button.btn.eq:hover{ background:linear-gradient(180deg,#2A2A2E,#111114); }
+    button.btn.eq:active{ box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 0 0 #000000, 0 2px 6px rgba(17,17,20,.3); }
+    button.btn.warn{ color:#8A8A8E; }
+
+    .formview{ display:none; flex:1 1 auto; min-height:0; flex-direction:column; overflow-y:auto; padding:14px 16px 18px; gap:10px; }
+    .formview.show{ display:flex; animation:tai7ViewIn .16s ease; }
+
+    /* history drawer — same left-slide pattern as the info/about drawer */
+    .histbtn{ display:none; }
+    .historybackdrop{ position:absolute; inset:0; background:transparent; opacity:0; pointer-events:none; z-index:38; }
+    .historybackdrop.open{ opacity:1; pointer-events:auto; }
+    .historydrawer{
+      position:absolute; top:0; left:0; bottom:0; width:82%; max-width:264px;
+      background:#FFFFFF; z-index:39; display:flex; flex-direction:column; gap:2px;
+      box-shadow:none; padding:16px 14px;
+      transform:translateX(-100%); transition:transform .22s cubic-bezier(.2,.8,.3,1);
+      overflow-y:auto;
+    }
+    .historydrawer.open{ transform:translateX(0); }
+    .histlist{ display:flex; flex-direction:column; gap:1px; }
+    .histrow{ display:flex; align-items:center; gap:7px; width:100%; padding:9px 4px; border-bottom:1px solid #F0F0F2; transition:background .12s ease; }
+    .histrow:hover{ background:#FAFAFB; }
+    .histrow-main{display:grid;flex:1 1 auto;min-width:0;gap:3px;padding:4px 7px;text-align:left;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;font:inherit;transition:background .15s}
+    .histrow-main:hover{background:#F1F1F3}
+    .histrow-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+    .histadd{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border:1px solid #E7E7E9;border-radius:9px;background:#fff;color:#242529;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+    .histadd svg{width:15px;height:15px}.histadd:hover{background:#111114;border-color:#111114;color:#fff}.histadd:active{transform:scale(.94)}.histadd:focus-visible,.histrow-main:focus-visible{outline:2px solid #777B80;outline-offset:2px}
+    .histexpr{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:11.5px; color:#8A8A8E; }
+    .histres{ font-size:13px; color:#111114; font-weight:700; }
+    .histempty{ padding:16px 8px; text-align:center; font-size:12.5px; color:#B0B0B4; }
+    .histclear{ width:100%; margin-top:8px; padding-top:12px; border:none; border-top:1px solid #EFEFF1; background:transparent; color:#D9432E; font-size:12px; font-weight:600; cursor:pointer; }
+    .histclear:hover{ color:#B7301F; }
+
+    /* programmer mode */
+    .progview{ display:none; flex:1 1 auto; min-height:0; flex-direction:column; }
+    .progview.show{ display:flex; animation:tai7ViewIn .16s ease; }
+    .progdisplay{ flex:0 0 auto; padding:12px 16px 8px; border-bottom:1px solid #EFEFF1; display:flex; flex-direction:column; gap:3px; }
+    .progrow{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+    .progrow span{ font-size:10px; font-weight:700; letter-spacing:.5px; color:#B0B0B4; }
+    .progrow b{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-variant-numeric:lining-nums tabular-nums; font-size:15px; color:#111114; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:ltr; }
+    .progrow:first-child b{ font-size:22px; }
+    .progbases{ flex:0 0 auto; display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px 12px; border-bottom:1px solid #EFEFF1; }
+    .pbase{ font-size:11px; font-weight:700; padding:6px; border-radius:8px; border:1px solid #E4E4E7; background:#FFFFFF; color:#6B6B70; cursor:pointer; transition:.12s ease; }
+    .pbase.active{ background:#111114; border-color:#111114; color:#FFFFFF; }
+    .proggrid{ flex:1 1 auto; display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(6,1fr); gap:6px; padding:10px 12px 12px; min-height:0; }
+    .proggrid button.btn{ font-size:13px; }
+    .proggrid button.btn.fn[data-prog-hexkey]{ opacity:.35; pointer-events:none; }
+    .proggrid.hexon button.btn.fn[data-prog-hexkey]{ opacity:1; pointer-events:auto; }
+    @keyframes tai7RowIn{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+    .fgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .app-select{width:100%;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 11px;border:1px solid #BFC2C8;border-radius:11px;background:linear-gradient(180deg,#fff 0%,#F8F8F9 100%);color:#17181B;font:600 13px/1.35 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(17,17,20,.045);transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}
+    .app-select:hover{background:#F2F2F4;border-color:#B9BBC2}
+    .app-select:focus-visible{outline:none;border-color:#777B80;box-shadow:0 0 0 3px rgba(17,17,20,.11)}
+    .app-select[aria-expanded="true"]{background:#F1F1F3;border-color:#AEB0B7}
+    .app-select .select-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .app-select svg{width:15px;height:15px;flex:0 0 auto;color:#555960;transition:transform .16s}
+    .app-select[aria-expanded="true"] svg{transform:rotate(180deg)}
+    .win.casio-skin .app-select{background:linear-gradient(180deg,#FAF8F0 0%,#EEEBDD 100%);border-color:#D0C9B2;color:#2B2E1F}
+    .win.casio-skin .app-select svg{color:#625D4D}
+    .select-popover{position:absolute;z-index:80;display:flex;flex-direction:column;min-width:120px;max-height:280px;overflow:hidden;padding:5px;border:1px solid #D8D9DE;border-radius:13px;background:#fff;color:#17181B;box-shadow:0 18px 44px rgba(17,17,20,.18),0 2px 8px rgba(17,17,20,.08);animation:select-pop-in .13s ease both}
+    .select-popover[hidden]{display:none}
+    @keyframes select-pop-in{from{opacity:0;transform:translateY(4px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .select-search{flex:0 0 auto;width:100%;height:34px;margin:0 0 4px;padding:7px 9px;border:1px solid #E2E3E7;border-radius:9px;background:#F8F8F9;color:#17181B;font:500 12px "DM Sans",system-ui,sans-serif;outline:none}
+    .select-search:focus{border-color:#AEB0B7;box-shadow:0 0 0 2px rgba(17,17,20,.08)}
+    .select-options{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+    .select-option{width:100%;min-height:34px;display:flex;align-items:center;gap:9px;padding:7px 9px;border:0;border-radius:8px;background:transparent;color:#292A2F;text-align:left;font:500 12px/1.35 "DM Sans",system-ui,sans-serif;cursor:pointer}
+    .select-option:hover,.select-option.highlight{background:#F1F1F3;color:#111114}
+    .select-option[aria-selected="true"]{background:#E8E9EC;color:#111114;font-weight:650}
+    .select-option[hidden]{display:none}
+    .select-option-check{width:14px;height:14px;flex:0 0 14px;color:#16171A;opacity:0}
+    .select-option[aria-selected="true"] .select-option-check{opacity:1}
+    .win.casio-skin .select-popover{background:#F6F4EC;border-color:#D8D2BC;color:#2B2E1F}
+    .win.casio-skin .select-search{background:#EFEBDD;border-color:#D8D2BC;color:#2B2E1F}
+    .win.casio-skin .select-option{color:#2B2E1F}
+    .win.casio-skin .select-option:hover,.win.casio-skin .select-option.highlight{background:#EAE5D5}
+    .win.casio-skin .select-option[aria-selected="true"]{background:#DDD8C7}
+    .currency-pair{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr);align-items:end;gap:7px}.currency-swap{width:40px;height:36px;margin-bottom:0;border:1px solid #e4e4e7;border-radius:10px;background:#fff;color:#111114;display:grid;place-items:center;cursor:pointer;transition:background .15s,transform .15s}.currency-swap:hover{background:#f2f2f2;transform:rotate(180deg)}.currency-swap svg{width:19px;height:19px}.fx-note{padding:6px 12px 2px;color:#777b78;font:500 10px/1.45 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    .f{ display:flex; flex-direction:column; gap:5px; animation:tai7RowIn .18s ease both; }
+    .f.wide{ grid-column:1/-1; }
+    .f label{ font-size:11px; font-weight:600; color:#6B6B70; }
+    .f input, .f select{ font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:13px; color:#111114; background-color:#FFFFFF; border:1px solid #BFC2C8; border-radius:10px; padding:9px 11px; outline:none; transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease,transform .18s ease; }
+    .f select{ -webkit-appearance:none; appearance:none; padding-right:36px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235C6066' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 11px center; background-size:15px; cursor:pointer; color-scheme:light; box-shadow:0 1px 2px rgba(17,17,20,.035); }
+    .f select:hover{border-color:#BFC1C7;background-color:#FCFCFD}
+    .f select option,.cal-select option{background:#fff;color:#17181B}
+    .f select option:checked,.cal-select option:checked{background:#EDEEF1;color:#111114}
+    .f select option{ background:#FFFFFF; color:#111114; }
+    .f select:focus-visible,.cal-select:focus-visible{outline:2px solid #111114;outline-offset:2px}
+    .modemenu,.pickerpanel{box-shadow:0 18px 46px rgba(17,17,20,.16),0 3px 10px rgba(17,17,20,.06)}
+    .menusearch:focus-within{border-color:#B9BAC0;background:#fff;box-shadow:0 0 0 3px rgba(17,17,20,.07)}
+    .modeitem:focus-visible{outline:2px solid #777B80;outline-offset:1px}
+    .win.casio-skin .f select,.win.casio-skin .cal-select{background-color:#F6F4EC;border-color:#D8D2BC;color:#2B2E1F}
+    .win.casio-skin .f select option,.win.casio-skin .cal-select option{background:#F6F4EC;color:#2B2E1F}
+    .f input:hover, .f select:hover{ border-color:#C8C9CC; background-color:#FCFCFD; }
+    .f input:focus, .f select:focus{ border-color:#111114; box-shadow:0 0 0 3px rgba(17,17,20,.09); background-color:#FFFFFF; }
+    .f select:active{ transform:scale(.995); }    /* Shared app-theme treatment for every calculator select, including future fields. */
+    .win select:not(.cal-select){-webkit-appearance:none;appearance:none;min-height:38px;padding:9px 38px 9px 12px;border:1px solid #BFC2C8;border-radius:11px;background-color:#FAFAFB;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233A3B40' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:15px;color:#18191D;color-scheme:light;font:600 13px/1.35 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;box-shadow:0 1px 2px rgba(17,17,20,.045);cursor:pointer;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease}
+    .win select:not(.cal-select):hover{border-color:#B9BBC2;background-color:#F5F5F7}
+    .win select:not(.cal-select):focus-visible{outline:none;border-color:#73767E;background-color:#fff;box-shadow:0 0 0 3px rgba(17,17,20,.11)}
+    .win select:not(.cal-select) option{background:#fff;color:#17181B}
+    .win select:not(.cal-select) option:checked{background:#E8E9EC;color:#111114}
+    .win.casio-skin select:not(.cal-select){background-color:#F6F4EC;border-color:#D8D2BC;color:#2B2E1F}
+    .win.casio-skin select:not(.cal-select):hover{background-color:#EFEDDF;border-color:#BEB79E}
+    .f input:disabled, .f select:disabled{ background-color:#F4F4F5; color:#92949A; cursor:not-allowed; }
+    .pillrow{ display:flex; gap:6px; flex-wrap:wrap; }
+
+    /* date & time picker buttons (replace native browser pickers) */
+    .pickerfield{ position:relative; z-index:25; isolation:isolate; }
+    .pickerbtn{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:13px; color:#111114; background:#FFFFFF; border:1px solid #E4E4E7; border-radius:10px; padding:9px 11px; cursor:pointer; transition:border-color .18s ease,box-shadow .18s ease,background .18s ease; }
+    .pickerbtn:hover{ border-color:#C7C7CB; background:#FCFCFD; }
+    .pickerbtn.open{ border-color:#111114; box-shadow:0 0 0 3px rgba(17,17,20,.08); }
+    .pickerbtn svg{ width:15px; height:15px; color:#8A8A8E; flex:0 0 auto; transition:transform .15s ease; }
+    @keyframes tai7IconPop{ 0%{ transform:scale(1) rotate(0); } 45%{ transform:scale(1.3) rotate(-8deg); } 100%{ transform:scale(1) rotate(0); } }
+    .pickerbtn svg.pop{ animation:tai7IconPop .35s cubic-bezier(.34,1.56,.64,1); }
+    .pickerbtn span:first-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pickerpanel{ position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:30; background:#FFFFFF; border:1px solid #E4E4E7; border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,.18); padding:10px;
+      opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:opacity .15s ease, transform .15s cubic-bezier(.2,.8,.3,1); transform-origin:top center; }
+    .pickerpanel.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+    .pickerfield:has(.pickerpanel.open){z-index:35}
+    .pickerpanel{right:auto;width:min(290px,calc(100vw - 36px));max-width:calc(100vw - 36px);box-sizing:border-box}
+
+    .cal-head{ display:flex; align-items:center; justify-content:space-between; padding:2px 2px 8px; font-size:12.5px; font-weight:700; color:#111114; }
+    .cal-nav{ width:24px; height:24px; border-radius:7px; border:1px solid #E4E4E7; background:#FFFFFF; color:#6B6B70; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:.12s ease; }
+    .cal-nav:hover{ background:#F5F5F6; color:#111114; }
+    .cal-period{display:flex;align-items:center;justify-content:center;gap:5px;flex:1}.cal-select{height:30px;-webkit-appearance:none;appearance:none;border:1px solid #DDDEE2;border-radius:9px;background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235C6066' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 5px center;background-size:12px;color:#111114;color-scheme:light;font:650 11px "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:0 20px 0 8px;min-width:0;cursor:pointer;text-align:left;box-shadow:0 1px 2px rgba(17,17,20,.035);transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease}.cal-select:hover{border-color:#BFC1C7;background-color:#FAFAFB}.cal-select:focus-visible{outline:none;border-color:#82858C;box-shadow:0 0 0 2px rgba(17,17,20,.09)}.cal-select[aria-expanded="true"]{background-color:#F1F1F3}.cal-select.month{flex:1}.cal-select.year{width:82px}
+    .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:2px; }
+    .cal-weekdays span{ text-align:center; font-size:9.5px; font-weight:700; color:#B0B0B4; padding:2px 0; }
+    .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+    .cal-day{ aspect-ratio:1; border:none; background:transparent; border-radius:8px; font-size:12px; color:#111114; cursor:pointer; transition:background .12s ease, color .12s ease; }
+    .cal-day:hover:not(:disabled){ background:#F5F5F6; }
+    .cal-day.today{ box-shadow:inset 0 0 0 1px #C7C7CB; font-weight:700; }
+    .cal-day.selected{ background:#111114; color:#FFFFFF; font-weight:700; }
+    .cal-day.muted{ color:#D4D4D6; cursor:default; }
+    .cal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.cal-today{ width:100%; padding:7px; border-radius:8px; border:1px solid #E4E4E7; background:#FFFFFF; color:#6B6B70; font-size:11.5px; font-weight:700; cursor:pointer; transition:.12s ease; }
+    .cal-today:hover{ background:#F5F5F6; color:#111114; }
+
+    .time-cols{ display:flex; align-items:stretch; gap:6px; height:180px; }
+    .time-col{ flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:2px; scroll-snap-type:y proximity; }
+    .time-colsep{ display:flex; align-items:center; font-weight:700; color:#B0B0B4; }
+    .time-item{ flex:0 0 auto; border:none; background:transparent; border-radius:8px; padding:7px 0; font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:13px; color:#6B6B70; cursor:pointer; scroll-snap-align:center; transition:background .12s ease, color .12s ease; }
+    .time-item:hover{ background:#F5F5F6; color:#111114; }
+    .time-item.selected{ background:#111114; color:#FFFFFF; font-weight:700; }
+    .time-custom{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:10px;padding:10px 11px;border:1px solid #E5E5E7;border-radius:11px;background:#FAFAFA}.time-custom-label{font-size:11px;font-weight:650;color:#65656B}.time-custom input{width:132px;min-width:0;padding:8px 9px;border:1px solid #D8D8DC;border-radius:8px;background:#fff;color:#111114;font:600 13px/1.2 "DM Sans",system-ui,sans-serif;outline:none}.time-custom input:focus{border-color:#99999F;box-shadow:0 0 0 3px #11111110}.time-done{ width:100%; margin-top:8px; padding:8px; border-radius:8px; border:none; background:#111114; color:#FFFFFF; font-size:12px; font-weight:700; cursor:pointer; transition:background .12s ease; }
+    .time-done:hover{ background:#26262A; }
+    .pill{ font-size:12px; font-weight:600; padding:7px 13px; border-radius:20px; border:1px solid #E4E4E7; background:#FFFFFF; color:#6B6B70; cursor:pointer; transition:background .12s ease, color .12s ease, border-color .12s ease, transform .12s cubic-bezier(.34,1.56,.64,1); }
+    .pill:active{ transform:scale(.92); }
+    .pill.active{ background:#111114; border-color:#111114; color:#FFFFFF; }
+    .pill.bubble{ animation:tai7Bubble .32s cubic-bezier(.34,1.56,.64,1); }
+
+    .results{ position:relative; z-index:1; margin-top:12px; border-top:1px solid #777B80; padding-top:10px; display:flex; flex-direction:column; gap:2px; }
+    .results::before{content:"Result -";display:block;flex:0 0 auto;margin:0 2px 3px;color:#25272B;font:700 12px/1.35 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;letter-spacing:.015em}
+    .custom-library{margin:4px 0 10px;padding:11px 12px;border:1px solid #e6e7e3;border-radius:12px;background:#fafbf9}
+    .custom-library-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:#252722}.custom-library-head span,.custom-library p{font-size:10px;color:#777b74;margin:5px 0 0}
+    .custom-preset-list{display:grid;gap:5px;margin-top:8px}.custom-preset{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:8px 9px;border:1px solid #e8e9e5;border-radius:8px;background:#fff;color:#222;font:500 11px/1.3 "DM Sans",sans-serif;cursor:pointer}.custom-preset span{color:#777;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .custom-save-button{width:100%;padding:10px;border:0;border-radius:10px;background:#111114;color:#fff;font:600 12px "DM Sans",sans-serif;cursor:pointer;margin:2px 0 8px}.custom-save-button:hover{background:#343438}
+    .rrow{ display:flex; align-items:center; justify-content:space-between; padding:7px 2px; font-size:13px; color:#3A3A3E; border-bottom:1px solid #F5F5F6; animation:tai7RowIn .18s ease both; }
+    .rrow:last-child{ border-bottom:none; }
+    .rrow b{ color:#111114; font-weight:700; }
+    .rrow.emph{ background:#FAFAFA; margin:0 -8px; padding:9px 8px; border-radius:10px; border-bottom:none; }
+    .rrow.emph b{ font-size:16px; }
+    .rtable-title{ font-size:11px; font-weight:700; color:#6B6B70; margin-top:8px; margin-bottom:4px; }
+    .rtable{ width:100%; border-collapse:collapse; font-size:11.5px; }
+    .rtable th{ text-align:right; color:#B0B0B4; font-weight:600; padding:4px 4px; font-size:10px; text-transform:uppercase; }
+    .rtable th:first-child, .rtable td:first-child{ text-align:left; }
+    .rtable td{ text-align:right; padding:5px 4px; border-top:1px solid #F5F5F6; color:#3A3A3E; }
+
+
+    .grip{ position:absolute; right:2px; bottom:2px; width:18px; height:18px; cursor:nwse-resize; opacity:.5; }
+    .grip:hover{ opacity:.9; }
+    .grip svg{ width:100%; height:100%; }
+
+    /* popup mode (browser-extension / fixed-embed context): fills its container
+       edge-to-edge instead of floating, no drag/resize chrome. */
+    .win.popup-mode{
+      position:relative; top:0; left:0; width:100%; height:100%; max-width:none; max-height:none;
+      min-width:0; min-height:0; border-radius:0; border:1px solid #111114; box-shadow:none;
+      transform:none; visibility:visible; opacity:1; pointer-events:auto;
+      transition:none;
+    }
+    .win.popup-mode .titlebar{ cursor:default; }
+    .win.popup-mode .grip{ display:none; }
+    .win.popup-mode [data-action="close"]{ display:none; }
+
+    /* ripple (material-style tap feedback) */
+    button.btn, .pill{ position:relative; overflow:hidden; }
+    .tai7-ripple{ position:absolute; border-radius:50%; background:rgba(17,17,20,0.14); transform:scale(0); opacity:1; pointer-events:none; animation:tai7Ripple .5s ease-out; }
+    button.btn.eq .tai7-ripple{ background:rgba(255,255,255,.3); }
+    @keyframes tai7Ripple{ to{ transform:scale(1); opacity:0; } }
+
+    /* ===== Casio fx-991CW ClassWiz · Scientific skin — mimics a physical fx-991 style calculator ===== */
+    .casio-brand{ display:none; }
+    .win.casio-skin{ background:#EDEAE0; border-color:#C9C2AE; }
+    .win.casio-skin .titlebar, .win.casio-skin .toolbar{ background:#EDEAE0; border-bottom-color:#DAD5C4; }
+    .win.casio-skin .display{ background:#B9C7AC; border-bottom-color:#A2B190; box-shadow:inset 0 3px 8px rgba(0,0,0,.18); position:relative; }
+    .win.casio-skin .casio-brand{ display:flex; justify-content:space-between; font-size:9px; font-weight:700; letter-spacing:1px; color:#3C4A34; opacity:.7; margin-bottom:4px; }
+    .win.casio-skin .casio-brand span{ font-weight:500; opacity:.8; }
+    .win.casio-skin .expr, .win.casio-skin .history span{ color:#43523A; }
+    .win.casio-skin .result{ color:#1B2716; letter-spacing:.5px; }
+    .win.casio-skin .sci{ background:#DAD5C1; border-bottom-color:#C9C2AE; }
+    .win.casio-skin .sci .modes .degrad{ background:#FFFFFF; border-color:#C9C2AE; }
+    .win.casio-skin .sci .modes .degrad.active{ background:#2B2E33; border-color:#2B2E33; }
+    .win.casio-skin .pad{ background:#DAD5C1; }
+    .win.casio-skin button.btn{
+      background:#FFFFFF; border:1px solid #C9C2AE; color:#222226; border-radius:10px;
+      box-shadow:0 2px 0 #BDB6A0, 0 3px 6px rgba(0,0,0,.16);
+    }
+    .win.casio-skin button.btn:hover{ background:#FFFFFF; transform:none; box-shadow:0 2px 0 #BDB6A0, 0 3px 6px rgba(0,0,0,.16); }
+    .win.casio-skin button.btn:active{ box-shadow:0 0 0 #BDB6A0; transform:translateY(2px) scale(.95); }
+    .win.casio-skin button.btn.fn{ background:#3A3D42; color:#F1EFE8; border-color:#2A2C30; }
+    .win.casio-skin button.btn.fn:hover{ color:#FFFFFF; border-color:#2A2C30; }
+    .win.casio-skin button.btn.warn{ background:#D9432E; color:#FFFFFF; border-color:#B5321F; }
+    .win.casio-skin button.btn.eq{ background:#1E6FD9; border-color:#1858AD; color:#FFFFFF; box-shadow:0 2px 0 #1858AD, 0 3px 6px rgba(0,0,0,.2); }
+    .win.casio-skin button.btn[data-key="÷"], .win.casio-skin button.btn[data-key="×"],
+    .win.casio-skin button.btn[data-key="−"], .win.casio-skin button.btn[data-key="+"],
+    .win.casio-skin button.btn[data-key="%"]{ background:#F2A73B; color:#3B2600; border-color:#D08E22; }
+    .win.casio-skin .modebtn{ background:#FFFFFF; border-color:#C9C2AE; color:#2B2E1F; }
+    .win.casio-skin .modebtn svg{ color:#8A8168; }
+    .win.casio-skin .iconbtn{ color:#6B6350; }
+    .win.casio-skin .iconbtn:hover{ background:#DFDACB; color:#2B2E1F; }
+    .win.casio-skin .title{ color:#2B2E1F; }
+    .win.casio-skin .modemenu, .win.casio-skin .historydrawer{ background:#F6F4EC; border-color:#D8D2BC; }
+    .win.casio-skin .modeitem:hover, .win.casio-skin .histrow:hover{ background:#EAE5D5; }
+    .win.casio-skin .modeitem.active{ color:#2B2E1F; }
+    .win.casio-skin .modeitem.picked{ background:#2B2E1F; color:#F6F4EC; }
+    .win.casio-skin .modecat{ color:#2B2E1F; border-top-color:#E4E0CE; }
+    .win.casio-skin .modecat .catcount{ color:#8A8168; background:#EFEBDD; }
+    .win.casio-skin .modecat .catic{ background:#EFEBDD; }
+    .win.casio-skin .menusearch{ background:#EFEBDD; border-color:#D8D2BC; }
+    .win.casio-skin .grip svg path{ stroke:#B7AF97; }
+
+    .win:not(.popup-mode){border:1px solid #111114;border-radius:24px;box-shadow:0 0 0 1px rgba(17,17,20,.035) inset!important}
+    .win:not(.popup-mode) .titlebar{padding:14px 16px;border-bottom-color:#e3e5df}
+    .win{box-shadow:none!important}
+    .win .logobtn{box-shadow:none!important}
+    .win .infopanel{box-shadow:none!important;border-right:1px solid #c4c4c8}
+    .win .title{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.12}
+    .win .title small{font-size:9px;font-weight:550;letter-spacing:.15px;color:#8d928a}
+
+    .win button.btn.eq{background:#111114!important;border-color:#111114!important;color:#fff!important;box-shadow:0 5px 14px rgba(17,17,20,.22)!important}
+    .win button.btn.eq:hover{background:#333!important}
+    .win .modeitem.picked{background:#111114!important;color:#fff!important}
+    .win .modeitem.picked svg{color:#fff!important}
+    .win .modeitem.active svg{color:#111114!important}
+    .histrow{display:flex!important;align-items:center!important;gap:7px!important;padding:8px 3px!important;border-bottom:1px solid #f0f0f2!important}
+    .histrow-main{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:4px 10px!important;align-items:center!important;min-height:48px}
+    .histrow .histexpr{grid-column:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#575b60;font:500 12px/1.35 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    .histrow .histres{grid-column:2;grid-row:1/3;color:#17181B!important;font-size:15px!important;white-space:nowrap}
+    .histrow .histstamp{grid-column:1;color:#96989D;font-size:10px;text-align:left}
+    .histrow{border-radius:10px}.histadd{align-self:center;box-shadow:0 1px 2px #1111110d}.histclear{border-radius:0 0 10px 10px}
+    .histrow:hover{background:#FAFAFB}
+    .histclear{padding:12px!important;color:#9c3f34!important}
+    .info-links{display:grid;gap:6px;margin-top:12px}
+    .info-links a{display:flex;align-items:center;justify-content:space-between;min-height:40px;padding:10px 12px;border:1px solid #e8e9e6;border-radius:10px;color:#1b2119;text-decoration:none;font:650 12.5px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    .info-links a:hover{background:#f3f3f3;border-color:#111114}
+    .info-links a span{color:#111114}
+    .info-links button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:40px;padding:10px 12px;border:1px solid #e8e9e6;border-radius:10px;background:#fff;color:#1b2119;text-align:left;cursor:pointer;font:650 12.5px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;transition:background .18s ease,border-color .18s ease,transform .2s ease,box-shadow .2s ease}
+    .info-links button:hover{background:#f3f3f3;border-color:#111114;box-shadow:0 3px 10px #1111140b;transform:translateY(-1px)}
+    .info-links button span{color:#111114}
+    .info-links .update-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;color:#111114;font-family:"Material Symbols Rounded";font-weight:400;font-style:normal;font-size:19px;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;word-wrap:normal;direction:ltr;font-feature-settings:"liga";-webkit-font-feature-settings:"liga";-webkit-font-smoothing:antialiased;user-select:none}
+    .info-links button[disabled] .update-icon{animation:update-icon-spin .9s linear infinite}
+    @keyframes update-icon-spin{to{transform:rotate(360deg)}}
+    .infopanel.open .info-links>button:hover{transform:translateY(-1px)}
+    .info-links .update-status{padding:3px 2px;color:#55585e;font:500 11px/1.45 "DM Sans",system-ui,sans-serif}
+    .info-links [hidden]{display:none!important}
+    .info-links .update-status:empty{display:none}
+    .info-links>*{opacity:0;transform:translateY(6px);transition:opacity .24s ease,transform .32s cubic-bezier(.2,.72,.25,1);transition-delay:0ms;will-change:opacity,transform}
+    .info-links>:nth-child(1){--entry-delay:0ms}.info-links>:nth-child(2){--entry-delay:45ms}.info-links>:nth-child(3){--entry-delay:90ms}.info-links>:nth-child(4){--entry-delay:135ms}.info-links>:nth-child(5){--entry-delay:180ms}.info-links>:nth-child(6){--entry-delay:225ms}.info-links>:nth-child(7){--entry-delay:270ms}
+    .infopanel.open .info-links>*{opacity:1;transform:translateY(0);transition-delay:var(--entry-delay,0ms)}
+    @media(prefers-reduced-motion:reduce){.info-links>*{opacity:1;transform:none;transition:none;will-change:auto}}
+    @media(prefers-reduced-motion:reduce){.info-links button[disabled] .update-icon{animation:none}}
+    @media(max-width:680px){.win.popup-mode .titlebar{padding-top:max(10px,env(safe-area-inset-top))}}
+    .win .titlebar{border-bottom-color:#111114}
+    .win .titlebar{container-type:inline-size}
+    @container (max-width: 410px){
+      .titlebar{gap:2px!important;padding-left:8px!important;padding-right:8px!important}
+      .titlebar .iconbtn{width:25px;flex:0 0 25px}
+      .brand-home{gap:4px}
+      .brand-home .logobtn .ticon{width:27px;height:27px}
+      .brand-home .brand-seven{font-size:clamp(11px,3.3cqi,14px)}
+      .brand-home .brand-calculator{font-size:clamp(10px,3cqi,13px)}
+      .brand-home .title small.brand-kawkab-straight{font-size:clamp(6px,1.8cqi,8px);letter-spacing:0}
+    }
+    .histrow{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-rows:auto auto auto;gap:4px 8px!important;align-items:center!important;transition:background .16s ease,transform .2s cubic-bezier(.2,.8,.3,1)}
+    .histrow.is-pinned{background:#f8f8f9}
+    .histrow .histrow-main{grid-column:1;grid-row:1 / 4;align-self:center}.histrow .histadd{grid-column:2;grid-row:1 / 4;align-self:center}.histrow .histpin{grid-column:3;grid-row:1 / 4;align-self:center}
+    .histrow-main{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto}
+    .histfeature{grid-column:1;grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#111114;font:650 11px/1.3 "DM Sans",system-ui,sans-serif}
+    .histrow .histexpr{grid-column:1;grid-row:2}
+    .histrow .histres{grid-column:2;grid-row:1/4;white-space:nowrap}
+    .histrow .histstamp{grid-column:1;grid-row:3}
+    .histpin{display:grid;place-items:center;grid-column:3;grid-row:1/4;flex:0 0 30px;width:30px;height:30px;border:1px solid #E7E7E9;border-radius:9px;background:#fff;color:#666970;cursor:pointer;transition:background .16s,border-color .16s,color .16s,transform .16s}
+    .modepin{display:grid;place-items:center;transition:background .16s,color .16s,transform .16s}.modepin svg{width:16px;height:16px;pointer-events:none}.modepin.is-pinned{background:#111114;color:#fff}.modepin:active{transform:scale(.92)}.modepin:focus-visible{outline:2px solid #777B80;outline-offset:2px}
+    .theme-choice{display:grid;gap:8px;padding:12px 0;border-bottom:1px solid #c4c4c8}.theme-choice label{font-size:12px;font-weight:700;color:#111114}.theme-choice select{width:100%;border:1px solid #c7c7cb;border-radius:10px;background:#fff;color:#111114;padding:10px;font:600 13px system-ui}
+    .win[data-theme="soft"]{background:#e9f0eb!important}.win[data-theme="soft"] :is(.titlebar,.toolbar,.display,.kpview){background:#e9f0eb!important}.win[data-theme="soft"] button.btn.eq{background:#386c59!important;border-color:#386c59!important;color:#fff!important}
+    .win[data-theme="cloud"]{background:#f0ebf6!important}.win[data-theme="cloud"] :is(.titlebar,.toolbar,.display,.kpview){background:#f0ebf6!important}.win[data-theme="cloud"] button.btn.eq{background:#7553a4!important;border-color:#7553a4!important;color:#fff!important}
+    .win[data-theme="dark"]{background:#17191d!important;color:#f5f5f5!important}.win[data-theme="dark"] :is(.titlebar,.toolbar,.display,.kpview,.body){background:#17191d!important;border-color:#62666f!important}.win[data-theme="dark"] :is(.title,.brand-seven,.brand-calculator,.result,.titlebar .iconbtn){color:#f5f5f5!important}.win[data-theme="dark"] .brand-home .ticon{filter:invert(1)}.win[data-theme="dark"] button.btn{background:#30343a!important;border-color:#555a62!important;color:#fff!important;box-shadow:none!important}.win[data-theme="dark"] button.btn.eq{background:#e7e7e7!important;border-color:#e7e7e7!important;color:#111!important}.win[data-theme="dark"] .modebtn{background:#292d32!important;border-color:#777!important;color:#fff!important}
+    .win[data-theme="dark"] .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn):hover{background:#3a3f46!important;color:#fff!important;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+    .win[data-theme="soft"] .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn):hover{background:#dce8df;color:#284b3b}
+    .win[data-theme="cloud"] .titlebar .iconbtn:not(.dotmenu):not(.info-close-btn):hover{background:#e7dff0;color:#513a70}
+    .histpin svg{width:16px;height:16px}.histpin:hover{background:#f1f1f3;border-color:#b8b8bc;color:#111114}.histpin:active{transform:scale(.92)}.histpin.is-pinned{background:#111114;border-color:#111114;color:#fff}.histpin:focus-visible{outline:2px solid #777B80;outline-offset:2px}
+    @media(prefers-reduced-motion:reduce){.modemenu,.pickerpanel,.pickerbtn,.cal-select,.f{transition:none!important;animation:none!important}}
+    @media(prefers-reduced-motion:reduce){.brand-home .ticon,.select-popover{animation:none!important}}
+    /* Typography system: Manrope for calm headings; DM Sans for the working UI and readable numerals. */
+    .brand-title-line{display:flex;align-items:baseline;gap:4px;white-space:nowrap;} .brand-seven{font-family:"Fjalla One","DM Sans",sans-serif;font-size:14px;font-weight:400;letter-spacing:.01em;line-height:1.05;} .brand-calculator{font-family:"DM Sans",system-ui,sans-serif;font-size:13px;font-weight:550;letter-spacing:-.025em;line-height:1.05;} .win .title{gap:3px!important;}
+    .win{font-optical-sizing:auto;font-kerning:normal;font-feature-settings:"ss01" 1;}
+    .modebtn,.modeitem,.f label,.f input,.f select,.pickerbtn,.time-item,.history,.expr,.result,.histexpr,.histres,.progrow b,button.btn{font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-optical-sizing:auto;font-variant-numeric:lining-nums tabular-nums;}
+    .modebtn{min-height:42px;font-size:14px;font-weight:600;letter-spacing:-.01em}.modebtn svg{width:14px;height:14px}
+    .modeitem{font-weight:550;letter-spacing:0;}
+    .display{container-type:inline-size}.result{font-size:clamp(34px,9cqi,38px);font-weight:550;letter-spacing:-.035em;font-feature-settings:"ss01" 1,"tnum" 1;}
+    .expr,.histexpr{font-weight:450;letter-spacing:0;}
+    .histres,.progrow b{font-weight:600;}
+    .f label{font-weight:600;letter-spacing:.005em;}
+    button.btn{font-weight:550;letter-spacing:0;}
+    .pad{container-type:size}.pad button.btn{font-size:clamp(16px,min(7cqi,7cqb),30px);line-height:1}.pad button.btn svg{width:clamp(16px,min(5cqi,5cqb),24px);height:clamp(16px,min(5cqi,5cqb),24px)}
+    .pad button.btn.backspace svg{width:clamp(24px,min(7.5cqi,7.5cqb),33px);height:clamp(24px,min(7.5cqi,7.5cqb),33px)}
+    .pad button.btn.backspace{flex-direction:column;gap:clamp(2px,.8cqb,5px)}
+    .pad button.btn.backspace .delete-label{font:650 clamp(10px,2.6cqb,12px)/1 "DM Sans",system-ui,sans-serif;letter-spacing:0}
+    .pad button.btn:is([data-key="÷"],[data-key="×"],[data-key="−"],[data-key="+"]){font-size:clamp(19px,min(8cqi,8cqb),34px);font-weight:600}
+    .win .infopanel{border-right-color:#303236!important}
+    .win .infopanel :is(.infobrand,.infosection,.theme-choice,.infomade){border-color:#45484c!important}
+    .win .infopanel :is(.shortcut-toggle,.theme-dropdown summary,.theme-options,.info-links button,.info-links a){border-color:#45484c!important}
+    .win[data-theme="dark"] .infopanel{border-right-color:#a4abb5!important}
+    .win[data-theme="dark"] .infopanel :is(.infobrand,.infosection,.theme-choice,.infomade,.shortcut-toggle,.theme-dropdown summary,.theme-options,.info-links button,.info-links a){border-color:#a4abb5!important}
+    .pad button.btn{font-weight:600;letter-spacing:-.025em;font-variant-numeric:lining-nums tabular-nums;font-optical-sizing:auto;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    .win.mobile-app-mode .pad button.btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform 160ms cubic-bezier(.2,.7,.2,1),filter 160ms ease,box-shadow 160ms ease}
+    .win.mobile-app-mode .pad button.btn:active{transform:translateY(2px) scale(.975);filter:brightness(.94);box-shadow:inset 0 2px 5px #0002!important;transition-duration:65ms}
+    @media(prefers-reduced-motion:reduce){.win.mobile-app-mode .pad button.btn{transition:none}.win.mobile-app-mode .pad button.btn:active{transform:none}}
+    .pad button.btn:is([data-action="clear"],[data-action="equals"]){font-weight:700;letter-spacing:-.015em}
+    .pad button.btn.backspace svg{stroke-linecap:round;stroke-linejoin:round}
+    /* Theme-aware calculator selector and subtle feedback. */
+    .win .historydrawer .histclear{font-family:"DM Sans",system-ui,sans-serif;font-size:14px;font-weight:650;letter-spacing:-.01em;color:#8b3841!important}.win .historydrawer .histclear:hover{color:#68242c!important;background:#faf1f2}
+    .win .infopanel .kawkab-brand-logo{filter:brightness(0)!important;opacity:1!important}
+    .win .brand-home .title small.brand-kawkab-straight{color:#111114}
+    .win[data-theme="dark"] .infopanel .kawkab-brand-logo{filter:brightness(0) invert(1)!important;opacity:1!important}
+    .win[data-theme="dark"] .brand-home .title small.brand-kawkab-straight{color:#f2f4f6}
+    .shortcut-toggle{min-height:40px;padding:10px 12px;border:1px solid #b8b8bc;border-radius:10px;background:#fff;transition:background .18s ease,border-color .18s ease}.shortcut-toggle .infolabel{font-size:12px}.theme-dropdown summary{transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .2s ease,transform .2s cubic-bezier(.2,.8,.25,1)}.theme-dropdown .theme-chevron{transition:transform .22s ease}.theme-dropdown[open] .theme-chevron{transform:rotate(180deg)}
+    @keyframes settings-reveal{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}.infopanel.open .theme-choice{animation:settings-reveal .3s cubic-bezier(.2,.72,.25,1) both}.shortcut-content:not([hidden]),.theme-dropdown[open] .theme-options{animation:settings-reveal .22s ease both}.shortcut-content:not([hidden]){padding-top:10px}
+    .win[data-theme="soft"] .shortcut-toggle{background:#fff;border-color:#cad9cf}.win[data-theme="cloud"] .shortcut-toggle{background:#fff;border-color:#ded3e9}.win[data-theme="dark"] .shortcut-toggle{background:#30343a;border-color:#606772}.win[data-theme="dark"] :is(.shortcut-chevron,.theme-chevron){color:#e5e7eb}
+    @media(prefers-reduced-motion:reduce){.infopanel.open .theme-choice,.shortcut-content:not([hidden]),.theme-dropdown[open] .theme-options{animation:none}.shortcut-toggle,.theme-dropdown summary,.shortcut-chevron,.theme-chevron{transition:none!important}}
+    .theme-label{font:700 12.5px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#111114}.infopanel .infolabel{font:700 12.5px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;letter-spacing:0;text-transform:none;color:#111114}.theme-dropdown{position:relative}.theme-dropdown summary{list-style:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;min-height:40px;padding:10px 12px;border:1px solid #b8b8bc;border-radius:10px;background:#fff;color:#111114;font:650 13px/1.2 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.theme-dropdown summary::-webkit-details-marker{display:none}.theme-dropdown summary:hover{background:#f6f7f6;border-color:#777b80;box-shadow:0 3px 10px #1111140b;transform:translateY(-1px)}.theme-dropdown summary:active{transform:scale(.99)}.theme-dropdown summary:focus-visible{outline:2px solid #777b80;outline-offset:2px}.theme-dropdown[open] summary{border-color:#777}.theme-options{display:grid;gap:2px;margin-top:4px;padding:5px;border:1px solid #c9c9cf;border-radius:12px;background:#fff;box-shadow:0 8px 24px #0002}.theme-options button{border:0;border-radius:7px;background:transparent;color:#111114;text-align:left;padding:9px;font:600 13px/1.25 "DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;cursor:pointer}.theme-options button:hover,.theme-options button[aria-pressed="true"]{background:#ededf0}.theme-options button[aria-pressed="true"]::after{content:"✓";float:right}
+    .win[data-theme="soft"] .theme-dropdown summary,.win[data-theme="soft"] .theme-options,.win[data-theme="soft"] .info-links :is(button,a){background:#fff;border-color:#cad9cf}.win[data-theme="soft"] .theme-dropdown summary:hover{background:#f1f6f2;border-color:#9bb7a4;color:#17251c}.win[data-theme="soft"] .theme-options button:hover,.win[data-theme="soft"] .theme-options button[aria-pressed="true"]{background:#dfebe2}
+    .win[data-theme="cloud"] .theme-dropdown summary,.win[data-theme="cloud"] .theme-options,.win[data-theme="cloud"] .info-links :is(button,a){background:#fff;border-color:#ded3e9}.win[data-theme="cloud"] .theme-dropdown summary:hover{background:#f7f3fa;border-color:#bca8d0;color:#30233e}.win[data-theme="cloud"] .theme-options button:hover,.win[data-theme="cloud"] .theme-options button[aria-pressed="true"]{background:#eee6f6}
+    .win[data-theme="dark"] .theme-label{color:#f2f4f6}.win[data-theme="dark"] .theme-dropdown summary,.win[data-theme="dark"] .theme-options{background:#30343a;color:#fff;border-color:#606772}.win[data-theme="dark"] .theme-dropdown summary:hover{background:#3a3f46;border-color:#8a929d;color:#fff;box-shadow:0 3px 10px #0004}.win[data-theme="dark"] .theme-options button{color:#fff}.win[data-theme="dark"] .theme-options button:hover,.win[data-theme="dark"] .theme-options button[aria-pressed="true"]{background:#505762}
+    .info-links a{background:#fff}.win .infopanel .infoabout,.win .infopanel .infolabel,.win .infopanel .theme-label,.win .infopanel .theme-dropdown summary,.win .infopanel .theme-options button,.win .infopanel .info-links button,.win .infopanel .info-links a,.win .infopanel .shortcut-toggle{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;font-optical-sizing:auto;font-synthesis:none;text-rendering:optimizeLegibility}
+    .win[data-theme] .modemenu .menuspecial{border-bottom-color:#666b69}
+    .win[data-theme] .modemenu .modecat{border-top-color:#666b69}
+    .win[data-theme="soft"] .modemenu :is(.menuspecial,.modecat){border-color:#527261}.win[data-theme="soft"] .mode-divider-label{color:#496353}
+    .win[data-theme="cloud"] .modemenu :is(.menuspecial,.modecat){border-color:#78638d}.win[data-theme="cloud"] .mode-divider-label{color:#69537d}
+    .win[data-theme="dark"] .modemenu :is(.menuspecial,.modecat){border-color:#a1a8b2!important}.win[data-theme="dark"] .mode-divider-label{color:#c4cad2!important}
+    .win[data-theme] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#111114!important;border-color:#111114!important;color:white!important;box-shadow:none!important}
+    .win[data-theme="soft"] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#386c59!important;border-color:#386c59!important;color:white!important}
+    .win[data-theme="cloud"] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#7553a4!important;border-color:#7553a4!important;color:white!important}
+    .win[data-theme="dark"] button.btn:is([data-action="clear"],[data-prog-action="clear"]){background:#e7e7e7!important;border-color:#e7e7e7!important;color:#111!important}
+    .win[data-theme="soft"] .infopanel{background:#e9f0eb!important;border-color:#a7bcae!important}.win[data-theme="cloud"] .infopanel{background:#f0ebf6!important;border-color:#c8b8d9!important}
+    .win[data-theme="dark"] .infopanel{background:#202329!important;border-color:#5b616b!important;color:#f2f4f6!important}
+    .win[data-theme="dark"] .infopanel :is(.infolabel,.infoabout,.infoversion,.version-name,.version-number,.brand-seven,.brand-calculator,.shortcut-toggle,.theme-choice label,.iconbtn){color:#f2f4f6!important}
+    .win[data-theme="dark"] .infopanel .version-separator{color:#a4abb5!important}
+    .win[data-theme="dark"] .infopanel :is(.infosection,.infobrand,.theme-choice,.infomade){border-color:#535963!important}
+    .win[data-theme="dark"] .infopanel :is(.info-links button,.info-links a,.theme-choice select){background:#30343a!important;border-color:#606772!important;color:#fff!important}
+    .win.mobile-app-mode .infopanel .info-links .mobile-feedback-entry a{min-height:0;padding:5px 0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none;font-size:14px;text-decoration:none}
+    .win.mobile-app-mode .infopanel .info-links .mobile-feedback-entry a:hover{text-decoration:underline;text-underline-offset:3px}
+    .win.mobile-app-mode .infopanel .infobrand{padding-bottom:10px;margin-bottom:4px}
+    .win.mobile-app-mode .infopanel .infosection:not(.shortcut-section),.win.mobile-app-mode .infopanel .theme-choice{padding:8px 0}
+    .win.mobile-app-mode .infopanel .infomade{margin-top:8px;padding-top:10px}
+    .win.mobile-app-mode .infopanel .mobile-feedback-entry{padding:4px 0}
+    .win.mobile-app-mode .infopanel .info-links .mobile-feedback-entry a{min-height:34px;padding:0}
+    .win.mobile-app-mode .infopanel .info-links .mobile-feedback-entry + .infomade{margin-top:0}
+    .win.mobile-app-mode .infopanel :is(.infobrand,.infosection:not(.shortcut-section),.theme-choice,.mobile-guide-entry,.mobile-feedback-entry,.infomade){border-color:#45484c!important}
+    .win.mobile-app-mode[data-theme="dark"] .infopanel :is(.infobrand,.infosection:not(.shortcut-section),.theme-choice,.mobile-guide-entry,.mobile-feedback-entry,.infomade){border-color:#a4abb5!important}
+    .win[data-theme="dark"] .infopanel :is(.info-links button span,.info-links a span,.update-icon){color:#fff!important}
+    .win[data-theme="dark"] .infopanel .info-brand-mark{filter:invert(1)}.win[data-theme="dark"] .infopanel .kawkab-brand-logo{filter:grayscale(1) invert(1);opacity:.85}
+    .win[data-theme="dark"] .infopanel :is(.shortcut-intro,.shortcut-name,.shortcut-os,.infomade){color:#d2d6dc!important}
+    .win[data-theme="dark"] .titlebar .dotmenu{background:#30343a;border-color:#626975;color:#fff!important}.win[data-theme="dark"] .titlebar .dotmenu:hover{background:#414750;border-color:#a2aab6}.win[data-theme="dark"] .titlebar .dotmenu:focus-visible{outline:2px solid #fff;outline-offset:2px}
+    .win[data-theme="soft"] .modemenu{background:#f4f8f4;border-color:#b7cbbd}.win[data-theme="soft"] .menusearch{background:#fff;border-color:#c8dacf}.win[data-theme="soft"] .modeitem:hover,.win[data-theme="soft"] .modeitem.highlight{background:#dfebe2}.win[data-theme="soft"] .modebtn{background:#f7fbf7;border-color:#a7bcae}
+    .win[data-theme="blue"]{--theme-surface:#e3f0f3;--theme-accent:#316b7d;--theme-border:#9fc4ce;--theme-hover:#d0e6ea;--theme-menu:#f3fafb}
+    .win[data-theme="rose"]{--theme-surface:#f3e5e9;--theme-accent:#8e4e64;--theme-border:#d5b4c0;--theme-hover:#e9d3db;--theme-menu:#fcf6f8}
+    .win[data-theme="sand"]{--theme-surface:#f3ede3;--theme-accent:#80674b;--theme-border:#cdbda5;--theme-hover:#e9decc;--theme-menu:#faf6ef}
+    .win:is([data-theme="blue"],[data-theme="rose"],[data-theme="sand"]),.win:is([data-theme="blue"],[data-theme="rose"],[data-theme="sand"]) :is(.titlebar,.toolbar,.display,.kpview,.infopanel){background:var(--theme-surface)!important}
+    .win:is([data-theme="blue"],[data-theme="rose"],[data-theme="sand"]) :is(.modebtn,.theme-dropdown summary,.theme-options,.modemenu){background:var(--theme-menu);border-color:var(--theme-border)}
+    .win:is([data-theme="blue"],[data-theme="rose"],[data-theme="sand"]) :is(.theme-options button:hover,.theme-options button[aria-pressed="true"],.modeitem:hover,.modeitem.highlight){background:var(--theme-hover)}
+    .win:is([data-theme="blue"],[data-theme="rose"],[data-theme="sand"]) button.btn:is(.eq,[data-action="clear"],[data-prog-action="clear"]){background:var(--theme-accent)!important;border-color:var(--theme-accent)!important;color:#fff!important}
+    .win[data-theme="cloud"] .modemenu{background:#f9f6fc;border-color:#cfc1df}.win[data-theme="cloud"] .menusearch{background:#fff;border-color:#ded2eb}.win[data-theme="cloud"] .modeitem:hover,.win[data-theme="cloud"] .modeitem.highlight{background:#eee6f6}.win[data-theme="cloud"] .modebtn{background:#fcf9ff;border-color:#c8b8d9}
+    .win[data-theme="dark"] .modemenu{background:#24272d;border-color:#555b65;box-shadow:0 18px 45px #0009}.win[data-theme="dark"] .menusearch{background:#17191d;border-color:#525862}.win[data-theme="dark"] .menusearch input{color:#f4f5f6}.win[data-theme="dark"] .modeitem,.win[data-theme="dark"] .modecat{color:#eef0f2;border-color:#444953}.win[data-theme="dark"] .modeitem:hover,.win[data-theme="dark"] .modeitem.highlight{background:#3a3e47;color:#fff}.win[data-theme="dark"] .modeitem.active{color:#fff}.win[data-theme="dark"] .modeitem.picked{background:#dfe3ea!important;color:#16181c!important}.win[data-theme="dark"] .modeitem.picked svg{color:#16181c!important}.win[data-theme="dark"] .modecat .catic,.win[data-theme="dark"] .modecat .catcount{background:#393e47;color:#e5e8eb}.win[data-theme="dark"] .modepin{color:#bec3cc}.win[data-theme="dark"] .modepin:hover,.win[data-theme="dark"] .modepin.is-pinned{background:#e3e7ed;color:#1a1d21}.win[data-theme="dark"] .menuspecial{border-color:#444953}.win[data-theme="dark"] .expr,.win[data-theme="dark"] .history span{color:#b2b8c1}.win[data-theme="dark"] .edit-action{color:#d4d8de}
+    @media (hover:hover){.win[data-theme] .modebtn:hover{filter:brightness(.96)}.win[data-theme] button.btn:hover{filter:brightness(1.07)}}
+    .win[data-theme] .modebtn:focus-visible,.win[data-theme] .modepin:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+    @media(prefers-reduced-motion:reduce){.win[data-theme] .modemenu,.win[data-theme] button.btn{animation:none!important;transition:none!important}}
+
+        .f input,.f select,.app-select,.pickerbtn,.cal-select,.select-popover,.select-search,.currency-swap,.time-custom,.time-custom input{border-color:#BFC2C8}.rrow{border-bottom-color:#D1D3D8}.rtable td{border-top-color:#D1D3D8}.win[data-theme="dark"] .results{border-top-color:#9AA1AB}.win[data-theme="dark"] .results::before{color:#F2F4F6}.win[data-theme="dark"] .rrow{border-bottom-color:#454A52}.win[data-theme="dark"] .rtable td{border-top-color:#454A52}.win[data-theme="dark"] .f input,.win[data-theme="dark"] .f select,.win[data-theme="dark"] .app-select,.win[data-theme="dark"] .pickerbtn,.win[data-theme="dark"] .cal-select,.win[data-theme="dark"] .select-popover,.win[data-theme="dark"] .select-search,.win[data-theme="dark"] .currency-swap,.win[data-theme="dark"] .time-custom,.win[data-theme="dark"] .time-custom input{border-color:#626975}
+
+    .win:not(.mobile-app-mode) .title-float-btn{display:none!important}
+    .win.mobile-floating{position:fixed!important;top:var(--tai7-top)!important;left:var(--tai7-left)!important;width:var(--tai7-w)!important;height:var(--tai7-h)!important;min-width:min(260px,calc(100vw - 16px))!important;min-height:min(480px,calc(100dvh - 24px))!important;max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 24px)!important;border:2px solid #111114!important;border-radius:18px!important;box-shadow:0 20px 45px #0005!important;z-index:1000001}
+    .win.mobile-floating .titlebar{border-bottom:1px solid #111114!important}
+    @container (max-width: 350px){.win.mobile-floating .brand-home .title{display:none}.win.mobile-floating .brand-home .logobtn,.win.mobile-floating .brand-home .ticon{width:30px;height:30px}.win.mobile-floating .brand-home{flex:1 1 auto;min-width:30px}}
+    .win.mobile-floating .titlebar{touch-action:none;cursor:grab}
+    .win.mobile-floating .grip{display:block;touch-action:none}
+    .win.mobile-floating [data-action="close"]{display:inline-flex}
+    .win.mobile-app-mode.popup-mode:not(.open){visibility:hidden;opacity:0;pointer-events:none}
+    .win.popup-mode:not(.mobile-app-mode){border:2px solid #111114!important;border-radius:0!important;box-sizing:border-box}
+      /* Consistent medium-dark dividers: distinct from the frame, crisp while resizing. */
+    .win{--ui-divider:#858a91}
+    .win :is(.titlebar,.toolbar,.display,.sci,.infobrand,.infosection:not(:last-child),.theme-choice,.infomade,.mobile-guide-entry,.mobile-feedback-entry,.menuspecial,.modecat:not(:first-child),.histrow,.histclear,.progdisplay,.progbases,.results,.rrow,.rtable td){border-color:var(--ui-divider)!important}
+    .win :is(.titlebar,.toolbar,.display,.sci,.infobrand,.infosection:not(:last-child),.theme-choice,.infomade,.mobile-guide-entry,.mobile-feedback-entry,.menuspecial,.modecat:not(:first-child),.histrow,.histclear,.progdisplay,.progbases,.results,.rrow,.rtable td){border-width:1.5px!important}
+    .win .infopanel{border-right:1.5px solid var(--ui-divider)!important}
+.win .historydrawer,.win .infopanel,.win .modemenu{box-sizing:border-box!important;border:1.5px solid #45484c!important}.win[data-theme="dark"] .historydrawer,.win[data-theme="dark"] .infopanel,.win[data-theme="dark"] .modemenu{border-color:#a4abb5!important}
+    .win[data-theme="dark"]{--ui-divider:#737a84}
+    .win[data-theme="soft"]{--ui-divider:#77847c}
+    .win[data-theme="cloud"]{--ui-divider:#817888}
+    .win[data-theme="blue"]{--ui-divider:#74858d}
+    .win[data-theme="rose"]{--ui-divider:#887c82}
+    .win[data-theme="sand"]{--ui-divider:#898276}
+    .win .histlist{gap:9px;padding:10px 8px}
+    .win .histrow{grid-template-columns:minmax(0,1fr) 36px 36px!important;grid-template-rows:auto auto auto!important;gap:8px!important;min-height:108px;padding:12px!important;border:1.5px solid var(--ui-divider)!important;border-radius:14px!important;background:#fff;box-shadow:0 2px 5px #1111140b}
+    .win .histrow .histfeature{grid-column:1/-1;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip}.win .histrow .histrow-main{grid-column:1/-1;grid-row:2}.win .histrow .histadd{grid-column:2;grid-row:3}.win .histrow .histpin{grid-column:3;grid-row:3}
+    .win .histrow-main{display:flex!important;justify-content:space-between;align-items:baseline;padding:0 2px!important;gap:10px!important}
+    .win .histfeature{font-size:12px;line-height:1.3;font-weight:700}
+    .win .histrow .histexpr{font-size:12px;line-height:1.35;color:#555963}
+    .win .histrow .histres{font-size:15px!important;font-weight:750;letter-spacing:-.02em}
+    .win .histrow .histstamp{grid-column:1;grid-row:3;align-self:center;font-size:10px;line-height:1.35;color:#767b84;white-space:nowrap}
+    .win .histrow :is(.histadd,.histpin){width:36px;height:36px;border:1.5px solid #cbd0d6;border-radius:10px;box-shadow:none}
+    .win .histrow .histadd{border:0;background:transparent;box-shadow:none;color:inherit}.win .histrow .histadd svg{width:16px;height:16px}.win .histrow .histadd:hover{background:#f0f1f3;color:#111114;border:0}
+    .win .histlist .histclear{margin:0 0 4px;padding:8px 4px 10px!important;border:0!important;border-radius:0;background:transparent}
+    .win .histrow .histfeature{grid-column:1/3}.win .histrow .histdelete{grid-column:3;grid-row:1;display:grid;place-items:center;width:36px;height:32px;padding:0;border:0;background:transparent;color:#626772;cursor:pointer}.win .histrow .histdelete svg{width:17px;height:17px}.win .histrow .histdelete:hover{color:#a52a2a;background:#f7eded;border-radius:8px}.win .histrow .histdelete:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+    .win.mobile-app-mode .formview,.win.mobile-app-mode .fgrid,.win.mobile-app-mode .fgrid>*{min-width:0;max-width:100%;box-sizing:border-box}
+    .win.mobile-app-mode .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.win.mobile-app-mode .fgrid :is(input,select,textarea,.app-select){min-width:0;max-width:100%;box-sizing:border-box}
+    @media(max-width:410px){.win.mobile-app-mode .formview{padding-inline:12px}.win.mobile-app-mode .fgrid{grid-template-columns:minmax(0,1fr);gap:12px}.win.mobile-app-mode .fgrid>*{grid-column:1/-1!important}.win.mobile-app-mode .currency-pair{grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr)!important}.win.mobile-app-mode .currency-pair>*{grid-column:auto!important}}
+    .win .histlist{gap:7px;padding:6px 8px}.win .histrow{min-height:0!important;padding:9px 10px!important;gap:3px 7px!important;border-radius:12px!important;box-shadow:0 1px 3px #1111140a}.win .histrow .histrow-main{min-height:28px!important}.win .histrow .histfeature{font-size:11.5px}.win .histrow .histres{font-size:14px!important}.win .histrow :is(.histadd,.histpin){width:30px;height:30px}.win .histrow .histdelete{width:30px;height:27px}.win .histrow .histdelete svg{width:15px;height:15px}
+    .win .histrow .histpin,.win .histrow .histpin.is-pinned{border:0;background:transparent;box-shadow:none}.win .histrow .histpin:hover{border:0;background:#f0f1f3;border-radius:8px}.win .histrow .histpin.is-pinned{color:#111114}.win[data-theme="dark"] .histrow .histpin.is-pinned{color:#fff}
+    .win .histrow .histrow-main{justify-content:flex-start!important;gap:5px!important}.win .histrow .histexpr{flex:0 1 auto;max-width:70%;min-width:0}.win .histrow .histres{flex:0 0 auto}
+    .win .histrow{grid-template-columns:minmax(0,1fr) 28px 28px 28px!important;gap:3px 3px!important}.win .histrow .histfeature{grid-column:1/-1}.win .histrow .histrow-main{grid-column:1/-1}.win .histrow .histadd{grid-column:2;grid-row:3}.win .histrow .histpin{grid-column:3;grid-row:3}.win .histrow .histdelete{grid-column:4;grid-row:3;width:28px;height:30px}.win .histrow .histstamp{grid-column:1;grid-row:3;font-size:9px}
+    .win .histrow .histrow-main{grid-column:1;grid-row:2;min-width:0}.win .histrow .histadd{grid-column:2;grid-row:2}.win .histrow .histpin{grid-column:3;grid-row:2}.win .histrow .histdelete{grid-column:4;grid-row:2}.win .histrow .histstamp{grid-column:1/-1;grid-row:3;font-size:10px}.win .histrow .histexpr{max-width:62%}.win .histrow .histres{font-size:13px!important}
+    .win .historydrawer .infobrand{padding-bottom:8px;margin-bottom:0}.win .historydrawer .histlist{padding-top:0}.win .historydrawer .histclear{padding-top:5px!important;padding-bottom:7px!important;margin-bottom:3px}
+    .win .histrow{grid-template-rows:auto auto!important}.win .histrow .histfeature{grid-column:1;grid-row:1;font-size:10.5px;line-height:1.25}.win .histrow .histstamp{grid-column:2/5;grid-row:1;align-self:center;justify-self:end;text-align:right;font-size:9px;white-space:nowrap}
+    .formview.unit-converter .fgrid>.f{grid-column:1/-1}.formview .unit-pair{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}.formview .unit-pair>.f{min-width:0}.formview .unit-pair :is(select,.app-select){width:100%;min-width:0;box-sizing:border-box}
+    .formview.unit-converter .results{margin-top:16px}.formview.unit-converter .rrow.emph{padding:14px 16px;margin:2px 0;border:1.5px solid var(--ui-divider,#858a91)!important;border-radius:13px;background:#f1f3f6;gap:12px}.formview.unit-converter .rrow.emph b{font-size:clamp(18px,4vw,24px);font-weight:800;color:#111114}.win[data-theme="dark"] .formview.unit-converter .rrow.emph{background:#303640}.win[data-theme="dark"] .formview.unit-converter .rrow.emph b{color:#fff}
+    .formview .form-reset{align-self:flex-end;min-height:36px;padding:6px 2px;border:0;background:transparent;color:#8b3841;font:700 15px system-ui,sans-serif;cursor:pointer}.formview .form-reset:hover{color:#68242c;text-decoration:underline;text-underline-offset:3px}.formview .form-reset:focus-visible{outline:2px solid currentColor;outline-offset:3px}.win[data-theme="dark"] .formview .form-reset{background:transparent;color:#e6a6ad}
+    .win .modebtn{position:relative;flex:0 1 460px;width:min(460px,100%);margin-inline:auto;justify-content:center;padding-inline:34px;text-align:center;border-width:1.5px;border-color:#737880;font-size:16px}.win .modebtn .mlabel{display:block;min-width:0;max-width:100%;text-align:center}.win .modebtn svg{position:absolute;right:12px;top:50%;transform:translateY(-50%)}.win .modebtn.open svg{transform:translateY(-50%) rotate(180deg)}
+    .win .modebtn{min-height:44px;border:2px solid #30343a;border-radius:12px;box-shadow:0 2px 6px #11111412;font-weight:700}.win .modebtn:hover{border-color:#17191d;box-shadow:0 3px 9px #1111141c}.win[data-theme="dark"] .modebtn{border-color:#b8c0ca;box-shadow:0 2px 6px #0005}
+    .win .modemenu{left:50%!important;right:auto!important;width:min(380px,calc(100% - 24px))!important;max-width:calc(100% - 24px)!important;transform:translate(-50%,-4px);transform-origin:top center}.win .modemenu.open{transform:translate(-50%,0) scale(1)}
+    .win.history-add-locked .histrow .histadd{display:none}
+    .win[data-theme="dark"] .histrow{background:#25292f}.win[data-theme="dark"] .histfeature,.win[data-theme="dark"] .histrow .histres{color:#f5f5f5!important}.win[data-theme="dark"] .histrow .histexpr,.win[data-theme="dark"] .histrow .histstamp{color:#bdc3cc}
+    @media(max-width:719px){:host(.web-calculator-host) .win.popup-mode{top:calc(68px + env(safe-area-inset-top))!important;left:0!important;width:100vw!important;height:calc(100dvh - 68px - env(safe-area-inset-top))!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;border:2px solid #111114!important;border-radius:14px 14px 0 0!important}}
+    :host(.web-calculator-host) .win.popup-mode:not(.open){visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+    :host(.web-calculator-host) .win.popup-mode [data-action="close"]{display:inline-flex}
+    @media(max-width:719px) and (orientation:landscape){:host(.web-calculator-host) .win.popup-mode{top:calc(56px + env(safe-area-inset-top))!important;height:calc(100dvh - 56px - env(safe-area-inset-top))!important}}
+    </style>
+
+  <div class="win" part="window">
+    <div class="titlebar" data-drag>
+      <button class="iconbtn dotmenu hamburger-menu" type="button" aria-label="Open menu" aria-controls="app-info-panel" aria-expanded="false" title="Open menu — about SevenTask Calculator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="st-menu-line st-menu-top" d="M4 6h16"/><path class="st-menu-line st-menu-middle" d="M4 12h16"/><path class="st-menu-line st-menu-bottom" d="M4 18h16"/></svg>
+      </button>
+      <button class="brand-home" data-action="brand-home" type="button" aria-label="SevenTask Calculator — open Just the calculator" title="SevenTask Calculator · Just the calculator">
+        <span class="logobtn" aria-hidden="true"><img class="ticon" src="icon.svg" alt=""></span>
+        <span class="title"><span class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></span><small class="kawkab-brand brand-kawkab-straight" aria-label="Kawkab Tech Labs">Kawkab Tech Labs</small></span>
+      </button>
+      <button class="iconbtn title-history" data-action="history-toggle" aria-label="Open calculation history" title="Calculation history">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 7.7V3.9m0 3.8h3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 7.5A8.5 8.5 0 1 1 3.6 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 7.7v4.6l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="iconbtn title-float-btn" data-action="preview-floating" type="button" aria-label="Toggle floating calculator" title="Floating calculator"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4l6 6M4 10h6V4m10 16-6-6m6 0h-6v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="iconbtn title-duplicate-btn" data-action="duplicate" title="Open a second calculator">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="13" height="14" rx="2.5" fill="#FFFFFF" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+      <button class="iconbtn" data-action="close" type="button" aria-label="Close calculator" title="Close"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <div class="infobackdrop" data-infobackdrop aria-hidden="true"></div>
+    <div class="infopanel" id="app-info-panel" data-infopanel role="dialog" aria-modal="true" aria-label="Calculator menu" aria-hidden="true">
+      <div class="infobrand">
+        <svg class="info-brand-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false">
+  <g stroke="#000000" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="15" y="3" width="34" height="58" rx="8" stroke-width="3.1"/>
+    <rect x="20" y="10" width="24" height="11" rx="2.2" stroke-width="2.2"/>
+    <rect x="21.5" y="27.5" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="29.25" y="27.5" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="37" y="27.5" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="21.5" y="36" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="29.25" y="36" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="37" y="36" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="21.5" y="44.5" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="29.25" y="44.5" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <rect x="37" y="44.5" width="5.5" height="5.5" rx="1.6" stroke-width="1.7"/>
+    <path d="M22 55.5h4.5m4.3 0h4.5m4.3 0h4.5" stroke-width="1.7"/>
+  </g>
+</svg>
+        <div class="infobrandtext"><b class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></b></div>
+        <button class="iconbtn info-close-btn" data-action="info-toggle" type="button" aria-label="Close menu" title="Close menu"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="infosection version-section">
+        <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.17</b></div>
+      </div>
+      <div class="infosection">
+        <div class="infolabel">About</div>
+        <div class="infoabout">Everyday answers, all in one place, with 136+ calculators, saved history, and the freedom to duplicate a calculator to run different tools side by side.</div>
+      </div>
+      <div class="theme-choice"><span class="theme-label">Theme</span><details class="theme-dropdown"><summary aria-label="Choose theme"><span data-theme-label>Monochrome (Default)</span><svg class="shortcut-chevron theme-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="theme-options" role="group" aria-label="Themes"><button type="button" data-theme-option="monochrome">Monochrome (Default)</button><button type="button" data-theme-option="dark">Dark</button><button type="button" data-theme-option="soft">Sage Garden</button><button type="button" data-theme-option="cloud">Lavender Mist</button><button type="button" data-theme-option="blue">Ocean Breeze</button><button type="button" data-theme-option="rose">Rosewood</button><button type="button" data-theme-option="sand">Sandstone</button></div></details></div>
+      <div class="mobile-guide-entry"><button type="button" data-action="mobile-guide">How to Use <svg class="st-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg></button></div>
+      <div class="info-links"><button type="button" data-action="share-app">Share Android app <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6m-7.6 7 7.6 4.6"/></svg></button><button type="button" data-action="check-updates"><span>Download Latest Version</span><svg class="update-icon st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20 6v5.2c0 5-3.2 8.7-8 10.3-4.8-1.6-8-5.3-8-10.3V6l8-3.5Z"/><path d="M9.5 12.2 11.2 14l3.5-4"/></svg></a>
+      <div class="infosection shortcut-section">
+        <button class="shortcut-toggle" data-action="shortcuts-toggle" type="button" aria-expanded="false" aria-controls="shortcut-list">
+        <span class="infolabel">Keyboard shortcuts</span>
+          <svg class="shortcut-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="shortcut-content" id="shortcut-list" hidden>
+          <div class="shortcut-intro">For the main calculator · Windows and Mac</div>
+          <div class="shortcut-row"><b class="shortcut-name">Numbers &amp; operators</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>0–9</kbd> <kbd>+ − × ÷ %</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>0–9</kbd> <kbd>+ − × ÷ %</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Calculate</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Enter</kbd> <kbd>=</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>Return</kbd> <kbd>=</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Delete last entry</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Backspace</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>Delete</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Undo · Redo</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Ctrl Z</kbd> <kbd>Ctrl Y</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>⌘ Z</kbd> <kbd>⌘ Y</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Search calculators</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Ctrl K</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>⌘ K</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Open calculator list</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>C</kbd> or type <kbd>calculator</kbd></div><div class="shortcut-os"><span>Mac</span><kbd>C</kbd> or type <kbd>calculator</kbd></div></div></div><div class="shortcut-row"><b class="shortcut-name">Calculator list · move / select</b><div class="shortcut-keys"><div class="shortcut-os"><span>Both</span><kbd>↑ ↓</kbd> move · <kbd>Enter</kbd> select</div><div class="shortcut-os"><span>Both</span><kbd>PgUp / PgDn</kbd> · <kbd>Home / End</kbd></div></div></div>
+          <div class="shortcut-row"><b class="shortcut-name">Escape</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Esc</kbd> close panel/list, or clear</div><div class="shortcut-os"><span>Mac</span><kbd>Esc</kbd> close panel/list, or clear</div></div></div>
+        </div>
+      </div>
+      <div class="mobile-feedback-entry"><a href="mailto:kawkabtechlabs@gmail.com?subject=SevenTask%20Calculator%20feedback">Send Feedback <svg class="st-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg></a></div>
+      <div class="infomade">Made by <img class="kawkab-brand-logo" src="assets/kawkab-tech-labs-logo.svg" alt="Kawkab Tech Labs" width="88" height="28"></div></div>
+    </div>
+    <div class="mobile-guide-backdrop" data-mobile-guide hidden></div>
+    <section class="mobile-guide-dialog" data-mobile-guide-dialog role="dialog" aria-modal="true" aria-labelledby="mobile-guide-title" hidden>
+      <header><div><span class="mobile-guide-eyebrow">SEVENTASK CALCULATOR</span><h2 id="mobile-guide-title">How to Use</h2></div><button type="button" data-action="mobile-guide-close" aria-label="Close guide">×</button></header>
+      <p>Watch the quick guide, then start calculating.</p>
+      <video controls playsinline preload="metadata" aria-label="How to use SevenTask Calculator"><source src="/promo/media/seventask-calculator-how-to-use.mp4" type="video/mp4">Video playback is not supported on this device.</video>
+      <button class="mobile-guide-done" type="button" data-action="mobile-guide-close">Start calculating</button>
+    </section>
+
+    <div class="historybackdrop" data-historybackdrop></div>
+    <div class="historydrawer" data-historypanel>
+      <div class="infobrand">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 7.7V3.9m0 3.8h3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 7.5A8.5 8.5 0 1 1 3.6 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 7.7v4.6l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="infobrandtext"><b>History</b><span>Saved on this device</span></div>
+        <button class="iconbtn" data-action="history-toggle" title="Close">✕</button>
+      </div>
+      <div class="histlist" data-histlist></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="modebtn" data-action="modesel-toggle">
+        <span class="mlabel" data-mode-label>Just the calculator</span>
+        <svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="iconbtn histbtn" data-action="history-toggle" title="History">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5V12l3.2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="modemenu" data-modemenu></div>
+    </div>
+
+    <div class="body">
+      <div class="kpview" data-kpview>
+        <div class="display">
+          <div class="casio-brand">CASIO <span>fx-991CW</span></div>
+          <div class="history" data-history data-action="history-toggle" role="button" tabindex="0" aria-label="Open calculation history" hidden></div>
+          <div class="expr" data-expr>&nbsp;</div>
+          <div class="result" data-result>0</div>
+          <div class="edit-actions" aria-label="Undo and redo">
+            <button class="edit-action" data-action="undo" type="button" aria-label="Undo" title="Undo" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 14 4 9l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 9H14a5.5 5.5 0 0 1 0 11h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            <button class="edit-action" data-action="redo" type="button" aria-label="Redo" title="Redo" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 14 5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5 9H10a5.5 5.5 0 0 0 0 11h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          </div>
+        </div>
+        <div class="sci" data-sci>
+          <div class="modes">
+            <button class="degrad" data-action="mode-deg">DEG</button>
+            <button class="degrad" data-action="mode-rad">RAD</button>
+          </div>
+          <button class="btn fn" data-fn="sin(">sin</button>
+          <button class="btn fn" data-fn="cos(">cos</button>
+          <button class="btn fn" data-fn="tan(">tan</button>
+          <button class="btn fn" data-fn="log(">log</button>
+          <button class="btn fn" data-fn="ln(">ln</button>
+          <button class="btn fn" data-key="^2">x²</button>
+          <button class="btn fn" data-fn="sqrt(">√</button>
+          <button class="btn fn" data-key="^">x^y</button>
+          <button class="btn fn" data-action="inv">1/x</button>
+          <button class="btn fn" data-key="!">n!</button>
+          <button class="btn fn" data-key="π">π</button>
+          <button class="btn fn" data-key="e">e</button>
+          <button class="btn fn" data-key="(">(</button>
+          <button class="btn fn" data-key=")">)</button>
+          <button class="btn fn" data-action="pm">±</button>
+        </div>
+        <div class="pad">
+          <div class="grid">
+            <button class="btn warn" data-action="clear" aria-label="All clear" title="All clear">AC</button>
+            <button class="btn warn backspace" data-action="back" type="button" aria-label="Backspace" title="Delete last character"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/><path d="m12 9 5 6m0-6-5 6" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg><span class="delete-label" aria-hidden="true">Delete</span></button>
+            <button class="btn" data-key="%">%</button>
+            <button class="btn" data-key="÷">÷</button>
+            <button class="btn" data-key="7">7</button>
+            <button class="btn" data-key="8">8</button>
+            <button class="btn" data-key="9">9</button>
+            <button class="btn" data-key="×">×</button>
+            <button class="btn" data-key="4">4</button>
+            <button class="btn" data-key="5">5</button>
+            <button class="btn" data-key="6">6</button>
+            <button class="btn" data-key="−">−</button>
+            <button class="btn" data-key="1">1</button>
+            <button class="btn" data-key="2">2</button>
+            <button class="btn" data-key="3">3</button>
+            <button class="btn" data-key="+">+</button>
+            <button class="btn" data-action="pm2">±</button>
+            <button class="btn" data-key="0">0</button>
+            <button class="btn" data-key=".">.</button>
+            <button class="btn eq" data-action="equals">=</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="progview" data-progview>
+        <div class="progdisplay">
+          <div class="progrow"><span>HEX</span><b data-prog-hex>0</b></div>
+          <div class="progrow"><span>DEC</span><b data-prog-dec>0</b></div>
+          <div class="progrow"><span>OCT</span><b data-prog-oct>0</b></div>
+          <div class="progrow"><span>BIN</span><b data-prog-bin>0</b></div>
+          <div class="edit-actions" aria-label="Undo and redo">
+            <button class="edit-action" data-action="undo" type="button" aria-label="Undo" title="Undo" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 14 4 9l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 9H14a5.5 5.5 0 0 1 0 11h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            <button class="edit-action" data-action="redo" type="button" aria-label="Redo" title="Redo" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 14 5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5 9H10a5.5 5.5 0 0 0 0 11h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          </div>
+        </div>
+        <div class="progbases">
+          <button class="pbase" data-prog-base="HEX">HEX</button>
+          <button class="pbase" data-prog-base="DEC">DEC</button>
+          <button class="pbase" data-prog-base="OCT">OCT</button>
+          <button class="pbase" data-prog-base="BIN">BIN</button>
+        </div>
+        <div class="proggrid">
+          <button class="btn fn" data-prog-hexkey="A">A</button>
+          <button class="btn fn" data-prog-op="AND">AND</button>
+          <button class="btn fn" data-prog-op="OR">OR</button>
+          <button class="btn fn" data-prog-op="XOR">XOR</button>
+          <button class="btn fn" data-prog-action="not">NOT</button>
+
+          <button class="btn fn" data-prog-hexkey="B">B</button>
+          <button class="btn" data-prog-key="7">7</button>
+          <button class="btn" data-prog-key="8">8</button>
+          <button class="btn" data-prog-key="9">9</button>
+          <button class="btn" data-prog-op="÷">÷</button>
+
+          <button class="btn fn" data-prog-hexkey="C">C</button>
+          <button class="btn" data-prog-key="4">4</button>
+          <button class="btn" data-prog-key="5">5</button>
+          <button class="btn" data-prog-key="6">6</button>
+          <button class="btn" data-prog-op="×">×</button>
+
+          <button class="btn fn" data-prog-hexkey="D">D</button>
+          <button class="btn" data-prog-key="1">1</button>
+          <button class="btn" data-prog-key="2">2</button>
+          <button class="btn" data-prog-key="3">3</button>
+          <button class="btn" data-prog-op="−">−</button>
+
+          <button class="btn fn" data-prog-hexkey="E">E</button>
+          <button class="btn fn" data-prog-action="shl">&lt;&lt;</button>
+          <button class="btn" data-prog-key="0">0</button>
+          <button class="btn fn" data-prog-action="shr">&gt;&gt;</button>
+          <button class="btn" data-prog-op="+">+</button>
+
+          <button class="btn fn" data-prog-hexkey="F">F</button>
+            <button class="btn warn" data-prog-action="clear" aria-label="All clear" title="All clear">AC</button>
+          <button class="btn warn backspace" data-prog-action="back" type="button" aria-label="Backspace" title="Delete last digit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/><path d="m12 9 5 6m0-6-5 6" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg></button>
+          <button class="btn eq" data-prog-action="equals" style="grid-column:span 2">=</button>
+        </div>
+      </div>
+
+      <div class="formview" data-formview></div>
+    </div>
+    <div class="select-popover" data-select-popover hidden role="dialog" aria-label="Choose an option"></div>
+    <div class="tai7-toast" data-toast role="status" aria-live="polite" hidden></div>
+
+    <div class="grip" data-resize title="Resize">
+      <svg viewBox="0 0 16 16"><path d="M14 2 L2 14 M14 8 L8 14 M14 14 L14 14" stroke="#C7C7CB" stroke-width="1.5"/></svg>
+    </div>
+  </div>
+  `;
+
+  /* Keyboard routes to whichever calculator window was last interacted with. */
+  let ACTIVE = null;
+  document.addEventListener('keydown', (e)=>{ if(ACTIVE) ACTIVE.handleKeydown(e); });
+
+  let INSTANCE_SEQ = 0;
+
+  class Tai7Calculator extends HTMLElement {
+    constructor(){
+      super();
+      if(document.body.classList.contains('web-calculator-page'))this.classList.add('web-calculator-host');
+      this.attachShadow({ mode:'open' });
+      this.shadowRoot.innerHTML = TEMPLATE;
+      this.expr = '';
+      this.mode = 'deg';
+      this.history = [];
+      this.inlineHistoryHiddenIds = new Set();
+      this.clearTapTimes = [];
+      this.undoStacks = { expr:[], prog:[] };
+      this.redoStacks = { expr:[], prog:[] };
+      this.feature = 'basic';
+      this.formValues = {};
+      this.formHistoryTimer = 0;
+      this.lastFormHistoryKey = '';
+      this.calendarState = {};
+      this.dropdownState = null;
+      this.menuBuilt = false;
+    }
+
+    connectedCallback(){
+      const R = this.shadowRoot;
+      this.$win = R.querySelector('.win');
+      this.$expr = R.querySelector('[data-expr]');
+      this.$result = R.querySelector('[data-result]');
+      this.$history = R.querySelector('[data-history]');
+      this.$sci = R.querySelector('[data-sci]');
+      this.$kpview = R.querySelector('[data-kpview]');
+      this.$formview = R.querySelector('[data-formview]');
+      this.$progview = R.querySelector('[data-progview]');
+      this.$modeLabel = R.querySelector('[data-mode-label]');
+      this.$modeMenu = R.querySelector('[data-modemenu]');
+      this.$modeBtn = R.querySelector('[data-action="modesel-toggle"]');
+      this.$histBtn = R.querySelector('.title-history');
+      this.$historyPanel = R.querySelector('[data-historypanel]');
+      this.$historyBackdrop = R.querySelector('[data-historybackdrop]');
+      this.$histList = R.querySelector('[data-histlist]');
+      this.$proggrid = R.querySelector('.proggrid');
+      this.$infoPanel = R.querySelector('[data-infopanel]');
+      this.$infoBackdrop = R.querySelector('[data-infobackdrop]');
+      this.$infoBtn = R.querySelector('.dotmenu');
+      this.$selectPopover = R.querySelector('[data-select-popover]');
+
+      this.progValue = 0; this.progEntry = '0'; this.progAcc = null; this.progOp = null; this.progBase = 'DEC'; this.progFresh = true;
+
+      this.instanceId = this.id || ('tai7c-' + (++INSTANCE_SEQ) + '-' + Math.random().toString(36).slice(2,6));
+      this.STORE_KEY = 'tai7c_state_' + this.instanceId;
+      this.HISTORY_KEY = this.STORE_KEY + '_history';
+
+      // Popup mode: <taskai7-calculator popup> — fills its container edge-to-edge
+      // instead of floating, and skips drag/resize (used for extension popups /
+      // fixed embeds where there's no page around it to float over).
+      const launchParams=new URLSearchParams(location.search);
+      const desktopMode=launchParams.has('desktop') || launchParams.has('mobile-preview');
+      this.mobileAppMode=launchParams.has('mobile');
+      this.nativeAppMode=this.mobileAppMode && launchParams.has('native');
+      this.overlayMode=this.mobileAppMode && launchParams.has('overlay');
+      this.nativeCopyMode=this.nativeAppMode && launchParams.has('copy');
+      if(this.mobileAppMode)this.$win.classList.add('mobile-app-mode');
+      if(this.nativeCopyMode)this.$win.querySelector('.title-float-btn').hidden=true;
+      const requestedFeature=launchParams.get('feature');
+      if(desktopMode&&requestedFeature&&(requestedFeature==='scientific'||requestedFeature==='casio'||requestedFeature==='programmer'||requestedFeature==='unitconverter'||CALC_MAP[requestedFeature])) this.feature=requestedFeature;
+      const roomyDemo=launchParams.has('demo') && window.innerWidth>=680;
+      if(roomyDemo){
+        this.$win.classList.add('demo-mode');
+        this.$win.style.setProperty('--tai7-w',Math.min(480,Math.max(400,Math.floor(window.innerWidth*.42)))+'px');
+        this.$win.style.setProperty('--tai7-h',Math.min(720,Math.max(560,window.innerHeight-120))+'px');
+      }
+      if((launchParams.has('mobile-preview') && !this.hasAttribute('preview-copy')) || this.hasAttribute('popup') || (!desktopMode&&launchParams.has('embed')&&!roomyDemo) || (!desktopMode&&!roomyDemo&&window.matchMedia('(max-width: 719px)').matches)){
+        this.$win.classList.add('popup-mode');
+        this.popupMode = true;
+        const duplicateButton=this.$win.querySelector('[data-action="duplicate"]'); if(duplicateButton && !launchParams.has('mobile-preview') && !this.nativeAppMode) duplicateButton.hidden=true;
+        if(duplicateButton && this.nativeCopyMode) duplicateButton.hidden=true;
+      }
+
+      this.loadState();
+      if(this.activeCalc()?.fields)this.blankFormInputs();
+      try{this.setPreviewTheme(localStorage.getItem('stc-preview-theme')||'monochrome',false)}catch(e){this.setPreviewTheme('monochrome',false)}
+      this.bindEvents();
+      this.updateBaseTabs();
+      this.render();
+      this.renderHistory();
+      const standaloneCalculatorRoute=/\/calculator(?:\.html)?\/?$/.test(location.pathname);
+      if((!document.body.classList.contains('web-calculator-page') || roomyDemo || launchParams.has('embed') || launchParams.has('mobile-preview')) && (this.popupMode || roomyDemo || desktopMode || standaloneCalculatorRoute)) this.open();
+      // Show onboarding once for an installed PWA. The native Android shell
+      // owns its own first-run guide; ordinary web visits open directly.
+      if(this.mobileAppMode && !this.nativeAppMode && !this.overlayMode && !this.nativeCopyMode &&
+         (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true)) {
+        setTimeout(()=>this.showFirstRunGuide(),0);
+      }
+      this.historyExpiryTimer=setInterval(()=>{if(this.pruneHistory()){this.renderHistory();if(this.$historyPanel.classList.contains("open"))this.renderHistoryPanel();this.saveState();}},5*60*1000);
+      const warmMenu=()=>this.ensureMenuBuilt();
+      if('requestIdleCallback' in window) requestIdleCallback(warmMenu,{timeout:1200});
+      else setTimeout(warmMenu,180);
+    }
+
+    disconnectedCallback(){ if(this.historyExpiryTimer) clearInterval(this.historyExpiryTimer); clearTimeout(this.previewHistoryTimer); }
+    ensureMenuBuilt(){if(this.menuBuilt)return;this.buildMenu();}
+
+    syncMenuSelection(){
+      if(!this.menuBuilt)return;
+      this.$modeMenu.querySelectorAll('[data-select-feature]').forEach(el=>el.classList.toggle('active',el.dataset.selectFeature===this.feature));
+    }
+
+    buildMenu(){
+      let listHtml = `<div class="menuspecial">
+        <button class="modeitem special active" data-select-feature="basic">${SPECIAL_ICONS.basic}<span class="mitext">Just the calculator</span><span class="tick">✓</span></button>
+        <button class="modeitem special" data-select-feature="scientific">${SPECIAL_ICONS.scientific}<span class="mitext">Scientific</span><span class="tick">✓</span></button>
+        <button class="modeitem special" data-select-feature="casio">${SPECIAL_ICONS.casio}<span class="mitext">Casio fx-991CW ClassWiz · Scientific</span><span class="tick">✓</span></button>
+        <button class="modeitem special" data-select-feature="programmer">${SPECIAL_ICONS.programmer}<span class="mitext">Programmer</span><span class="tick">✓</span></button>
+        <button class="modeitem special" data-select-feature="unitconverter">${SPECIAL_ICONS.conversion}<span class="mitext">Conversion · units &amp; currency</span><span class="tick">✓</span></button>
+      </div>`;
+        listHtml += `<div class="mode-divider-label pinned-divider">${PIN_ICON}<span>Pinned Calculators</span></div>`;
+      CATEGORIES.forEach(cat=>{
+        const icon = CATEGORY_ICONS[cat.name] || '';
+        const visibleItems = cat.items.filter(it=>it.id!=='unitconverter');
+        listHtml += `<div class="modecat"><span class="catic">${icon}</span><span class="cattext">${cat.name}</span><span class="catcount">${visibleItems.length}</span></div>`;
+        visibleItems.forEach(it=>{
+          listHtml += `<div class="modeentry" data-entry-feature="${it.id}"><button class="modeitem" data-select-feature="${it.id}" data-search="${it.name.toLowerCase()}"><span class="mitext">${it.name}</span><span class="tick">✓</span></button><button class="modepin" type="button" data-pin-feature="${it.id}" aria-label="Pin ${it.name}" title="Pin calculator" aria-pressed="false">${PIN_ICON}</button></div>`;
+        });
+      });
+      this.$modeMenu.innerHTML = `
+        <div class="menusearch">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="4.3"/><path d="M13 13l-3-3"/></svg>
+          <input type="text" placeholder="Search calculators…" data-mode-search autocomplete="off">
+        </div>
+        <div class="menulist" data-menulist>${listHtml}</div>
+        <div class="menuempty" data-menuempty hidden>No calculators match</div>`;
+      this.$modeSearch = this.$modeMenu.querySelector('[data-mode-search]');
+      this.$menuList = this.$modeMenu.querySelector('[data-menulist]');
+      this.$menuEmpty = this.$modeMenu.querySelector('[data-menuempty]');
+      this.$modeSearch.addEventListener('input', ()=> this.filterMenu(this.$modeSearch.value));
+      this.$menuList.addEventListener('click',e=>{const pin=e.target.closest('[data-pin-feature]');if(pin){e.preventDefault();e.stopPropagation();this.togglePinnedFeature(pin.dataset.pinFeature);}});
+      window.addEventListener('storage',e=>{if(e.key===PINNED_FEATURES_KEY&&this.menuBuilt)this.refreshPinnedMenu();});
+      this.refreshPinnedMenu();
+      this.$modeSearch.addEventListener('click', e=> e.stopPropagation());
+      this.menuBuilt=true;
+      this.syncMenuSelection();
+      this.$modeSearch.addEventListener('keydown', e=>{
+        if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();e.stopPropagation();this.moveMenuHighlight(e.key==='ArrowDown'?1:-1);return;}
+        if(e.key==='PageDown'||e.key==='PageUp'){e.preventDefault();e.stopPropagation();this.moveMenuHighlight(e.key==='PageDown'?8:-8);return;}
+        if(e.key==='Home'||e.key==='End'){e.preventDefault();e.stopPropagation();this.moveMenuHighlight(e.key==='Home'?-Infinity:Infinity);return;}
+        if(e.key==='Enter'){const item=this.$modeMenu.querySelector('.modeitem.highlight');if(item){e.preventDefault();e.stopPropagation();item.click();}return;}
+        if(e.key==='Escape'){e.preventDefault();e.stopPropagation();this.closeModeMenu();this.$modeBtn.focus();}
+      });
+    }
+
+    readPinnedFeatures(){try{return JSON.parse(localStorage.getItem(PINNED_FEATURES_KEY)||'[]').filter(id=>CATEGORIES.some(cat=>cat.items.some(item=>item.id===id)));}catch{return[];}}
+    togglePinnedFeature(id){const pins=this.readPinnedFeatures();const next=pins.includes(id)?pins.filter(item=>item!==id):[...pins,id];try{localStorage.setItem(PINNED_FEATURES_KEY,JSON.stringify(next));}catch{}this.refreshPinnedMenu();this.filterMenu(this.$modeSearch?.value||'');}
+    refreshPinnedMenu(){
+      if(!this.$menuList)return;
+      this.$menuList.querySelector('.pinned-wrap')?.remove();
+      const ids=this.readPinnedFeatures();
+      const names=new Map(CATEGORIES.flatMap(cat=>cat.items.map(item=>[item.id,item.name])));
+      this.$menuList.querySelectorAll('.modeentry').forEach(entry=>{
+        const btn=entry.querySelector('[data-pin-feature]');
+        if(!btn)return;
+        const active=ids.includes(entry.dataset.entryFeature);
+        btn.innerHTML=PIN_ICON;
+        btn.classList.toggle('is-pinned',active);
+        btn.setAttribute('aria-pressed',String(active));
+        btn.setAttribute('aria-label',(active?'Unpin ':'Pin ')+(names.get(entry.dataset.entryFeature)||'calculator'));
+        btn.title=active?'Unpin calculator':'Pin calculator';
+      });
+      if(!ids.length)return;
+      const pinned=ids.map(id=>this.$menuList.querySelector(`[data-entry-feature="${id}"]`)).filter(Boolean);
+      if(!pinned.length)return;
+      const wrap=document.createElement('div');wrap.className='pinned-wrap';
+      wrap.innerHTML='<div class="modecat pinned-heading"><span class="cattext">Pinned</span><span class="catcount">'+pinned.length+'</span></div>';
+      pinned.forEach(entry=>wrap.appendChild(entry.cloneNode(true)));
+      this.$menuList.insertBefore(wrap,this.$menuList.querySelector('.modecat'));
+      wrap.querySelector('.pinned-heading').style.display='';
+    }
+    filterMenu(query){
+      const q = query.trim().toLowerCase();
+      let anyVisible = false;
+      this.$menuList.querySelectorAll('.modecat').forEach(cat=>{
+        let sib = cat.nextElementSibling, hasMatch = false;
+        while(sib && sib.classList.contains('modeentry')){
+          const item=sib.querySelector('.modeitem'),match = !q || (item?.dataset.search||'').includes(q);
+          sib.style.display = match ? '' : 'none';
+          if(match) hasMatch = true;
+          sib = sib.nextElementSibling;
+        }
+        cat.style.display = hasMatch ? '' : 'none';
+        if(hasMatch) anyVisible = true;
+      });
+      const specialWrap = this.$menuList.querySelector('.menuspecial');
+      let specialMatch = false;
+      specialWrap.querySelectorAll('.modeitem').forEach(sp=>{
+        const match = !q || sp.querySelector('.mitext').textContent.toLowerCase().includes(q);
+        sp.style.display = match ? '' : 'none';
+        if(match) specialMatch = true;
+      });
+      if(specialMatch) anyVisible = true;
+      specialWrap.style.display = specialMatch ? '' : 'none';
+      const pinnedWrap=this.$menuList.querySelector('.pinned-wrap');if(pinnedWrap){const matches=[...pinnedWrap.querySelectorAll('.modeentry')].some(entry=>{const match=!q||(entry.querySelector('.modeitem')?.dataset.search||'').includes(q);entry.style.display=match?'':'none';return match;});pinnedWrap.querySelector('.pinned-heading').style.display=matches?'':'none';pinnedWrap.style.display=matches?'':'none';if(matches)anyVisible=true;}
+      this.$menuEmpty.hidden = anyVisible;
+      this.clearMenuHighlight();
+    }
+    clearMenuHighlight(){ this.$menuList.querySelectorAll('.modeitem.highlight').forEach(item=>item.classList.remove('highlight')); }
+    moveMenuHighlight(direction){
+      const items=[...this.$menuList.querySelectorAll('.modeitem')].filter(item=>item.style.display!=='none' && item.getClientRects().length);
+      if(!items.length)return;
+      const current=items.findIndex(item=>item.classList.contains('highlight'));
+      const next=direction===Infinity ? items.length-1 : direction===-Infinity ? 0 : current<0 ? (direction>0?0:items.length-1) : Math.max(0,Math.min(items.length-1,current+direction));
+      this.clearMenuHighlight();
+      const item=items[next]; item.classList.add('highlight'); item.scrollIntoView({block:'nearest'});
+      this.$modeSearch?.setAttribute('aria-activedescendant',item.id || (item.id=`tai7-mode-${item.dataset.selectFeature}`));
+    }
+
+    // ---------- persistence ----------
+    loadState(){
+      try{
+        const raw = localStorage.getItem(this.STORE_KEY);
+        if(raw){
+          const s = JSON.parse(raw);
+          if(!this.popupMode){
+            if(s.w) this.$win.style.setProperty('--tai7-w', s.w);
+            if(s.h) this.$win.style.setProperty('--tai7-h', s.h);
+            if(s.x) this.$win.style.setProperty('--tai7-left',s.x);
+            if(s.y) this.$win.style.setProperty('--tai7-top',s.y);
+          }
+          if(s.mode) this.mode = s.mode;
+          if(typeof s.feature==='string'&&(SPECIAL_LABELS[s.feature]||CALC_MAP[s.feature]))this.feature=s.feature;
+          if(Array.isArray(s.inlineHistoryHiddenIds)) this.inlineHistoryHiddenIds = new Set(s.inlineHistoryHiddenIds.filter(id=>typeof id==='string'));
+        }
+        const savedHistory = JSON.parse(localStorage.getItem(this.HISTORY_KEY) || '[]');
+        if(Array.isArray(savedHistory)){ const cutoff=Date.now()-86400000; this.history=savedHistory.filter(h=>h&&typeof h.expr==='string'&&typeof h.result==='string'&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)<=Date.now()+60000&&(h.pinned===true||Number(h.createdAt)>=cutoff)).map((h,index)=>({...h,id:typeof h.id==='string'&&h.id?h.id:`${h.createdAt}-${index}`,pinned:h.pinned===true})); this.pruneHistory(); }
+      }catch(e){ this.history=[]; }
+    }
+    saveState(){
+      const cs = getComputedStyle(this.$win);
+      const s = {
+        w: this.$win.style.getPropertyValue('--tai7-w') || cs.width,
+        h: this.$win.style.getPropertyValue('--tai7-h') || cs.height,
+        x: this.$win.style.getPropertyValue('--tai7-left'),
+        y: this.$win.style.getPropertyValue('--tai7-top'),
+        mode: this.mode,
+        feature: this.feature,
+        inlineHistoryHiddenIds: this.history.filter(item=>this.inlineHistoryHiddenIds.has(item.id)).map(item=>item.id),
+      };
+      try{
+        localStorage.setItem(this.STORE_KEY, JSON.stringify(s));
+        this.pruneHistory();
+        localStorage.setItem(this.HISTORY_KEY, JSON.stringify(this.history));
+      }catch(e){}
+    }
+
+    centerWindow(){
+      if(this.popupMode) return;
+      // Use the CSS default (340x560) as fallback — not getBoundingClientRect(),
+      // which would measure the closed-state's scaled-down transform and throw
+      // the centering off by that scale factor.
+      const w = parseFloat(this.$win.style.getPropertyValue('--tai7-w')) || 400;
+      const h = parseFloat(this.$win.style.getPropertyValue('--tai7-h')) || 560;
+      const left = Math.max(8, Math.round((window.innerWidth - w) / 2));
+      const top = Math.max(8, Math.round((window.innerHeight - h) / 2));
+      this.$win.style.setProperty('--tai7-left', left + 'px');
+      this.$win.style.setProperty('--tai7-top', top + 'px');
+    }
+
+    showToast(message){const toast=this.$win?.querySelector('[data-toast]');if(!toast)return;toast.textContent=message;toast.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{toast.hidden=true;},3200);}
+    open(){ if(this.mobileAppMode&&this.mobileFloating)this.restoreMobileStandard(); this.centerWindow(); this.$win.classList.add('open'); document.body.classList.add('calc-open'); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded','true'); ACTIVE = this; }
+    enterMobileFloating(){
+      this.closeInfoPanel();this.closeHistoryPanel();this.closeModeMenu();
+      this.mobileFloating=true;this.popupMode=false;
+      this.$win.classList.remove('popup-mode');this.$win.classList.add('mobile-floating');
+      const width=Math.min(Math.max(300,window.innerWidth*.82),window.innerWidth-16);
+      const height=Math.min(Math.max(400,window.innerHeight*.72),window.innerHeight-24);
+      this.$win.style.setProperty('--tai7-w',Math.round(width)+'px');this.$win.style.setProperty('--tai7-h',Math.round(height)+'px');
+      this.centerWindow();this.$win.classList.add('open');
+    }
+    restoreMobileStandard(){
+      this.mobileFloating=false;this.popupMode=true;
+      this.$win.classList.remove('mobile-floating');this.$win.classList.add('popup-mode');
+      for(const key of ['--tai7-w','--tai7-h','--tai7-left','--tai7-top'])this.$win.style.removeProperty(key);
+      const bubble=document.querySelector('.seven-bubble');if(bubble)bubble.classList.remove('minimized');
+      const dismiss=document.querySelector('.seven-bubble-dismiss');if(dismiss)dismiss.hidden=true;
+    }
+    minimizeMobileBubble(){
+      this.mobileFloating=false;this.$win.classList.remove('open','mobile-floating');
+      this.popupMode=true;this.$win.classList.add('popup-mode');
+      document.body.classList.remove('calc-open');
+      const bubble=document.querySelector('.seven-bubble');if(bubble){bubble.hidden=false;bubble.classList.add('minimized');bubble.setAttribute('aria-expanded','false');}
+      const dismiss=document.querySelector('.seven-bubble-dismiss');if(dismiss)dismiss.hidden=false;
+      this.saveState();
+    }
+    close(){ this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.$win.classList.remove('open'); this.saveState(); if(this.id.startsWith('tai7c-copy-'))try{const ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]');localStorage.setItem('tai7c-open-copies',JSON.stringify(ids.filter(id=>id!==this.id)))}catch{} const remaining=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el!==this&&el.shadowRoot?.querySelector('.win.open')); const stillOpen=remaining.length>0; document.body.classList.toggle('calc-open',stillOpen); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded',String(stillOpen)); if(ACTIVE===this) ACTIVE=remaining.at(-1)||null; }
+    showFirstRunGuide(){
+      try { if(localStorage.getItem('stc-mobile-guide-seen') === '1') return; } catch {}
+      this.showMobileGuide(false);
+    }
+    showMobileGuide(manual=false){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!backdrop||!dialog)return;backdrop.hidden=false;dialog.hidden=false;const video=dialog.querySelector('video');if(manual&&video){video.currentTime=0;const playback=video.play();if(playback&&typeof playback.catch==='function')playback.catch(()=>{});}dialog.dataset.manual=String(manual);}
+    closeMobileGuide(){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!dialog)return;dialog.querySelector('video')?.pause();dialog.hidden=true;if(backdrop)backdrop.hidden=true;try{localStorage.setItem('stc-mobile-guide-seen','1')}catch{}}
+    toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
+
+    duplicate(){
+      if(this.nativeAppMode && window.SevenTaskNative?.duplicateFloatingCalculator){window.SevenTaskNative.duplicateFloatingCalculator();return;}
+      if(this.popupMode && new URLSearchParams(location.search).has('mobile-preview')){this.popupMode=false;this.$win.classList.remove('popup-mode');this.centerWindow();}
+      if(this.popupMode) return;
+      if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature).then(ok=>{if(!ok)this.showToast('You can open up to 7 calculators at once.');}).catch(()=>this.showToast('Could not open another calculator.'));return;}
+      const openCount=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el.shadowRoot?.querySelector('.win.open')).length;if(openCount>=7){this.showToast('You can open up to 7 calculators at once.');return;}
+      const el = document.createElement('taskai7-calculator');
+      el.id='tai7c-copy-'+(crypto.randomUUID?.()||Math.random().toString(36).slice(2));
+      el.feature = this.feature;
+      if(new URLSearchParams(location.search).has('mobile-preview'))el.setAttribute('preview-copy','');
+      document.body.appendChild(el);
+      el.open();
+      el.saveState();
+      try{const ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]');localStorage.setItem('tai7c-open-copies',JSON.stringify([...new Set([...ids,el.id])].slice(-6)))}catch{}
+      const rect=this.$win.getBoundingClientRect(),gap=16;
+      const width=rect.width,height=rect.height;
+      let left=rect.left+width+gap;
+      if(left+width>window.innerWidth-8) left=rect.left-width-gap;
+      left=Math.min(Math.max(8,left),Math.max(8,window.innerWidth-width-8));
+      const top=Math.min(Math.max(8,rect.top+gap),Math.max(8,window.innerHeight-height-8));
+      el.$win.style.setProperty('--tai7-w',width+'px');
+      el.$win.style.setProperty('--tai7-h',height+'px');
+      el.$win.style.setProperty('--tai7-left',left+'px');
+      el.$win.style.setProperty('--tai7-top',top+'px');
+      el.saveState();
+    }
+
+    setPreviewTheme(theme,persist=true){
+      const names={monochrome:'Monochrome (Default)',dark:'Dark',soft:'Sage Garden',cloud:'Lavender Mist',blue:'Ocean Breeze',rose:'Rosewood',sand:'Sandstone'};
+      if(!Object.hasOwn(names,theme))theme='monochrome';
+      this.$win.dataset.theme=theme;
+      const label=this.shadowRoot.querySelector('[data-theme-label]');if(label)label.textContent=names[theme];
+      this.shadowRoot.querySelectorAll('[data-theme-option]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeOption===theme)));
+      if(persist)try{localStorage.setItem('stc-preview-theme',theme)}catch(err){}
+    }
+    // ---------- events ----------
+    bindEvents(){
+      const R = this.shadowRoot;
+
+      R.querySelector('[data-mobile-guide]')?.addEventListener('click',()=>this.closeMobileGuide());
+      R.querySelector('[data-mobile-guide-dialog]')?.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();this.closeMobileGuide()}});
+      R.addEventListener('contextmenu',e=>{if(e.composedPath().some(node=>node?.classList?.contains('ticon')||node?.classList?.contains('info-brand-mark')||node?.classList?.contains('kawkab-brand-logo'))){e.preventDefault();e.stopPropagation();}});
+
+      R.addEventListener('pointerdown', ()=>{ ACTIVE = this; });
+      R.addEventListener('focusin', ()=>{ ACTIVE = this; });
+      R.addEventListener('click',e=>{const option=e.target.closest('[data-theme-option]');if(!option)return;this.setPreviewTheme(option.dataset.themeOption);this.shadowRoot.querySelector('.theme-dropdown').open=false;});
+      R.addEventListener('click', e=>{if(!e.target.closest('[data-action="clear"]'))this.clearTapTimes=[];},true);
+      this.$history.addEventListener('keydown', e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();this.openHistoryPanel();}
+      });
+
+      // Keep the header menu independent from delegated keypad actions. The
+      // SVG's circles are decorative; pointer events land on the button itself.
+      this.$infoBtn.addEventListener('click', e=>{ e.stopPropagation(); this.toggleInfoPanel(); });
+      // Let users dismiss the side panel with a quick double-click on its
+      // surface, while preserving normal interaction with its controls.
+      this.$infoPanel.addEventListener('dblclick', e=>{
+        if(e.target.closest('button,a,input,select,textarea,summary,[role="button"],[contenteditable="true"]')) return;
+        e.preventDefault();
+        this.closeInfoPanel({restoreFocus:true});
+      });
+
+      R.addEventListener('click', (e)=>{
+        const brandHome=e.target.closest('[data-action="brand-home"]');
+        if(brandHome){this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.selectFeature('basic');return;}
+        const selectOption=e.target.closest('[data-select-option]');
+        if(selectOption){this.chooseAppSelectOption(Number(selectOption.dataset.selectOption));return;}
+        const appSelect=e.target.closest('[data-app-select]');
+        if(appSelect){this.toggleAppSelect(appSelect);return;}
+
+        const featureBtn = e.target.closest('[data-select-feature]');
+        if(featureBtn){ this.selectFeature(featureBtn.dataset.selectFeature); return; }
+
+        const histAdd = e.target.closest('[data-hist-add]');
+        if(histAdd){ e.preventDefault();e.stopPropagation(); if(this.historyAddLocked)return;const now=performance.now(),id=histAdd.closest('[data-history-id]')?.dataset.historyId||histAdd.dataset.histAdd;if(this.lastHistoryAddId===id&&now-(this.lastHistoryAddAt||0)<700)return;this.lastHistoryAddId=id;this.lastHistoryAddAt=now;const value=histAdd.dataset.histAdd,before=this.expr||'0'; if(!['basic','scientific','casio'].includes(this.feature)){this.feature='basic';this.expr='';this.syncMenuSelection();} this.insert(value);this.historyAddLocked=!!this.expr&&this.expr!=='0';this.$win.classList.toggle('history-add-locked',this.historyAddLocked);this.lastHistoryAction=`Added ${value} from history: ${before} → ${this.expr}`;this.renderHistory();this.closeHistoryPanel({restoreFocus:true}); return; }
+
+        const histPin = e.target.closest('[data-history-pin]');
+        if(histPin){ e.preventDefault(); e.stopPropagation(); this.toggleHistoryPin(histPin.dataset.historyPin); return; }
+        const histDelete = e.target.closest('[data-history-delete]');
+        if(histDelete){ e.preventDefault(); e.stopPropagation(); const id=histDelete.dataset.historyDelete; this.history=this.history.filter(item=>item.id!==id); if(this.activeFormHistoryId===id)this.activeFormHistoryId=null; this.renderHistoryPanel(); this.renderHistory(); this.saveState(); return; }
+        if(e.target.closest('[data-action="reset-form"]')){clearTimeout(this.formHistoryTimer);this.activeFormHistoryId=null;this.lastFormHistoryKey='';this.formValues={};this.blankFormInputs();this.renderForm();this.saveState();return;}
+
+        const histPick = e.target.closest('[data-hist-pick]');
+        if(histPick){ const item=this.history.find(h=>h.id===histPick.dataset.histPick); if(item?.formValues&&item.featureId){this.feature=item.featureId;this.formValues={...item.formValues};this.syncMenuSelection();this.render();}else if(item){this.pushUndo();this.expr=item.expr;this.showError(false);this.render();}this.saveState();this.closeHistoryPanel({restoreFocus:true});return; }
+
+        const baseTab = e.target.closest('[data-prog-base]');
+        if(baseTab){ this.bubbleFx(baseTab); this.ripple(baseTab, e); this.progSetBase(baseTab.dataset.progBase); return; }
+
+        const pk = e.target.closest('[data-prog-key],[data-prog-hexkey],[data-prog-op],[data-prog-action]');
+        if(pk){
+          if(pk.hasAttribute('disabled') || (pk.dataset.progHexkey !== undefined && this.progBase!=='HEX')) return;
+          this.bubbleFx(pk); this.ripple(pk, e); this.vibrate();
+          if(pk.dataset.progKey !== undefined) this.progInput(pk.dataset.progKey);
+          else if(pk.dataset.progHexkey !== undefined) this.progInput(pk.dataset.progHexkey);
+          else if(pk.dataset.progOp !== undefined) this.progPressOp(pk.dataset.progOp);
+          else if(pk.dataset.progAction !== undefined) this.progAction(pk.dataset.progAction);
+          return;
+        }
+
+        const t = e.target.closest('[data-key],[data-action],[data-fn]');
+        if(!t) return;
+        if(t.closest('.kpview')){ this.bubbleFx(t); this.ripple(t, e); this.vibrate(); }
+        if(t.dataset.key !== undefined) this.insert(t.dataset.key);
+        else if(t.dataset.fn !== undefined) this.insert(t.dataset.fn);
+        else { if(t.dataset.action==='clear')this.noteClearTap(); this.handleAction(t.dataset.action); }
+      });
+
+      document.addEventListener('pointerdown', (e)=>{
+        if(this.dropdownState){const path=e.composedPath();if(!path.includes(this.$selectPopover)&&!path.includes(this.dropdownState.button))this.closeAppSelect();}
+        if(this.$modeMenu && this.$modeMenu.classList.contains('open')){
+          const path = e.composedPath();
+          if(!path.includes(this.$modeMenu) && !path.includes(this.$modeBtn)) this.closeModeMenu();
+        }
+        if(this.$historyPanel && this.$historyPanel.classList.contains('open')){
+          const path = e.composedPath();
+          if(!path.includes(this.$historyPanel) && !path.includes(this.$histBtn)) this.closeHistoryPanel();
+        }
+        const openPanel = this.$formview && this.$formview.querySelector('.pickerpanel.open');
+        if(openPanel){
+          const path = e.composedPath();
+          const openBtn = this.$formview.querySelector('.pickerbtn.open');
+          if(!path.includes(openPanel) && !(openBtn && path.includes(openBtn))) this.closeAllPickers();
+        }
+      });
+
+      this.$formview.addEventListener('input', (e)=>{
+        const customTime=e.target.closest('input[data-time-custom]');
+        if(customTime){const key=customTime.dataset.timeCustom;if(/^\d{2}:\d{2}$/.test(customTime.value)){this.formValues[key]=customTime.value;const [hh,mm]=customTime.value.split(':');const panel=customTime.closest('[data-picker-panel]');panel?.querySelectorAll('[data-time-hour]').forEach(x=>x.classList.toggle('selected',x.dataset.timeHour===hh));panel?.querySelectorAll('[data-time-min]').forEach(x=>x.classList.toggle('selected',x.dataset.timeMin===mm));const btn=this.$formview.querySelector(`[data-timepicker="${key}"]`);if(btn)btn.querySelector('span').textContent=this.formatTimeDisplay(customTime.value);this.renderResults();this.scheduleFormHistory();}return;}
+        const el = e.target.closest('input[data-field]');
+        if(!el) return;
+        this.formValues[el.dataset.field] = el.value;
+        this.renderResults();
+        this.scheduleFormHistory();
+      });
+      R.addEventListener('input',(e)=>{if(e.target.matches('[data-select-search]'))this.filterAppSelect(e.target.value);});
+      this.$formview.addEventListener('scroll',()=>this.closeAppSelect(),{passive:true});
+      this.$formview.addEventListener('change', (e)=>{
+        const el = e.target.closest('select[data-field]');
+        if(el){ this.formValues[el.dataset.field]=el.value; this.renderForm(); this.scheduleFormHistory(); }
+        const calPeriod=e.target.closest('[data-cal-month],[data-cal-year]');
+        if(calPeriod){const panel=calPeriod.closest('[data-picker-panel]');if(panel)this.setCalendarPeriod(panel.dataset.pickerPanel,calPeriod.dataset.calMonth!==undefined?'month':'year',parseInt(calPeriod.value,10));}
+      });
+      this.$formview.addEventListener('click', (e)=>{
+        const saveCustom=e.target.closest('[data-custom-save]');
+        if(saveCustom){
+          const name=String(this.formValues.customName||'My Calculator').trim().slice(0,48)||'My Calculator';
+          const formula=String(this.formValues.formula||'').trim().slice(0,180);
+          try{
+            evalCustomFormula(formula,this.formValues);
+            let saved=JSON.parse(localStorage.getItem('seventask_custom_calculators')||'[]');
+            if(!Array.isArray(saved)) saved=[];
+            saved=saved.filter(item=>item.name!==name); saved.push({name,formula,inputs:Object.fromEntries('abcdefgh'.split('').map(k=>[k,this.formValues[k]??0]))});
+            localStorage.setItem('seventask_custom_calculators',JSON.stringify(saved.slice(-20)));
+            this.renderForm();
+          }catch(err){ this.formValues.formula=formula; this.renderResults(); }
+          return;
+        }
+        const loadCustom=e.target.closest('[data-custom-load]');
+        if(loadCustom){
+          try{const saved=JSON.parse(localStorage.getItem('seventask_custom_calculators')||'[]');const item=saved[Number(loadCustom.dataset.customLoad)];if(item){this.formValues.customName=item.name;this.formValues.formula=item.formula;Object.assign(this.formValues,item.inputs||{});this.renderForm();}}catch(err){}
+          return;
+        }
+        const pill = e.target.closest('.pill');
+        const currencySwap=e.target.closest('[data-action="currency-swap"]');
+        if(currencySwap){const old=this.formValues.from;this.formValues.from=this.formValues.to;this.formValues.to=old;this.renderForm();this.scheduleFormHistory();return;}
+        if(pill){
+          this.bubbleFx(pill); this.ripple(pill, e);
+          const group = pill.closest('.pillrow');
+          if(group) group.querySelectorAll('.pill').forEach(p=> p.classList.toggle('active', p===pill));
+          this.formValues[pill.dataset.field] = pill.dataset.val;
+          this.renderResults();
+          this.scheduleFormHistory();
+          return;
+        }
+
+        const dateBtn = e.target.closest('[data-datepicker]');
+        if(dateBtn){ this.togglePicker(dateBtn.dataset.datepicker, 'date', dateBtn); return; }
+        const timeBtn = e.target.closest('[data-timepicker]');
+        if(timeBtn){ this.togglePicker(timeBtn.dataset.timepicker, 'time', timeBtn); return; }
+
+        const calDay = e.target.closest('[data-cal-pick]');
+        if(calDay){ this.pickDate(calDay.closest('[data-picker-panel]').dataset.pickerPanel, calDay.dataset.calPick); return; }
+        const calNav = e.target.closest('[data-cal-nav]');
+        if(calNav){ this.navCalendar(calNav.closest('[data-picker-panel]').dataset.pickerPanel, parseInt(calNav.dataset.calNav,10)); return; }
+        const calToday = e.target.closest('[data-cal-today]');
+        if(calToday){ const key=calToday.closest('[data-picker-panel]').dataset.pickerPanel; const now=new Date(),iso=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; this.pickDate(key, iso); return; }
+        const calClear = e.target.closest('[data-cal-clear]');
+        if(calClear){ this.pickDate(calClear.closest('[data-picker-panel]').dataset.pickerPanel, ''); return; }
+
+        const timeHour = e.target.closest('[data-time-hour]');
+        if(timeHour){ this.pickTimePart(timeHour.closest('[data-picker-panel]').dataset.pickerPanel, 'hour', timeHour.dataset.timeHour); return; }
+        const timeMin = e.target.closest('[data-time-min]');
+        if(timeMin){ this.pickTimePart(timeMin.closest('[data-picker-panel]').dataset.pickerPanel, 'min', timeMin.dataset.timeMin); return; }
+        const timeDone = e.target.closest('[data-time-done]');
+        if(timeDone){ this.closeAllPickers(); return; }
+      });
+
+      // Drag the floating calculator from any quiet surface area. Resize from
+      // any edge/corner; interactive controls and scrollable panels keep their
+      // normal click, typing and scrolling behavior.
+      let pointerAction=null, px=0, py=0, startRect=null, collapseRequested=false,draggedBrand=false,startedOnBrand=false;
+      this.$win.querySelector('.brand-home')?.addEventListener('click',e=>{if(draggedBrand){e.preventDefault();e.stopPropagation();draggedBrand=false;}},true);
+      const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+      const snapPixel=value=>Math.round(value*(window.devicePixelRatio||1))/(window.devicePixelRatio||1);
+      const getResizeEdge=(e,rect)=>{
+        const pad=10,x=e.clientX-rect.left,y=e.clientY-rect.top;
+        let edge='';
+        if(x<=pad)edge+='w'; else if(x>=rect.width-pad)edge+='e';
+        if(y<=pad)edge='n'+edge; else if(y>=rect.height-pad)edge='s'+edge;
+        return edge;
+      };
+      const isInteractive=(target)=>{
+        if(target.closest('.brand-home'))return false;
+        if(target.closest('button,input,select,textarea,a,[contenteditable="true"],[role="button"],[role="option"],[role="menuitem"],[data-no-drag],.history span,[data-hist]')) return true;
+        for(let node=target;node&&node!==this.$win;node=node.parentElement){
+          const style=getComputedStyle(node);
+          if((/auto|scroll/.test(style.overflowY)&&node.scrollHeight>node.clientHeight+2)||(/auto|scroll/.test(style.overflowX)&&node.scrollWidth>node.clientWidth+2)) return true;
+        }
+        return false;
+      };
+      this.$win.addEventListener('pointerdown',(e)=>{
+        if(this.popupMode||e.button!==0||!e.isPrimary||isInteractive(e.target)) return;
+        const rect=this.$win.getBoundingClientRect(),edge=getResizeEdge(e,rect);
+        const grip=e.target.closest('[data-resize]');
+        if(grip)pointerAction='resize-se';
+        else if(edge)pointerAction=edge;
+        else pointerAction='drag';
+        px=e.clientX;py=e.clientY;startRect=rect;collapseRequested=false;
+        startedOnBrand=!!e.target.closest('.brand-home');draggedBrand=false;
+        if(!startedOnBrand){this.$win.setPointerCapture(e.pointerId);e.preventDefault();}
+      });
+      this.$win.addEventListener('pointermove',(e)=>{
+        if(!pointerAction){
+          if(this.popupMode)return;
+          const rect=this.$win.getBoundingClientRect(),edge=getResizeEdge(e,rect);
+          if(edge)this.$win.style.cursor={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'}[edge];
+          else if(!isInteractive(e.target))this.$win.style.cursor='grab';
+          else this.$win.style.removeProperty('cursor');
+          return;
+        }
+        const dx=e.clientX-px,dy=e.clientY-py,r=startRect;
+        if(pointerAction==='drag'){
+          if(startedOnBrand&&Math.abs(dx)+Math.abs(dy)>6){draggedBrand=true;if(!this.$win.hasPointerCapture(e.pointerId))this.$win.setPointerCapture(e.pointerId);}
+          this.$win.style.setProperty('--tai7-left',snapPixel(clamp(r.left+dx,0,Math.max(0,window.innerWidth-60)))+'px');
+          this.$win.style.setProperty('--tai7-top',snapPixel(clamp(r.top+dy,0,Math.max(0,window.innerHeight-40)))+'px');
+          this.$win.style.cursor='grabbing';
+          return;
+        }
+        const edge=pointerAction==='resize-se'?'se':pointerAction;
+        const maxW=Math.max(1,Math.min(620,window.innerWidth-24)),maxH=Math.max(1,Math.min(860,window.innerHeight-24));
+        const minW=Math.min(this.mobileFloating?260:340,maxW),minH=Math.min(this.mobileFloating?480:440,maxH);
+        const west=edge.includes('w'),east=edge.includes('e'),north=edge.includes('n'),south=edge.includes('s');
+        const requestedWidth=r.width+(east?dx:west?-dx:0),requestedHeight=r.height+(south?dy:north?-dy:0);
+        collapseRequested=this.mobileFloating&&(requestedWidth<260||requestedHeight<minH);
+        const width=clamp(requestedWidth,minW,Math.min(maxW,west?r.right-12:window.innerWidth-r.left-12));
+        const height=clamp(requestedHeight,minH,Math.min(maxH,north?r.bottom-12:window.innerHeight-r.top-12));
+        this.$win.style.setProperty('--tai7-w',snapPixel(width)+'px');
+        this.$win.style.setProperty('--tai7-h',snapPixel(height)+'px');
+        if(west)this.$win.style.setProperty('--tai7-left',snapPixel(Math.max(0,r.right-width))+'px');
+        if(north)this.$win.style.setProperty('--tai7-top',snapPixel(Math.max(0,r.bottom-height))+'px');
+      });
+      const finishPointer=()=>{if(!pointerAction)return;const resized=pointerAction!=='drag';pointerAction=null;startRect=null;this.$win.style.removeProperty('cursor');if(this.mobileFloating&&resized&&collapseRequested){this.minimizeMobileBubble();return;}this.saveState();};
+      this.$win.addEventListener('pointerup',finishPointer);
+      this.$win.addEventListener('pointercancel',finishPointer);
+
+      this.$infoBackdrop.addEventListener('click', ()=> this.closeInfoPanel({restoreFocus:true}));
+      this.$historyBackdrop.addEventListener('click', ()=> this.closeHistoryPanel({restoreFocus:true}));
+
+      this.updateModeChips();
+    }
+
+    vibrate(){
+      try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
+    }
+    bubbleFx(el){
+      if(!el) return;
+      el.classList.remove('bubble');
+      void el.offsetWidth;
+      el.classList.add('bubble');
+    }
+
+    ripple(el, evt){
+      if(!el) return;
+      const rect = el.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height) * 1.6;
+      const span = document.createElement('span');
+      span.className = 'tai7-ripple';
+      span.style.width = span.style.height = size + 'px';
+      const cx = (evt && evt.clientX) ? evt.clientX : rect.left + rect.width/2;
+      const cy = (evt && evt.clientY) ? evt.clientY : rect.top + rect.height/2;
+      span.style.left = (cx - rect.left - size/2) + 'px';
+      span.style.top = (cy - rect.top - size/2) + 'px';
+      el.appendChild(span);
+      span.addEventListener('animationend', ()=> span.remove());
+    }
+
+    handleKeydown(e){
+      if(!this.$win.classList.contains('open')) return;
+      if(this.dropdownState&&this.handleAppSelectKeydown(e))return;
+
+      if(e.key==='Escape'){
+        const target=e.composedPath()[0];
+        const editing=target && (target.tagName==='INPUT'||target.tagName==='TEXTAREA'||target.isContentEditable);
+        if(this.$infoPanel.classList.contains('open')) this.closeInfoPanel({restoreFocus:true});
+        else if(this.$historyPanel.classList.contains('open')) this.closeHistoryPanel({restoreFocus:true});
+        else if(this.$modeMenu.classList.contains('open')) this.closeModeMenu();
+        else if(!editing){ if(this.feature==='programmer') this.progAction('clear'); else this.handleAction('clear'); }
+        else return;
+        e.preventDefault(); e.stopPropagation(); return;
+      }
+
+      // Dropdown menu keyboard navigation — works even while the search box
+      // has focus, so arrow keys can drive the list right after typing.
+      if(this.$modeMenu.classList.contains('open')){
+        if(e.key==='ArrowDown' || e.key==='ArrowUp'){
+          e.preventDefault();
+          this.moveMenuHighlight(e.key==='ArrowDown' ? 1 : -1);
+          return;
+        }
+        if(e.key==='PageDown' || e.key==='PageUp'){
+          e.preventDefault(); e.stopPropagation();
+          this.moveMenuHighlight(e.key==='PageDown'?8:-8); return;
+        }
+        if(e.key==='Home' || e.key==='End'){
+          e.preventDefault(); e.stopPropagation();
+          this.moveMenuHighlight(e.key==='Home'?-Infinity:Infinity); return;
+        }
+        if(e.key==='Enter'){
+          const hi = this.$modeMenu.querySelector('.modeitem.highlight');
+          if(hi){ e.preventDefault(); hi.click(); return; }
+        }
+        if(e.key==='Escape'){ this.closeModeMenu(); return; }
+      }
+
+      // Use the event's actual (composed) target instead of document.activeElement —
+      // activeElement doesn't pierce shadow DOM, so a focused input inside our own
+      // shadow root (search box, form fields, ...) would otherwise go undetected
+      // and digits typed there would silently leak into the calculator's expression.
+      const target = e.composedPath()[0];
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
+        e.preventDefault(); e.stopPropagation();
+        this.$modeMenu.classList.contains('open') ? (this.$modeSearch.focus(),this.$modeSearch.select()) : this.openModeMenu();
+        return;
+      }
+      if(target && (target.tagName==='INPUT' || target.tagName==='TEXTAREA' || target.isContentEditable)) return;
+      if(e.key.toLowerCase()==='c' && !(this.feature==='programmer'&&this.progBase==='HEX')){ e.preventDefault();e.stopPropagation();this.openModeMenu();this.$modeSearch.value='';this.filterMenu('');return; }
+      if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.length===1&&/[a-z]/i.test(e.key)){
+        const now=Date.now(); this.commandBuffer=(now-(this.commandAt||0)<1400?(this.commandBuffer||''):'')+e.key.toLowerCase(); this.commandAt=now;
+        if('calculator'.startsWith(this.commandBuffer)){ if(this.commandBuffer==='calculator'){ e.preventDefault(); e.stopPropagation(); this.openModeMenu(); this.$modeSearch.value=''; this.filterMenu(''); this.commandBuffer=''; } return; }
+        this.commandBuffer='';
+      }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); e.stopPropagation(); e.shiftKey ? this.redoAction() : this.undoAction(); return; }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); e.stopPropagation(); this.redoAction(); return; }
+
+      if(this.feature==='programmer'){
+        const key = e.key.toUpperCase();
+        if(/[0-9]/.test(e.key)) this.progInput(e.key);
+        else if(/^[A-F]$/.test(key) && this.progBase==='HEX') this.progInput(key);
+        else if(e.key==='+') this.progPressOp('+');
+        else if(e.key==='-') this.progPressOp('−');
+        else if(e.key==='*') this.progPressOp('×');
+        else if(e.key==='/') this.progPressOp('÷');
+        else if(e.key==='Enter' || e.key==='=') { e.preventDefault(); this.progEquals(); }
+        else if(e.key==='Backspace') this.progAction('back');
+        else if(e.key==='Escape') this.progAction('clear');
+        else return;
+        e.stopPropagation();
+        return;
+      }
+
+      if(this.feature!=='basic' && this.feature!=='scientific' && this.feature!=='casio') return;
+      const map = { '*':'×', '/':'÷', '-':'−' };
+      if(/[0-9.+()%]/.test(e.key)) this.insert(e.key);
+      else if(map[e.key]) this.insert(map[e.key]);
+      else if(e.key==='Enter' || e.key==='=') { e.preventDefault(); this.evaluate(); }
+      else if(e.key==='Backspace') this.insert(null,'back');
+      else if(e.key==='Escape') this.handleAction('clear');
+      else return;
+      e.stopPropagation();
+    }
+
+    // ---------- calculator editing history ----------
+    undoDomain(){ return this.feature==='programmer' ? 'prog' : 'expr'; }
+    captureEditState(domain){
+      if(domain==='prog') return {value:this.progValue,entry:this.progEntry,acc:this.progAcc,op:this.progOp,base:this.progBase,fresh:this.progFresh};
+      return {expr:this.expr,historyAction:this.lastHistoryAction||''};
+    }
+    applyEditState(domain,state){
+      if(domain==='prog'){
+        this.progValue=state.value; this.progEntry=state.entry; this.progAcc=state.acc; this.progOp=state.op; this.progBase=state.base; this.progFresh=state.fresh;
+        this.renderProg(); this.saveState();
+      } else { this.expr=state.expr; this.lastHistoryAction=state.historyAction||''; this.showError(false); this.render(); this.renderHistory(); this.saveState(); }
+      this.updateUndoRedoButtons();
+    }
+    pushUndo(domain=this.undoDomain()){
+      const stack=this.undoStacks[domain]; stack.push(this.captureEditState(domain));
+      if(stack.length>100) stack.shift();
+      this.redoStacks[domain].length=0; this.updateUndoRedoButtons();
+    }
+    undoAction(){ const d=this.undoDomain(), from=this.undoStacks[d]; if(!from.length)return; this.redoStacks[d].push(this.captureEditState(d)); this.applyEditState(d,from.pop()); }
+    redoAction(){ const d=this.undoDomain(), from=this.redoStacks[d]; if(!from.length)return; this.undoStacks[d].push(this.captureEditState(d)); this.applyEditState(d,from.pop()); }
+    clearUndoRedoHistory(){ this.undoStacks={expr:[],prog:[]}; this.redoStacks={expr:[],prog:[]}; this.updateUndoRedoButtons(); }
+    updateUndoRedoButtons(){
+      if(!this.shadowRoot)return;
+      const d=this.undoDomain();
+      this.shadowRoot.querySelectorAll('[data-action="undo"]').forEach(b=>b.disabled=!this.undoStacks[d].length);
+      this.shadowRoot.querySelectorAll('[data-action="redo"]').forEach(b=>b.disabled=!this.redoStacks[d].length);
+    }
+
+    // ---------- actions ----------
+    noteClearTap(){
+      const now=Date.now();
+      this.clearTapTimes=this.clearTapTimes.filter(time=>now-time<=1200);
+      this.clearTapTimes.push(now);
+      if(this.clearTapTimes.length<3)return;
+      this.clearTapTimes=[];
+      this.inlineHistoryHiddenIds=new Set(this.history.map(item=>item.id));
+      this.renderHistory();
+      this.saveState();
+    }
+    handleAction(action){
+      switch(action){
+        case 'close': if(this.nativeCopyMode&&window.SevenTaskNative?.closeCopyCalculator)window.SevenTaskNative.closeCopyCalculator();else if(this.nativeAppMode&&window.SevenTaskNative?.closeFloatingCalculator)window.SevenTaskNative.closeFloatingCalculator();else this.close(); break;
+        case 'preview-floating':
+          if(this.nativeAppMode){
+            const bridge=window.SevenTaskNative;
+            if(this.overlayMode && bridge?.restoreFullScreen)bridge.restoreFullScreen();
+            else if(this.overlayMode && bridge?.minimizeFloatingCalculator)bridge.minimizeFloatingCalculator();
+            else if(bridge?.openFloatingCalculator)bridge.openFloatingCalculator();
+            else alert('Open the installed SevenTask Android app to use the floating calculator over other apps.');
+            break;
+          }
+          if(this.mobileAppMode){if(this.mobileFloating)this.minimizeMobileBubble();else this.enterMobileFloating();break;}
+          this.popupMode=!this.popupMode; this.$win.classList.toggle('popup-mode',this.popupMode); if(!this.popupMode)this.centerWindow(); break;
+        case 'duplicate': this.duplicate(); break;
+        case 'modesel-toggle': this.$modeMenu.classList.contains('open') ? this.closeModeMenu() : this.openModeMenu(); break;
+        case 'history-toggle': this.$historyPanel.classList.contains('open') ? this.closeHistoryPanel({restoreFocus:true}) : this.openHistoryPanel(); break;
+        case 'info-toggle': this.toggleInfoPanel(); break;
+        case 'share-app': this.shareApp(); break;
+        case 'check-updates': this.checkForUpdates(); break;
+        case 'download-app-update': this.downloadAppUpdate(); break;
+        case 'reload-web-update': location.reload(); break;
+        case 'shortcuts-toggle': this.toggleShortcutGuide(); break;
+        case 'mobile-guide': this.showMobileGuide(true); break;
+        case 'mobile-guide-close': this.closeMobileGuide(); break;
+        case 'mobile-overlay-minimize': if(window.SevenTaskNative?.minimizeFloatingCalculator)window.SevenTaskNative.minimizeFloatingCalculator(); break;
+        case 'mobile-overlay-close': if(window.SevenTaskNative?.closeFloatingCalculator)window.SevenTaskNative.closeFloatingCalculator(); break;
+        case 'history-clear': clearTimeout(this.previewHistoryTimer); clearTimeout(this.formHistoryTimer); this.activeFormHistoryId=null; this.history=this.history.filter(item=>item.pinned===true); this.lastHistoryAction=''; for(const stack of [this.undoStacks.expr,this.redoStacks.expr])for(const state of stack)state.historyAction=''; this.historyAddLocked=false;this.$win.classList.remove('history-add-locked');this.renderHistoryPanel(); this.renderHistory(); this.saveState(); break;
+        case 'mode-deg': this.mode='deg'; this.updateModeChips(); this.saveState(); break;
+        case 'mode-rad': this.mode='rad'; this.updateModeChips(); this.saveState(); break;
+        case 'clear': if(this.expr){ this.pushUndo(); this.expr=''; } this.showError(false); this.render(); break;
+        case 'back': if(this.expr){ this.pushUndo(); this.expr=this.expr.slice(0,-1); this.render(); } break;
+        case 'undo': this.undoAction(); break;
+        case 'redo': this.redoAction(); break;
+        case 'equals': this.evaluate(); break;
+        case 'inv': if(this.expr){ this.pushUndo(); this.expr = `1/(${this.expr})`; } this.render(); break;
+        case 'pm': case 'pm2':
+          if(!this.expr) break;
+          this.pushUndo();
+          if(this.expr.startsWith('-(') && this.expr.endsWith(')')) this.expr=this.expr.slice(2,-1);
+          else this.expr = `-(${this.expr})`;
+          this.render(); break;
+      }
+    }
+
+    async shareApp(){
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.11/SevenTask-Calculator-Android-1.18.11.apk?build=27';
+      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.11):',url:apkUrl};
+      try{
+        const nativeApp=window.SevenTaskNative;
+        if(typeof nativeApp?.shareApp==='function'){
+          nativeApp.shareApp(shareData.title,shareData.text,shareData.url);
+          return;
+        }
+        const capacitor=window.Capacitor;
+        if(capacitor?.isNativePlatform?.()&&typeof capacitor.registerPlugin==='function'){
+          const share=capacitor.registerPlugin('Share');
+          await share.share({title:shareData.title,text:shareData.text,url:shareData.url,dialogTitle:'Share SevenTask Calculator'});
+          return;
+        }
+        if(typeof navigator.share==='function'){
+          await navigator.share(shareData);
+          return;
+        }
+      }catch(error){
+        if(error?.name==='AbortError')return;
+      }
+      try{
+        await navigator.clipboard.writeText(apkUrl);
+      }catch{}
+    }
+
+    async checkForUpdates(){
+      const button=this.shadowRoot.querySelector('[data-action="check-updates"]');
+      const label=button?.querySelector('span');
+      const status=this.shadowRoot.querySelector('[data-update-status]');
+      const download=this.shadowRoot.querySelector('[data-action="download-app-update"]');
+      const reload=this.shadowRoot.querySelector('[data-action="reload-web-update"]');
+      if(!button||!status||button.disabled)return;
+      button.disabled=true;
+      if(label)label.textContent='Checking…';
+      status.hidden=false;
+      status.textContent='';
+      if(download)download.hidden=true;
+      if(reload)reload.hidden=true;
+      try{
+        const capacitor=window.Capacitor;
+        const nativeApp=window.SevenTaskNative;
+        if(typeof nativeApp?.getVersionCode==='function'){
+          const response=await fetch('https://seventaskcalculator.in/mobile-update.json',{cache:'no-store',credentials:'omit',redirect:'error'});
+          if(!response.ok)throw new Error('Update information unavailable');
+          const release=await response.json();
+          const target=new URL(release.apkUrl);
+          const currentBuild=Number(nativeApp.getVersionCode());
+          const latestBuild=Number(release.versionCode);
+          if(target.protocol!=='https:'||target.hostname!=='seventaskcalculator.in'||!target.pathname.startsWith('/downloads/mobile-')||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
+          const size=Number(release.apkSizeBytes);
+          const sizeText=Number.isFinite(size)&&size>0?` · ${ (size/1048576).toFixed(2) } MB`:'';
+          const currentVersion=String(nativeApp.getVersionName()||'').trim();
+          if(latestBuild>currentBuild){
+            this.pendingApkUpdate=target.href;
+            status.textContent=`Update available: ${currentVersion||'current version'} → ${release.versionName}${sizeText}.`;
+            if(download)download.textContent=`Download update${sizeText}`;
+            if(download)download.hidden=false;
+          }else status.textContent=`You have the latest version: ${currentVersion||release.versionName}.`;
+        }else if(capacitor?.isNativePlatform?.()){
+          const app=capacitor.registerPlugin('App');
+          const info=await app.getInfo();
+          const response=await fetch('https://seventaskcalculator.in/mobile-update.json',{cache:'no-store',credentials:'omit',redirect:'error'});
+          if(!response.ok)throw new Error('Update information unavailable');
+          const release=await response.json();
+          const target=new URL(release.apkUrl);
+          const currentBuild=Number(info.build);
+          const latestBuild=Number(release.versionCode);
+          if(target.protocol!=='https:'||target.hostname!=='seventaskcalculator.in'||!target.pathname.startsWith('/downloads/mobile-')||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
+          const size=Number(release.apkSizeBytes);
+          const sizeText=Number.isFinite(size)&&size>0?` · ${ (size/1048576).toFixed(2) } MB`:'';
+          if(latestBuild>currentBuild){
+            this.pendingApkUpdate=target.href;
+            status.textContent=`Update available: ${info.version||'current version'} → ${release.versionName}${sizeText}.`;
+            if(download)download.textContent=`Download update${sizeText}`;
+            if(download)download.hidden=false;
+          }else status.textContent=`You have the latest version: ${info.version||release.versionName}.`;
+        }else{
+          const releaseResponse=await fetch('https://seventaskcalculator.in/release.json',{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(8000)});
+          const webRelease=releaseResponse.ok?await releaseResponse.json():null;
+          const latestVersion=String(webRelease?.versionName||this.shadowRoot.querySelector('.version-number')?.textContent||'').trim();
+          const currentVersion=String(this.shadowRoot.querySelector('.version-number')?.textContent||'').trim();
+          if(!('serviceWorker'in navigator)){
+            status.textContent=`Latest web version: ${latestVersion}. This browser applies updates automatically.`;
+            return;
+          }
+          const hadController=Boolean(navigator.serviceWorker.controller);
+          const registration=await navigator.serviceWorker.register('./sw.js');
+          let candidate=null;
+          const onUpdateFound=()=>{candidate=registration.installing};
+          registration.addEventListener('updatefound',onUpdateFound,{once:true});
+          await Promise.race([registration.update(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Update check timed out')),8000))]);
+          candidate=candidate||registration.installing;
+          const foundWaiting=Boolean(registration.waiting);
+          if(candidate&&candidate.state!=='activated'&&candidate.state!=='installed'&&candidate.state!=='redundant'){
+            await new Promise(resolve=>{
+              const done=()=>{clearTimeout(timer);candidate.removeEventListener('statechange',onState);resolve()};
+              const onState=()=>{if(['installed','activating','activated','redundant'].includes(candidate.state))done()};
+              const timer=setTimeout(done,9000);
+              candidate.addEventListener('statechange',onState);
+              onState();
+            });
+          }
+          const updateFound=latestVersion!==currentVersion||(hadController&&(foundWaiting||Boolean(candidate&&candidate.state!=='redundant')));
+          if(updateFound){
+            status.textContent=`Version ${latestVersion} is ready. Reload to update.`;
+            if(reload)reload.hidden=false;
+          }else status.textContent=`You have the latest version: ${latestVersion}.`;
+        }
+      }catch{
+        status.textContent=navigator.onLine?'Could not check for updates. Try again shortly.':'Connect to the internet to check for updates.';
+      }finally{
+        button.disabled=false;
+        if(label)label.textContent='Download Latest Version';
+      }
+    }
+
+    async downloadAppUpdate(){
+      const url=this.pendingApkUpdate;
+      if(!url)return;
+      try{
+        const nativeApp=window.SevenTaskNative;
+        if(typeof nativeApp?.openUpdate==='function'){
+          nativeApp.openUpdate(url);
+          return;
+        }
+        const capacitor=window.Capacitor;
+        if(capacitor?.isNativePlatform?.()){
+          await capacitor.registerPlugin('Browser').open({url});
+          return;
+        }
+        location.assign(url);
+      }catch{
+        window.open(url,'_blank','noopener,noreferrer');
+      }
+    }
+
+    insert(token, special){
+      if(special==='back'){ if(this.expr){ this.pushUndo(); this.expr=this.expr.slice(0,-1); } this.render(); return; }
+      this.pushUndo();
+      this.lastHistoryAction='';
+      this.showError(false);
+      this.expr += token;
+      this.render();
+      this.renderHistory();
+    }
+
+    setModeLabel(text){
+      const el = this.$modeLabel;
+      if(el.textContent === text) return;
+      el.classList.remove('swap');
+      void el.offsetWidth;
+      el.textContent = text;
+      el.classList.add('swap');
+    }
+    updateModeChips(){
+      const deg=this.shadowRoot.querySelector('[data-action="mode-deg"]');
+      const rad=this.shadowRoot.querySelector('[data-action="mode-rad"]');
+      deg.classList.toggle('active', this.mode==='deg');
+      rad.classList.toggle('active', this.mode==='rad');
+    }
+
+    // ---------- feature dropdown ----------
+    openModeMenu(){
+      this.ensureMenuBuilt();
+      this.$modeMenu.classList.add('open'); this.$modeBtn.classList.add('open');
+      if(this.$modeSearch){ this.$modeSearch.value=''; this.filterMenu(''); }
+      // Avoid opening the on-screen keyboard until the search field is tapped.
+      if(this.$modeSearch && !this.mobileAppMode && matchMedia('(hover: hover)').matches) this.$modeSearch.focus({preventScroll:true});
+    }
+    closeModeMenu(){ this.$modeMenu.classList.remove('open'); this.$modeBtn.classList.remove('open'); }
+    selectFeature(id){
+      this.closeAppSelect();
+      if(id === this.feature){ this.closeModeMenu(); return; }
+      const btn = this.shadowRoot.querySelector(`[data-select-feature="${id}"]`);
+      if(btn) btn.classList.add('picked');
+      this.feature = id;
+      this.syncMenuSelection();
+      this.formValues = {};
+      clearTimeout(this.formHistoryTimer); this.lastFormHistoryKey=''; this.activeFormHistoryId=null;
+      this.calendarState = {};
+      setTimeout(()=>{
+        this.closeModeMenu();
+        this.render();
+        this.saveState();
+        if(btn) btn.classList.remove('picked');
+      }, 110);
+    }
+
+    // ---------- master render ----------
+    render(){
+      if(this.historyAddLocked&&(!this.expr||this.expr==='0'))this.historyAddLocked=false;
+      this.$win.classList.toggle('history-add-locked',!!this.historyAddLocked);
+      const isKeypad = this.feature==='basic' || this.feature==='scientific' || this.feature==='casio';
+      const isProg = this.feature==='programmer';
+      this.$kpview.classList.toggle('show', isKeypad);
+      this.$progview.classList.toggle('show', isProg);
+      this.$formview.classList.toggle('show', !isKeypad && !isProg);
+      this.$sci.classList.toggle('show', this.feature==='scientific' || this.feature==='casio');
+      this.$win.classList.toggle('casio-skin', this.feature==='casio');
+      this.$histBtn.style.display = '';
+
+      if(isKeypad){
+        this.setModeLabel(SPECIAL_LABELS[this.feature]);
+        this.$expr.textContent = this.expr || '\u00A0';
+        this.$result.textContent = this.expr ? this.previewOrLast() : '0';
+        this.schedulePreviewHistory();
+      } else if(isProg){
+        clearTimeout(this.previewHistoryTimer);
+        this.setModeLabel(SPECIAL_LABELS.programmer);
+        this.renderProg();
+      } else {
+        const def = CALC_MAP[this.feature];
+        this.setModeLabel(def ? def.name : this.feature);
+        this.renderForm();
+      }
+      this.updateUndoRedoButtons();
+    }
+
+    // ---------- programmer mode ----------
+    updateBaseTabs(){
+      this.shadowRoot.querySelectorAll('.pbase').forEach(el=>{
+        el.classList.toggle('active', el.dataset.progBase===this.progBase);
+      });
+      if(this.$proggrid) this.$proggrid.classList.toggle('hexon', this.progBase==='HEX');
+    }
+    progRecompute(){
+      const radix = baseRadix[this.progBase];
+      const n = parseInt(this.progEntry || '0', radix);
+      this.progValue = isFinite(n) ? n : 0;
+    }
+    renderProg(){
+      const R = this.shadowRoot;
+      R.querySelector('[data-prog-hex]').textContent = (this.progValue<0? '-':'') + Math.abs(this.progValue).toString(16).toUpperCase();
+      R.querySelector('[data-prog-dec]').textContent = this.progValue.toString(10);
+      R.querySelector('[data-prog-oct]').textContent = (this.progValue<0? '-':'') + Math.abs(this.progValue).toString(8);
+      R.querySelector('[data-prog-bin]').textContent = (this.progValue<0? '-':'') + Math.abs(this.progValue).toString(2);
+      this.updateBaseTabs();
+      this.updateUndoRedoButtons();
+    }
+    progDigitAllowed(ch){
+      const radix = baseRadix[this.progBase];
+      const v = parseInt(ch, 16);
+      return isFinite(v) && v < radix;
+    }
+    progInput(ch){
+      if(!this.progDigitAllowed(ch)) return;
+      this.pushUndo('prog');
+      if(this.progFresh || this.progEntry==='0'){ this.progEntry = ch; this.progFresh=false; }
+      else this.progEntry += ch;
+      this.progRecompute();
+      this.renderProg();
+    }
+    progOpApply(op,a,b){
+      switch(op){
+        case '+': return a+b;
+        case '−': return a-b;
+        case '×': return a*b;
+        case '÷': return b!==0 ? Math.trunc(a/b) : 0;
+        case 'AND': return a & b;
+        case 'OR': return a | b;
+        case 'XOR': return a ^ b;
+        default: return b;
+      }
+    }
+    progPressOp(op){
+      this.pushUndo('prog');
+      if(this.progAcc===null) this.progAcc = this.progValue;
+      else { this.progValue = this.progOpApply(this.progOp, this.progAcc, this.progValue); this.progAcc = this.progValue; }
+      this.progOp = op; this.progEntry='0'; this.progFresh=true;
+      this.renderProg();
+    }
+    progEquals(){
+      if(this.progAcc!==null && this.progOp){ this.pushUndo('prog'); this.progValue = this.progOpApply(this.progOp, this.progAcc, this.progValue); }
+      this.progAcc=null; this.progOp=null; this.progEntry = this.progValue.toString(baseRadix[this.progBase]).toUpperCase(); this.progFresh=true;
+      this.renderProg(); this.saveState();
+    }
+    progAction(action){
+      if(action==='equals'){ this.progEquals(); return; }
+      if(action==='clear' || action==='back' || action==='not' || action==='shl' || action==='shr') this.pushUndo('prog');
+      switch(action){
+        case 'clear': this.progValue=0; this.progEntry='0'; this.progAcc=null; this.progOp=null; this.progFresh=true; break;
+        case 'back': this.progEntry = this.progEntry.length>1 ? this.progEntry.slice(0,-1) : '0'; this.progRecompute(); break;
+        case 'not': this.progValue = ~this.progValue; this.progEntry=this.progValue.toString(baseRadix[this.progBase]).toUpperCase(); this.progFresh=true; break;
+        case 'shl': this.progValue = this.progValue * 2; this.progEntry=this.progValue.toString(baseRadix[this.progBase]).toUpperCase(); this.progFresh=true; break;
+        case 'shr': this.progValue = Math.trunc(this.progValue / 2); this.progEntry=this.progValue.toString(baseRadix[this.progBase]).toUpperCase(); this.progFresh=true; break;
+      }
+      this.renderProg();
+    }
+    progSetBase(base){
+      if(base===this.progBase)return;
+      this.pushUndo('prog');
+      this.progBase = base;
+      this.progEntry = this.progValue.toString(baseRadix[base]).toUpperCase();
+      this.progFresh = true;
+      this.renderProg();
+    }
+
+    // ---------- history panel ----------
+    openHistoryPanel(){ this.closeInfoPanel(); this.closeModeMenu(); this.renderHistoryPanel(); this.$historyPanel.classList.add('open'); this.$historyBackdrop.classList.add('open'); this.$histBtn.classList.add('open'); }
+    toggleInfoPanel(){ this.$infoPanel.classList.contains('open') ? this.closeInfoPanel({restoreFocus:true}) : this.openInfoPanel(); }
+    openInfoPanel(){ this.closeHistoryPanel(); this.closeModeMenu(); this.$infoPanel.classList.add('open'); this.$infoPanel.setAttribute('aria-hidden','false'); this.$infoBackdrop.classList.add('open'); this.$infoBackdrop.setAttribute('aria-hidden','false'); this.$infoBtn.setAttribute('aria-expanded','true'); this.$infoBtn.setAttribute('aria-label','Close menu'); this.$infoBtn.setAttribute('title','Close menu — about SevenTask Calculator'); }
+    toggleShortcutGuide(){ const button=this.$infoPanel.querySelector('[data-action="shortcuts-toggle"]'), content=this.$infoPanel.querySelector('#shortcut-list'); if(!button||!content)return; const open=button.getAttribute('aria-expanded')!=='true'; button.setAttribute('aria-expanded',String(open)); content.hidden=!open; }
+    closeInfoPanel({restoreFocus=false}={}){ const wasOpen=this.$infoPanel.classList.contains('open'),hadFocus=this.$infoPanel.contains(this.shadowRoot.activeElement); this.$infoPanel.classList.remove('open'); this.$infoPanel.setAttribute('aria-hidden','true'); this.$infoBackdrop.classList.remove('open'); this.$infoBackdrop.setAttribute('aria-hidden','true'); this.$infoBtn.setAttribute('aria-expanded','false'); this.$infoBtn.setAttribute('aria-label','Open menu'); this.$infoBtn.setAttribute('title','Open menu — about SevenTask Calculator'); if(restoreFocus&&wasOpen&&hadFocus)this.$infoBtn.focus({preventScroll:true}); }
+    closeHistoryPanel({restoreFocus=false}={}){ const wasOpen=this.$historyPanel.classList.contains('open'),hadFocus=this.$historyPanel.contains(this.shadowRoot.activeElement); this.$historyPanel.classList.remove('open'); this.$historyBackdrop.classList.remove('open'); this.$histBtn.classList.remove('open'); if(restoreFocus&&wasOpen&&hadFocus)this.$histBtn.focus({preventScroll:true}); }
+    renderHistoryPanel({animateFrom=null}={}){
+      this.pruneHistory();
+      this.$histList.replaceChildren();
+      if(!this.history.length){
+        const empty=document.createElement('div'); empty.className='histempty'; empty.textContent='Your calculations will appear here.'; this.$histList.appendChild(empty); return;
+      }
+      const previousPositions=animateFrom;
+      const ordered=this.history.slice().sort((a,b)=>{const ap=a.pinned===true,bp=b.pinned===true;if(ap!==bp)return ap?-1:1;return ap?Number(b.pinnedAt||b.createdAt)-Number(a.pinnedAt||a.createdAt):Number(b.createdAt)-Number(a.createdAt);});
+      for(const h of ordered){
+        const row=document.createElement('div'); row.className='histrow';
+        row.dataset.historyId=h.id; row.classList.toggle('is-pinned',h.pinned===true);
+        const pick=document.createElement('button'); pick.type='button'; pick.className='histrow-main'; pick.dataset.histPick=h.id; pick.setAttribute('aria-label',`Load ${h.featureName||'Calculator'} calculation ${h.expr} = ${h.result}`);
+        const feature=document.createElement('span'); feature.className='histfeature'; feature.textContent=h.featureName||'Calculator';
+        const expr=document.createElement('span'); expr.className='histexpr'; expr.textContent=h.expr;
+        const result=document.createElement('b'); result.className='histres'; result.textContent='= '+h.result;
+        const stamp=document.createElement('small'); stamp.className='histstamp'; stamp.textContent=h.createdAt ? new Intl.DateTimeFormat('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit',hour12:true}).format(new Date(h.createdAt)) : 'Saved calculation';
+        pick.append(expr,result);
+        const pin=document.createElement('button'); pin.type='button'; pin.className='histpin'+(h.pinned===true?' is-pinned':''); pin.dataset.historyPin=h.id; pin.setAttribute('aria-pressed',String(h.pinned===true)); pin.setAttribute('aria-label',`${h.pinned===true?'Unpin':'Pin'} ${h.featureName||'calculator'} history item`); pin.title=h.pinned===true?'Unpin history item':'Pin history item';
+        pin.innerHTML=PIN_ICON;
+        const add=document.createElement('button'); add.type='button'; add.className='histadd'; add.dataset.histAdd=h.result; add.setAttribute('aria-label',`Add result ${h.result} to current calculation`); add.title='Add result to current calculation';
+        add.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        const remove=document.createElement('button'); remove.type='button'; remove.className='histdelete'; remove.dataset.historyDelete=h.id; remove.setAttribute('aria-label',`Delete ${h.featureName||'calculator'} history item`); remove.title='Delete this history item';
+        remove.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg>';
+        row.append(feature,remove,pick,pin,add,stamp); this.$histList.appendChild(row);
+      }
+      if(this.history.some(item=>item.pinned!==true)){const clear=document.createElement('button'); clear.type='button'; clear.className='histclear'; clear.dataset.action='history-clear'; clear.textContent=this.history.some(item=>item.pinned===true)?'Clear unpinned history':'Clear all history'; this.$histList.prepend(clear);}
+      if(previousPositions&& !matchMedia('(prefers-reduced-motion: reduce)').matches){const rows=[...this.$histList.querySelectorAll('.histrow[data-history-id]')];for(const row of rows){const old=previousPositions.get(row.dataset.historyId);if(!old)continue;const next=row.getBoundingClientRect(),dy=old.top-next.top;if(Math.abs(dy)<1)continue;row.style.transition='none';row.style.transform=`translateY(${dy}px)`;void row.offsetHeight;requestAnimationFrame(()=>{row.style.transition='transform .2s cubic-bezier(.2,.8,.3,1)';row.style.transform='translateY(0)';row.addEventListener('transitionend',()=>{row.style.removeProperty('transition');row.style.removeProperty('transform');},{once:true});});}}
+    }
+
+    // ---------- dynamic form ----------
+    activeCalc(){ return CALC_MAP[this.feature]; }
+
+    renderField(f){
+      const val = this.formValues[f.key];
+      if(f.type==='select'){
+        const opts = typeof f.options==='function' ? f.options(this.formValues) : f.options;
+        const selected=opts.find(o=>String((o&&o.value!==undefined)?o.value:o)===String(val));
+        const selectedLabel=selected&&selected.label!==undefined?selected.label:(selected&&selected.value!==undefined?selected.value:selected);
+        return `<div class="f"><label>${escapeHtml(f.label)}</label><button type="button" class="app-select" role="combobox" data-app-select data-field-select="${escapeHtml(f.key)}" aria-haspopup="listbox" aria-expanded="false" aria-label="${escapeHtml(f.label)}"><span class="select-value">${escapeHtml(selectedLabel??'Choose an option')}</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`;
+      }
+      if(f.type==='pills'){
+        const opts = typeof f.options==='function' ? f.options(this.formValues) : f.options;
+        const pillHtml = opts.map(o=>`<button type="button" class="pill ${String(o)===String(val)?'active':''}" data-field="${f.key}" data-val="${o}">${o}</button>`).join('');
+        return `<div class="f wide"><label>${f.label}</label><div class="pillrow">${pillHtml}</div></div>`;
+      }
+      if(f.type==='date'){
+        const label = val ? this.formatDateDisplay(val) : 'Select date';
+        return `<div class="f pickerfield"><label>${f.label}</label>
+          <button type="button" class="pickerbtn" data-datepicker="${f.key}">
+            <span>${label}</span>
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="pickerpanel" data-picker-panel="${f.key}"></div>
+        </div>`;
+      }
+      if(f.type==='time'){
+        const label = val ? this.formatTimeDisplay(val) : 'Select time';
+        return `<div class="f pickerfield"><label>${f.label}</label>
+          <button type="button" class="pickerbtn" data-timepicker="${f.key}">
+            <span>${label}</span>
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5"/><path d="M12 7.5V12l3.2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="pickerpanel" data-picker-panel="${f.key}"></div>
+        </div>`;
+      }
+      return `<div class="f"><label>${f.label}</label><input data-field="${f.key}" type="${f.type||'number'}" value="${escapeHtml(val ?? '')}" placeholder="${escapeHtml(f.placeholder||'')}" ${f.step?`step="${f.step}"`:''}></div>`;
+    }
+
+    toggleAppSelect(button){
+      if(this.dropdownState&&this.dropdownState.button===button){this.closeAppSelect(true);return;}
+      this.closeAppSelect();
+      let state, options=[];
+      if(button.dataset.fieldSelect){
+        const key=button.dataset.fieldSelect;
+        const field=this.activeCalc()?.fields?.find(item=>item.key===key);
+        if(!field)return;
+        const source=typeof field.options==='function'?field.options(this.formValues):field.options;
+        options=(source||[]).map(option=>({value:(option&&option.value!==undefined)?option.value:option,label:(option&&option.label!==undefined)?option.label:((option&&option.value!==undefined)?option.value:option)}));
+        state={button,kind:'field',key,options,selected:String(this.formValues[key]??'')};
+      }else if(button.dataset.calendarSelect){
+        const panel=button.closest('[data-picker-panel]');if(!panel)return;
+        const key=panel.dataset.pickerPanel,part=button.dataset.calendarSelect,period=this.calendarState[key];if(!period)return;
+        if(part==='month')options=['January','February','March','April','May','June','July','August','September','October','November','December'].map((label,value)=>({label,value}));
+        else{const min=Math.min(1800,period.year-20),max=Math.max(2100,period.year+20);for(let value=min;value<=max;value++)options.push({value,label:String(value)});}
+        state={button,kind:'calendar',key,part,options,selected:String(part==='month'?period.month:period.year)};
+      }else return;
+      if(!options.length)return;
+      this.dropdownState=state;
+      const searchable=options.length>12;
+      const search=searchable?'<input class="select-search" data-select-search type="search" autocomplete="off" placeholder="Search options" aria-label="Search options">':'';
+      const rows=options.map((item,index)=>`<button type="button" class="select-option${String(item.value)===state.selected?' highlight':''}" data-select-option="${index}" role="option" aria-selected="${String(item.value)===state.selected}" aria-label="${escapeHtml(String(item.label))}"><svg class="select-option-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 8 3.1 3.1L13 4.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${escapeHtml(String(item.label))}</span></button>`).join('');
+      this.$selectPopover.innerHTML=`${search}<div class="select-options" data-select-options role="listbox" aria-label="Options">${rows}</div>`;
+      this.$selectPopover.hidden=false;
+      button.setAttribute('aria-expanded','true');
+      this.positionAppSelect(button);
+      if(searchable)requestAnimationFrame(()=>this.$selectPopover.querySelector('[data-select-search]')?.focus({preventScroll:true}));
+    }
+
+    positionAppSelect(button){
+      const win=this.$win.getBoundingClientRect(),rect=button.getBoundingClientRect(),popup=this.$selectPopover;
+      const width=Math.min(Math.max(rect.width,180),Math.max(160,win.width-16));
+      const left=Math.max(8,Math.min(rect.left-win.left,win.width-width-8));
+      const below=Math.max(0,win.bottom-rect.bottom-10),above=Math.max(0,rect.top-win.top-10);
+      const openUp=below<190&&above>below,space=Math.max(120,Math.min(280,(openUp?above:below)-8));
+      popup.style.left=`${left}px`;popup.style.width=`${width}px`;popup.style.maxHeight=`${space}px`;
+      popup.style.top=openUp?'auto':`${rect.bottom-win.top+4}px`;
+      popup.style.bottom=openUp?`${win.bottom-rect.top+4}px`:'auto';
+      const options=popup.querySelector('[data-select-options]');if(options)options.style.maxHeight=`${Math.max(80,space-(popup.querySelector('[data-select-search]')?44:10))}px`;
+    }
+
+    closeAppSelect(returnFocus=false){
+      if(!this.$selectPopover)return;
+      const state=this.dropdownState;this.dropdownState=null;this.$selectPopover.hidden=true;this.$selectPopover.replaceChildren();this.$selectPopover.removeAttribute('style');
+      if(state){state.button.setAttribute('aria-expanded','false');if(returnFocus)state.button.focus({preventScroll:true});}
+    }
+
+    filterAppSelect(query){
+      if(!this.dropdownState)return;
+      const q=String(query||'').trim().toLocaleLowerCase();let first=null;
+      this.$selectPopover.querySelectorAll('[data-select-option]').forEach(button=>{const shown=!q||button.textContent.toLocaleLowerCase().includes(q);button.hidden=!shown;button.classList.remove('highlight');if(shown&&!first)first=button;});
+      if(first){first.classList.add('highlight');this.dropdownState.highlightedIndex=Number(first.dataset.selectOption);}else this.dropdownState.highlightedIndex=-1;
+    }
+
+    chooseAppSelectOption(index){
+      const state=this.dropdownState,option=state?.options[index];if(!state||!option)return;
+      this.closeAppSelect();
+      if(state.kind==='field'){this.formValues[state.key]=option.value;this.renderForm();this.scheduleFormHistory();}
+      else this.setCalendarPeriod(state.key,state.part,Number(option.value));
+    }
+
+    handleAppSelectKeydown(e){
+      const state=this.dropdownState;if(!state)return false;
+      const options=[...this.$selectPopover.querySelectorAll('[data-select-option]:not([hidden])')];
+      if(e.key==='Escape'){e.preventDefault();e.stopPropagation();this.closeAppSelect(true);return true;}
+      if(e.key==='Tab'){this.closeAppSelect();return false;}
+      if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){
+        e.preventDefault();e.stopPropagation();let i=options.findIndex(option=>option.classList.contains('highlight'));
+        if(e.key==='Home')i=0;else if(e.key==='End')i=options.length-1;else i=(i+(e.key==='ArrowDown'?1:-1)+options.length)%options.length;
+        options.forEach(option=>option.classList.toggle('highlight',option===options[i]));if(options[i]){state.highlightedIndex=Number(options[i].dataset.selectOption);options[i].scrollIntoView({block:'nearest'});}return true;
+      }
+      if(e.key==='Enter'){
+        const highlighted=options.find(option=>option.classList.contains('highlight'));
+        if(highlighted){e.preventDefault();e.stopPropagation();this.chooseAppSelectOption(Number(highlighted.dataset.selectOption));return true;}
+      }
+      return false;
+    }
+
+    formatDateDisplay(iso){
+      const d = new Date(iso+'T00:00:00');
+      if(isNaN(d)) return iso;
+      const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    formatTimeDisplay(hhmm){
+      const parts = hhmm.split(':').map(Number);
+      const h=parts[0]||0, m=parts[1]||0;
+      const period = h>=12?'PM':'AM';
+      const h12 = ((h+11)%12)+1;
+      return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${period}`;
+    }
+
+    // ---------- custom calendar / time picker ----------
+    togglePicker(key, kind, btn){
+      const panel = this.$formview.querySelector(`[data-picker-panel="${key}"]`);
+      if(!panel) return;
+      const isOpen = panel.classList.contains('open');
+      this.closeAllPickers();
+      if(isOpen) return;
+      if(kind==='date'){
+        if(!this.calendarState) this.calendarState = {};
+        if(!this.calendarState[key]){
+          const val = this.formValues[key];
+          const base = val ? new Date(val+'T00:00:00') : new Date();
+          this.calendarState[key] = { year: base.getFullYear(), month: base.getMonth() };
+        }
+        panel.innerHTML = this.buildCalendarHtml(key);
+      } else {
+        panel.innerHTML = this.buildTimePickerHtml(key);
+        requestAnimationFrame(()=>{
+          panel.querySelectorAll('.time-item.selected').forEach(el=>{
+            try{ el.scrollIntoView({ block:'center' }); }catch(e){}
+          });
+        });
+      }
+      panel.classList.add('open');
+      btn.classList.add('open');
+      // Keep the picker inside the visible form when date fields share a row.
+      const formRect=this.$formview.getBoundingClientRect(),fieldRect=panel.parentElement.getBoundingClientRect();
+      const panelWidth=Math.min(290,Math.max(160,formRect.width-16));
+      panel.style.width=panelWidth+'px';
+      panel.style.left=Math.min(0,Math.max(formRect.left+8-fieldRect.left,formRect.right-8-fieldRect.left-panelWidth))+'px';
+      panel.style.right='auto';
+      requestAnimationFrame(()=>{if(panel.classList.contains('open'))panel.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});});
+      const icon = btn.querySelector('svg');
+      if(icon){ icon.classList.remove('pop'); void icon.offsetWidth; icon.classList.add('pop'); }
+    }
+    closeAllPickers(){
+      this.$formview.querySelectorAll('.pickerpanel.open').forEach(p=> p.classList.remove('open'));
+      this.$formview.querySelectorAll('.pickerbtn.open').forEach(b=> b.classList.remove('open'));
+    }
+    buildCalendarHtml(key){
+      const st = this.calendarState[key];
+      const first = new Date(st.year, st.month, 1);
+      const startDay = first.getDay();
+      const daysInMonth = new Date(st.year, st.month+1, 0).getDate();
+      const daysInPrevMonth = new Date(st.year, st.month, 0).getDate();
+      const selected = this.formValues[key];
+      const today=new Date();
+      const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      let cells = '';
+      for(let i=startDay-1; i>=0; i--){ cells += `<button type="button" class="cal-day muted" disabled>${daysInPrevMonth-i}</button>`; }
+      for(let d=1; d<=daysInMonth; d++){
+        const dateStr = `${st.year}-${String(st.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const cls = ['cal-day']; if(dateStr===selected) cls.push('selected'); if(dateStr===todayStr) cls.push('today');
+        cells += `<button type="button" class="${cls.join(' ')}" data-cal-pick="${dateStr}">${d}</button>`;
+      }
+      const trailing = (7 - ((startDay+daysInMonth) % 7)) % 7;
+      for(let d=1; d<=trailing; d++){ cells += `<button type="button" class="cal-day muted" disabled>${d}</button>`; }
+      const yearMin=Math.min(1800,st.year-20), yearMax=Math.max(2100,st.year+20);
+      return `
+        <div class="cal-head">
+          <button type="button" class="cal-nav" data-cal-nav="-1" aria-label="Previous month">‹</button>
+          <div class="cal-period"><button type="button" class="cal-select month" role="combobox" data-app-select data-calendar-select="month" aria-haspopup="listbox" aria-expanded="false" aria-label="Choose month">${monthNames[st.month]}</button><button type="button" class="cal-select year" role="combobox" data-app-select data-calendar-select="year" aria-haspopup="listbox" aria-expanded="false" aria-label="Choose year">${st.year}</button></div>
+          <button type="button" class="cal-nav" data-cal-nav="1" aria-label="Next month">›</button>
+        </div>
+        <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div class="cal-grid">${cells}</div>
+        <div class="cal-actions"><button type="button" class="cal-today" data-cal-clear="1">Clear</button><button type="button" class="cal-today" data-cal-today="1">Today</button></div>`;
+    }
+    navCalendar(key, dir){
+      const st = this.calendarState[key];
+      st.month += dir;
+      if(st.month<0){ st.month=11; st.year--; } else if(st.month>11){ st.month=0; st.year++; }
+      const panel = this.$formview.querySelector(`[data-picker-panel="${key}"]`);
+      if(panel) panel.innerHTML = this.buildCalendarHtml(key);
+    }
+    setCalendarPeriod(key,part,value){
+      const st=this.calendarState[key];if(!st||!Number.isInteger(value))return;
+      if(part==='month'&&value>=0&&value<=11)st.month=value;
+      if(part==='year'&&value>=1&&value<=9999)st.year=value;
+      const panel=this.$formview.querySelector(`[data-picker-panel="${key}"]`);
+      if(panel)panel.innerHTML=this.buildCalendarHtml(key);
+    }
+    pickDate(key, iso){
+      this.formValues[key] = iso;
+      if(iso && this.calendarState && this.calendarState[key]){
+        const d = new Date(iso+'T00:00:00');
+        this.calendarState[key] = { year:d.getFullYear(), month:d.getMonth() };
+      }
+      const btn = this.$formview.querySelector(`[data-datepicker="${key}"]`);
+      if(btn) btn.querySelector('span').textContent = this.formatDateDisplay(iso);
+      this.closeAllPickers();
+      this.renderResults();
+      this.scheduleFormHistory();
+    }
+    buildTimePickerHtml(key){
+      const val = this.formValues[key] || '00:00';
+      const parts = val.split(':'); const h=parts[0]||'00', m=parts[1]||'00';
+      const hours = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
+      const minutes = Array.from({length:60},(_,i)=>String(i).padStart(2,'0'));
+      const hourHtml = hours.map(hh=>`<button type="button" class="time-item ${hh===h?'selected':''}" data-time-hour="${hh}">${hh}</button>`).join('');
+      const minHtml = minutes.map(mm=>`<button type="button" class="time-item ${mm===m?'selected':''}" data-time-min="${mm}">${mm}</button>`).join('');
+      return `
+        <div class="time-cols">
+          <div class="time-col">${hourHtml}</div>
+          <div class="time-colsep">:</div>
+          <div class="time-col">${minHtml}</div>
+        </div>
+        <label class="time-custom"><span class="time-custom-label">Custom time · choose any minute</span><input type="time" step="60" value="${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}" data-time-custom="${escapeHtml(key)}" aria-label="Enter a custom time"></label>
+        <button type="button" class="time-done" data-time-done="1">Done</button>`;
+    }
+    pickTimePart(key, part, value){
+      const panel = this.$formview.querySelector(`[data-picker-panel="${key}"]`);
+      if(!panel) return;
+      const cur = (this.formValues[key] || '00:00').split(':');
+      let h = cur[0]||'00', m = cur[1]||'00';
+      if(part==='hour') h=value; else m=value;
+      this.formValues[key] = `${h}:${m}`;
+      const attr = part==='hour' ? 'timeHour' : 'timeMin';
+      panel.querySelectorAll(`[data-${part==='hour'?'time-hour':'time-min'}]`).forEach(el=>{
+        el.classList.toggle('selected', el.dataset[attr]===value);
+      });
+      const btn = this.$formview.querySelector(`[data-timepicker="${key}"]`);
+      if(btn) btn.querySelector('span').textContent = this.formatTimeDisplay(this.formValues[key]);
+      const custom=this.$formview.querySelector(`[data-time-custom="${key}"]`);if(custom)custom.value=this.formValues[key];
+      this.renderResults();
+      this.scheduleFormHistory();
+    }
+
+    renderCustomLibrary(){
+      let saved=[];
+      try{saved=JSON.parse(localStorage.getItem('seventask_custom_calculators')||'[]');}catch(e){}
+      const head='<div class="custom-library-head"><b>Build a calculator that fits your work</b><span>Use A–H inputs · + − × ÷ ^ % · parentheses · sqrt, sin, cos, tan, log, ln, abs, pow</span></div>';
+      if(!Array.isArray(saved)||!saved.length)return '<div class="custom-library">'+head+'<p>No saved formulas yet. Set your inputs and formula, then save it.</p></div>';
+      return '<div class="custom-library">'+head+'<div class="custom-preset-list">'+saved.map((item,i)=>'<button type="button" class="custom-preset" data-custom-load="'+i+'"><b>'+escapeHtml(item.name||'Custom calculator')+'</b><span>'+escapeHtml(item.formula||'')+'</span></button>').join('')+'</div></div>';
+    }
+    blankFormInputs(){const def=this.activeCalc();if(!def?.fields)return;for(const field of def.fields)if(field.type!=='select')this.formValues[field.key]='';}
+    renderForm(){
+      const def = this.activeCalc();
+      if(!def || !def.fields){ this.$formview.innerHTML=''; return; }
+      def.fields.forEach(f=>{
+        if(this.formValues[f.key]===undefined){
+          const d = typeof f.default==='function' ? f.default(this.formValues) : f.default;
+          this.formValues[f.key] = d ?? '';
+        }
+        if(f.type==='select'){
+          const opts=typeof f.options==='function'?f.options(this.formValues):f.options;
+          const optionValue=o=>(o&&o.value!==undefined)?o.value:o;
+          if(!opts.some(o=>String(optionValue(o))===String(this.formValues[f.key]))){
+            let d=typeof f.default==='function'?f.default(this.formValues):f.default;
+            if(!opts.some(o=>String(optionValue(o))===String(d))) d=optionValue(opts[0]??'');
+            this.formValues[f.key]=d;
+          }
+        }
+      });
+      let html = def.fields.map(f=>this.renderField(f)).join('');
+      this.$formview.classList.toggle('unit-converter',def.id==='unitconverter');
+      const isCurrencyForm=def.id==='currency'||(def.id==='unitconverter'&&this.formValues.cat==='Currency');
+      if(def.id==='unitconverter'){
+        const fields=Object.fromEntries(def.fields.map(f=>[f.key,f]));
+        html=`${this.renderField(fields.cat)}<div class="unit-pair">${this.renderField(fields.from)}${this.renderField(fields.to)}</div>${this.renderField(fields.value)}`;
+      }else if(isCurrencyForm){
+        const fields=Object.fromEntries(def.fields.map(f=>[f.key,f]));
+        html=`${fields.cat?this.renderField(fields.cat):''}${this.renderField(fields.value)}<div class="currency-pair">${this.renderField(fields.from)}<button class="currency-swap" type="button" data-action="currency-swap" aria-label="Swap currencies" title="Swap currencies"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8h14m0 0-3-3m3 3-3 3M20 16H6m0 0 3 3m-3-3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>${this.renderField(fields.to)}</div>`;
+      }
+      this.$formview.innerHTML = `<div class="fgrid">${html}</div><button type="button" class="form-reset" data-action="reset-form" aria-label="Reset calculator values">Reset Values</button>${def.id==='customcalc'?this.renderCustomLibrary()+'<button type="button" class="custom-save-button" data-custom-save>Save calculator</button>':''}<div class="results" data-results role="group" aria-label="Result"></div>`;
+      if(isCurrencyForm&&!CURRENCY_READY){
+        loadCurrencyCodes().then(()=>{if((this.activeCalc()?.id==='currency'||(this.activeCalc()?.id==='unitconverter'&&this.formValues.cat==='Currency')))this.renderForm();});
+      }
+      this.renderResults();
+    }
+
+    renderResults(){
+      const def = this.activeCalc();
+      if(!def || !def.compute) return;
+      if(def.id==='currency'||(def.id==='unitconverter'&&this.formValues.cat==='Currency')){this.renderCurrencyResults();return;}
+      let results;
+      try{ results = def.compute(this.formValues) || []; }
+      catch(e){ results = [{label:'Error', value:'Check your inputs'}]; }
+      const box = this.$formview.querySelector('[data-results]');
+      if(!box) return;
+      box.innerHTML = results.map(r=>{
+        if(r.type==='table'){
+          const rows = (r.rows||[]).map(row=>`<tr><td>${row.year}</td><td>${fmtCur(row.principal)}</td><td>${fmtCur(row.interest)}</td><td>${fmtCur(row.balance)}</td></tr>`).join('');
+          return `<div class="rtable-title">${r.title||'Breakdown'}</div><table class="rtable"><thead><tr><th>Yr</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table>`;
+        }
+        return `<div class="rrow ${r.emphasis?'emph':''}"><span>${escapeHtml(r.label)}</span><b>${escapeHtml(r.value)}</b></div>`;
+      }).join('');
+    }
+
+    async renderCurrencyResults(){
+      const box=this.$formview.querySelector('[data-results]');if(!box)return;
+      const amount=Number(this.formValues.value),from=this.formValues.from,to=this.formValues.to;
+      if(!this.formValues.value||!Number.isFinite(amount)){box.innerHTML='<div class="rrow"><span>Currency conversion</span><b>Enter an amount</b></div>';return;}
+      const request=(this._currencyRequest=(this._currencyRequest||0)+1);
+      box.innerHTML='<div class="rrow"><span>Exchange rate</span><b>Loading daily rate…</b></div>';
+      try{
+        const quote=await getCurrencyRate(from,to);if(request!==this._currencyRequest||!box.isConnected)return;
+        const converted=amount*quote.rate;let formatted;
+        try{formatted=new Intl.NumberFormat(undefined,{style:'currency',currency:to,maximumFractionDigits:6}).format(converted);}catch(e){formatted=`${fmtMeasure(converted)} ${to}`;}
+        box.innerHTML=`<div class="rrow emph"><span>${fmtMeasure(amount)} ${from} converts to</span><b>${formatted}</b></div><div class="rrow"><span>Reference rate</span><b>1 ${from} = ${fmtMeasure(quote.rate)} ${to}</b></div><div class="fx-note">Daily reference rate · ${escapeHtml(quote.date)}${quote.stale?' · offline saved rate':quote.cached?' · saved rate':''} · <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a></div>`;
+      }catch(err){if(request!==this._currencyRequest||!box.isConnected)return;box.innerHTML=`<div class="rrow"><span>Currency rate</span><b>${escapeHtml(err.message)}</b></div><div class="fx-note">Rates need an internet connection. Try another pair or check back later.</div>`;}
+    }
+
+    // ---------- math (basic/scientific keypad) ----------
+    sanitize(raw){
+      let s = raw;
+      s = s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/\^/g,'**');
+      s = s.replace(/π/g,'PI');
+      s = s.replace(/(^|[^A-Za-z])e(?![A-Za-z])/g, (m,p1)=> p1+'E');
+      s = s.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+      s = s.replace(/(\d+)!/g, 'fact($1)');
+      const open=(s.match(/\(/g)||[]).length, close=(s.match(/\)/g)||[]).length;
+      if(open>close) s += ')'.repeat(open-close);
+      const stripped = s.replace(/\b(sin|cos|tan|log|ln|sqrt|fact|pow|PI|E)\b/g,'');
+      if(!/^[0-9+\-*/().,%\s]*$/.test(stripped)) throw new Error('bad expr');
+      return s;
+    }
+    mathCtx(){
+      const deg = this.mode==='deg';
+      return {
+        sin:x=>Math.sin(deg?x*Math.PI/180:x), cos:x=>Math.cos(deg?x*Math.PI/180:x), tan:x=>Math.tan(deg?x*Math.PI/180:x),
+        log:x=>Math.log10(x), ln:x=>Math.log(x), sqrt:x=>Math.sqrt(x), pow:(a,b)=>Math.pow(a,b),
+        fact:n=>{ n=Math.round(n); if(n<0 || Number.isNaN(n)) return NaN; if(n>170) return Infinity; let r=1; for(let i=2;i<=n;i++) r*=i; return r; },
+        PI:Math.PI, E:Math.E,
+      };
+    }
+    evalExpr(raw){
+      const safe = this.sanitize(raw);
+      const c = this.mathCtx();
+      const fn = new Function('sin','cos','tan','log','ln','sqrt','pow','fact','PI','E', `"use strict"; return (${safe});`);
+      return fn(c.sin,c.cos,c.tan,c.log,c.ln,c.sqrt,c.pow,c.fact,c.PI,c.E);
+    }
+    evaluate(){
+      clearTimeout(this.previewHistoryTimer);
+      if(!this.expr) return;
+      try{
+        const result = this.evalExpr(this.expr);
+        if(typeof result!=='number' || !isFinite(result)) throw new Error('math error');
+        this.pushUndo();
+        const last=this.history[this.history.length-1];
+        if(!(last?.autoPreview && last.expr===this.expr && last.featureId===this.feature && last.result===this.formatNumber(result))) this.pushHistory(this.expr, result);
+        this.lastResult = result;
+        this.expr = this.formatNumber(result);
+        this.render(); this.saveState();
+        this.$result.classList.remove('pulse');
+        void this.$result.offsetWidth;
+        this.$result.classList.add('pulse');
+      }catch(err){ this.showError(true); }
+    }
+    formatNumber(n){ if(Number.isInteger(n)) return String(n); return String(parseFloat(n.toPrecision(12))); }
+    historyFeatureName(){ return SPECIAL_LABELS[this.feature]||CALC_MAP[this.feature]?.name||'Calculator'; }
+    scheduleFormHistory(){
+      const def=this.activeCalc(); if(!def||!Array.isArray(def.fields))return;
+      const featureId=this.feature,formValues={...this.formValues},key=featureId+':'+JSON.stringify(formValues);
+      clearTimeout(this.formHistoryTimer);
+      this.formHistoryTimer=setTimeout(()=>{
+        if(this.feature!==featureId||key===this.lastFormHistoryKey)return;
+        const current=this.activeCalc();if(!current||current.id!==featureId)return;
+        const changed=current.fields.filter(field=>{const value=formValues[field.key];if(value===undefined||value===null||String(value).trim()==='')return false;const base=typeof field.default==='function'?field.default(formValues):field.default;return String(value)!==String(base??'');});
+        if(!changed.length)return;
+        const summary=changed.slice(0,3).map(field=>`${field.label}: ${String(formValues[field.key]).slice(0,32)}`).join(' · ');
+        const resultNode=this.$formview.querySelector('.rrow.emph b')||this.$formview.querySelector('.rrow b');
+        const result=resultNode?.textContent?.trim();if(!result||/^(enter|loading|check your inputs|error|—)/i.test(result))return;
+        this.lastFormHistoryKey=key;
+        const existing=this.history.find(item=>item.id===this.activeFormHistoryId);
+        if(existing){Object.assign(existing,{expr:summary||current.name,result,formValues,createdAt:Date.now()});this.renderHistory();this.saveState();if(this.$historyPanel.classList.contains('open'))this.renderHistoryPanel();}
+        else this.activeFormHistoryId=this.pushHistory(summary||current.name,result,{featureId,featureName:current.name,formValues});
+      },650);
+    }
+    historyPositions(){return new Map([...this.$histList.querySelectorAll('.histrow[data-history-id]')].map(row=>[row.dataset.historyId,row.getBoundingClientRect()]));}
+    toggleHistoryPin(id){const item=this.history.find(entry=>entry.id===id);if(!item)return;const animateFrom=this.historyPositions();item.pinned=item.pinned!==true;if(item.pinned)item.pinnedAt=Date.now();else delete item.pinnedAt;this.saveState();this.renderHistoryPanel({animateFrom});}
+    pruneHistory(now=Date.now()){ const cutoff=now-86400000,previous=this.history.length;this.history=this.history.filter(h=>h&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)<=now+60000&&(h.pinned===true||Number(h.createdAt)>=cutoff));const unpinned=this.history.reduce((count,h)=>count+(h.pinned===true?0:1),0),excess=Math.max(0,unpinned-100);if(excess){let remove=excess;this.history=this.history.filter(h=>{if(h.pinned===true)return true;if(remove>0){remove--;return false;}return true;});}return this.history.length!==previous; }
+    pushHistory(expr,result,metadata={}){ this.pruneHistory(); const now=Date.now();let id;try{id=crypto.randomUUID();}catch{id=`${now}-${Math.random().toString(36).slice(2,9)}`;}const numeric=typeof result==='number'?this.formatNumber(result):String(result);this.history.push({id,expr:String(expr),result:numeric,createdAt:now,featureId:metadata.featureId||this.feature,featureName:metadata.featureName||this.historyFeatureName(),...(metadata.autoPreview?{autoPreview:true}:{}),...(metadata.formValues?{formValues:metadata.formValues}:{})});this.pruneHistory(now); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); return id; }
+    schedulePreviewHistory(){
+      return; // Save a calculator action only when the user completes it with equals.
+      clearTimeout(this.previewHistoryTimer);
+      const expr=this.expr,feature=this.feature,mode=this.mode;
+      if(!expr || !/[+×÷−*/^%]/.test(expr))return;
+      let result;try{result=this.evalExpr(expr)}catch(e){return}
+      if(typeof result!=='number'||!Number.isFinite(result))return;
+      const formatted=this.formatNumber(result);
+      this.previewHistoryTimer=setTimeout(()=>{
+        if(this.expr!==expr||this.feature!==feature||this.mode!==mode)return;
+        const last=this.history[this.history.length-1];
+        if(last?.expr===expr&&last.featureId===feature&&last.result===formatted)return;
+        this.pushHistory(expr,result,{autoPreview:true});
+      },1200);
+    }
+    previewOrLast(){
+      try{ const result=this.evalExpr(this.expr); if(typeof result==='number' && isFinite(result)) return this.formatNumber(result); }catch(e){}
+      return this.expr;
+    }
+    renderHistory(){
+      this.pruneHistory();
+      this.$history.replaceChildren();
+      if(this.lastHistoryAction){const action=document.createElement('span');action.textContent=this.lastHistoryAction;action.title=this.lastHistoryAction;this.$history.appendChild(action);}
+      for(const h of (this.lastHistoryAction?[]:this.history.filter(item=>!this.inlineHistoryHiddenIds.has(item.id)).slice(-2))){
+        const item=document.createElement('span'); item.dataset.hist=h.result; item.textContent=`${h.expr} = ${h.result}`;
+        this.$history.appendChild(item);
+      }
+      this.$history.hidden=this.$history.childElementCount===0;
+    }
+    showError(isErr){ this.$result.classList.toggle('err', !!isErr); if(isErr) this.$result.textContent='Error'; }
+  }
+
+  customElements.define('taskai7-calculator', Tai7Calculator);
+
+  window.TaskAI7Calculator = {
+    _el(){ let el=document.querySelector('taskai7-calculator'); if(!el){ el=document.createElement('taskai7-calculator'); document.body.appendChild(el); } return el; },
+    open(){ this._el().open(); }, close(){ this._el().close(); }, toggle(){ this._el().toggle(); }, home(){const el=this._el();el.open();try{el.selectFeature('basic')}catch(error){console.error('Could not select calculator home mode',error)}}, openFeature(id){const el=this._el();el.selectFeature(id);el.open();},
+  };
+window.addEventListener('message',event=>{if(event.source!==window.parent||event.origin!==location.origin)return;const data=event.data;if(!data||typeof data.feature!=='string'||!/^[a-z0-9-]+$/.test(data.feature))return;if(data.type==='seventask:open-feature'){window.TaskAI7Calculator.openFeature(data.feature);return}if(data.type!=='seventask:showcase-feature')return;const el=window.TaskAI7Calculator._el();el.selectFeature(data.feature);el.open();setTimeout(()=>{switch(data.action){case'library':el.openModeMenu();break;case'search':el.openModeMenu();el.$modeSearch?.focus({preventScroll:true});break;case'history':el.openHistoryPanel();break;case'shortcuts':el.openInfoPanel();el.toggleShortcutGuide();break;case'edit':el.expr='';el.render();for(const key of'42+7')el.insert(key);break;default:break}},120)});
+})();
