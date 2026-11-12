@@ -1924,7 +1924,7 @@ body.web-calculator-page .web-page-home{display:inline-flex}
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.14</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.15</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -3671,6 +3671,27 @@ window.addEventListener('message',event=>{if(event.source!==window.parent||event
 (()=>{const slides=[{title:'Calculate everything. Move with clarity.',copy:'Everyday math, money, science and work tools in one calm calculator.',label:'A clearer way to calculate'},{title:'Quick answers for everyday sums.',copy:'Work out percentages, discounts, ratios and time without switching tools.',label:'Everyday calculator'},{title:'Make the numbers make sense.',copy:'Explore savings, interest and other practical money calculations.',label:'Money & finance'},{title:'Go beyond the basic keypad.',copy:'Scientific functions, programmer tools and reusable custom formulas are ready when you need them.',label:'Science & formulas'},{title:'Keep business calculations close.',copy:'Handle prices, margins, stock and practical shop calculations in one workspace.',label:'Business tools'},{title:'Pick up where you left off.',copy:'Calculation history, undo and redo help you revisit work and continue from the result.',label:'History & control'},{title:'136+ focused tools. One workspace.',copy:'Open SevenTask Calculator on the web and find the right calculator for the task.',label:'SevenTask Calculator'}];const panel=document.getElementById('st-ad-break');if(!panel)return;const title=document.getElementById('st-ad-title'),copy=document.getElementById('st-ad-copy'),index=document.getElementById('st-ad-index'),dots=document.getElementById('st-ad-dots'),done=document.getElementById('st-ad-continue');let active=0,timer=0,successes=0,lastHistory='';function show(i){active=(i+slides.length)%slides.length;const s=slides[active];title.textContent=s.title;copy.textContent=s.copy;index.textContent=`${String(active+1).padStart(2,'0')} / 07 · ${s.label}`;[...dots.children].forEach((b,n)=>b.setAttribute('aria-current',String(n===active)))}slides.forEach((_,i)=>{const b=document.createElement('button');b.className='ad-dot';b.type='button';b.setAttribute('aria-label',`Advertisement slide ${i+1}`);b.setAttribute('aria-current',String(i===0));b.addEventListener('click',()=>show(i));dots.append(b)});function close(){panel.hidden=true;panel.setAttribute('aria-hidden','true');document.body.style.overflow='';window.clearInterval(timer);timer=0;done.focus({preventScroll:true})}done.addEventListener('click',close);document.addEventListener('keydown',e=>{if(!panel.hidden&&e.key==='Escape')close()});function open(){panel.hidden=false;panel.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';let previous=0;try{const saved=Number(localStorage.getItem('st-ad-slide')||'0');if(Number.isInteger(saved)&&saved>=0)previous=saved}catch{}active=(previous+1)%slides.length;show(active);try{localStorage.setItem('st-ad-slide',String(active))}catch{}window.clearInterval(timer);timer=window.setInterval(()=>show(active+1),5000);done.focus({preventScroll:true})}document.addEventListener('click',e=>{const path=e.composedPath?.()||[];if(!path.some(el=>el?.dataset&&(el.dataset.action==='equals'||el.dataset.progAction==='equals')))return;window.setTimeout(()=>{const el=document.querySelector('taskai7-calculator'),root=el?.shadowRoot,result=root?.querySelector('[data-result]'),text=result?.textContent?.trim(),history=root?.querySelector('[data-history]')?.textContent?.trim()||'';if(!text||text==='Error'||history===lastHistory)return;lastHistory=history;successes++;if(successes>=10){successes=0;open()}},120)},true)})();
 </script>
 <script>(()=>{if(window.sevenTaskDesktop||new URLSearchParams(location.search).has('native'))return;customElements.whenDefined('taskai7-calculator').then(()=>{let ids=[];try{ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]')}catch{}if(!Array.isArray(ids))return;for(const id of ids.slice(0,6)){if(typeof id!=='string'||!/^tai7c-copy-[a-z0-9-]+$/i.test(id)||document.getElementById(id))continue;const el=document.createElement('taskai7-calculator');el.id=id;if(new URLSearchParams(location.search).has('mobile-preview'))el.setAttribute('preview-copy','');document.body.appendChild(el);el.open()}})})();</script>
+<script>
+(()=>{
+  if(location.protocol==='file:'||!navigator.onLine)return;
+  const check=async()=>{
+    try{
+      const current=document.querySelector('taskai7-calculator')?.shadowRoot?.querySelector('.version-number')?.textContent?.trim();
+      if(!current)return;
+      const response=await fetch('./release.json?fresh='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(5000)});
+      if(!response.ok)return;
+      const latest=String((await response.json()).versionName||'').trim();
+      const parts=s=>s.split('.').map(Number);
+      if(!/^\d+\.\d+\.\d+$/.test(latest)||!/^\d+\.\d+\.\d+$/.test(current))return;
+      const newer=parts(latest).some((value,index)=>value>parts(current)[index]&&parts(latest).slice(0,index).every((part,i)=>part===parts(current)[i]));
+      if(!newer||sessionStorage.getItem('stc-reloaded-for-'+latest))return;
+      sessionStorage.setItem('stc-reloaded-for-'+latest,'1');
+      const url=new URL(location.href);url.searchParams.set('fresh',latest);location.replace(url.href);
+    }catch{}
+  };
+  addEventListener('pageshow',check);
+})();
+</script>
 <script src="mobile-settings.js?preview=3"></script></body>
 </html>
 

@@ -10,6 +10,24 @@
 /sw-v103.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
+/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/index.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/calculator
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/calculator.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/mobile-settings.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/release.json
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
 https://:project.pages.dev/*
   X-Robots-Tag: noindex
 
