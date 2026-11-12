@@ -62,9 +62,22 @@
     /* Release 1.18.11: clear full outlines on calculator side panels. */
 .win .historydrawer,.win .infopanel,.win .modemenu{box-sizing:border-box!important;border:1.5px solid #45484c!important}
 .win[data-theme="dark"] .historydrawer,.win[data-theme="dark"] .infopanel,.win[data-theme="dark"] .modemenu{border-color:#a4abb5!important}
+body.web-calculator-page .seven-bubble:not(.minimized){top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);padding:18px 30px 18px 20px;gap:18px;border:3px solid #111114;box-shadow:0 16px 40px #11111418;animation:none}
+body.web-calculator-page .seven-bubble:not(.minimized):hover{transform:translate(-50%,-50%) scale(1.04)}
+body.web-calculator-page .seven-bubble:not(.minimized) img{width:68px;height:68px}
+body.web-calculator-page .seven-bubble:not(.minimized) .brand-seven{font-size:25px}
+body.web-calculator-page .seven-bubble:not(.minimized) .brand-calculator{font-size:22px}
+.web-page-home{display:none;position:fixed;top:24px;right:26px;z-index:1000001;align-items:center;gap:9px;padding:10px 15px;border:2px solid #111114;border-radius:12px;background:#fff;color:#111114;text-decoration:none;font:700 15px/1.1 "DM Sans",system-ui,sans-serif;box-shadow:0 5px 14px #11111414}
+.web-page-home:hover{background:#f2f3f5}.web-page-home svg{width:19px;height:19px}
+body.web-calculator-page .web-page-home{display:inline-flex}
+body.web-calculator-page.calc-open .web-page-home{display:none}
+@media(max-width:540px){.web-page-home{top:16px;right:16px}}
+@media(max-width:540px){body.web-calculator-page .seven-bubble:not(.minimized){max-width:calc(100vw - 32px);padding:14px 18px;gap:12px}body.web-calculator-page .seven-bubble:not(.minimized) img{width:54px;height:54px}body.web-calculator-page .seven-bubble:not(.minimized) .brand-seven{font-size:20px}body.web-calculator-page .seven-bubble:not(.minimized) .brand-calculator{font-size:18px}}
   </style>
 </head>
 <body>
+  <script>document.body.classList.toggle('web-calculator-page',!new URLSearchParams(location.search).has('mobile')&&!window.sevenTaskDesktop);</script>
+  <a class="web-page-home" href="/" onclick="if(location.protocol==='file:')this.href='index.html'" aria-label="Go to web app home" title="Go to web app home"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Home</span></a>
   <button class="seven-bubble" hidden type="button" aria-label="Open SevenTask Calculator" aria-expanded="false" title="Open SevenTask Calculator">
     <img src="icon.svg" alt="" width="38" height="38"><span class="brand-title-line"><span class="brand-seven">SevenTask</span><span class="brand-calculator">Calculator</span></span>
   </button>
@@ -1910,7 +1923,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.11</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.12</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
