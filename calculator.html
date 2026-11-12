@@ -59,7 +59,7 @@
   .seven-bubble{border:2px solid #111114;padding:10px 18px 10px 11px}
   .seven-bubble img{width:42px;height:42px}
   @media(max-width:719px){.seven-bubble{padding:8px 14px 8px 9px}}
-    /* Release 1.18.11: clear full outlines on calculator side panels. */
+    /* Release 1.18.12: clear full outlines on calculator side panels. */
 .win .historydrawer,.win .infopanel,.win .modemenu{box-sizing:border-box!important;border:1.5px solid #45484c!important}
 .win[data-theme="dark"] .historydrawer,.win[data-theme="dark"] .infopanel,.win[data-theme="dark"] .modemenu{border-color:#a4abb5!important}
 body.web-calculator-page .seven-bubble:not(.minimized){top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);padding:18px 30px 18px 20px;gap:18px;border:3px solid #111114;box-shadow:0 16px 40px #11111418;animation:none}
@@ -2875,8 +2875,8 @@ body.web-calculator-page.calc-open .web-page-home{display:none}
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.11/SevenTask-Calculator-Android-1.18.11.apk?build=27';
-      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.11):',url:apkUrl};
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.12/SevenTask-Calculator-Android-1.18.12.apk?build=27';
+      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.12):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;
         if(typeof nativeApp?.shareApp==='function'){
