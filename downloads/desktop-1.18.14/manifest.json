@@ -1,0 +1,82 @@
+{
+  "filename": "SevenTask-Calculator-Setup-1.18.14.exe",
+  "bytes": 120253433,
+  "version": "1.18.14",
+  "parts": [
+    {
+      "file": "part-01.bin",
+      "bytes": 8388608,
+      "sha256": "fadd36201ae4c1aed8f7c3d55931b411f3debc3f56d42407cfaa023e1db2229b"
+    },
+    {
+      "file": "part-02.bin",
+      "bytes": 8388608,
+      "sha256": "de9abd902c0406532b2b99f993f497b08a37fc0c1aee2e9094c45850c7663546"
+    },
+    {
+      "file": "part-03.bin",
+      "bytes": 8388608,
+      "sha256": "a4d988506af7ca83141d53676cd60069982455696a8fe7bcfca19a7282c8e461"
+    },
+    {
+      "file": "part-04.bin",
+      "bytes": 8388608,
+      "sha256": "1b05c29c757045393c6114d56fee5e159f3b0f37f7a26fda3045cc5a9c763335"
+    },
+    {
+      "file": "part-05.bin",
+      "bytes": 8388608,
+      "sha256": "de51b902322872e1d3d5f0c887d0ff7b5439905b69bd75175dba50a9146ca82f"
+    },
+    {
+      "file": "part-06.bin",
+      "bytes": 8388608,
+      "sha256": "6701ebcfc508f97190fb071e5b302893693d0f79311ee94e251606c031141dfd"
+    },
+    {
+      "file": "part-07.bin",
+      "bytes": 8388608,
+      "sha256": "052234667e1afc2c2f1da88950aa09152f898d54c118f863c4c4e98f7729fe11"
+    },
+    {
+      "file": "part-08.bin",
+      "bytes": 8388608,
+      "sha256": "cc1dce4e8aba253549850c6330003c39017c82c1793da373f9549113abf426de"
+    },
+    {
+      "file": "part-09.bin",
+      "bytes": 8388608,
+      "sha256": "4495d8a23199ab3b676e123ee6d8f3f5b19856beda7c57d8df29613b61e1c548"
+    },
+    {
+      "file": "part-10.bin",
+      "bytes": 8388608,
+      "sha256": "f0b9c137a73c739b3ce21586e729314f13a558e9786ab9e6ca8991e8f9ca0f12"
+    },
+    {
+      "file": "part-11.bin",
+      "bytes": 8388608,
+      "sha256": "e5c9c41f49e2b715f95690ea2b8cbec7900844af785dcca18d112868ed58ac78"
+    },
+    {
+      "file": "part-12.bin",
+      "bytes": 8388608,
+      "sha256": "08a83d975e230af58ac69e8a628f2b1289793287ae19418a0d381f7778019b84"
+    },
+    {
+      "file": "part-13.bin",
+      "bytes": 8388608,
+      "sha256": "bfe3b3ddcf85312423bfcc9bbef0875a20322582c2590c0ea465469d2c619687"
+    },
+    {
+      "file": "part-14.bin",
+      "bytes": 8388608,
+      "sha256": "9ac72021d2ba16c28d9eeaeabc9bb5660cd4845044b9943f31bb6bdac096e4f5"
+    },
+    {
+      "file": "part-15.bin",
+      "bytes": 2812921,
+      "sha256": "85f8b45c0f61f4b324f0ef336fb26068a6c4ac5c58045b04d50727ece5717f42"
+    }
+  ]
+}
