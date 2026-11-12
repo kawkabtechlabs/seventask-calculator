@@ -7,6 +7,7 @@ permissions:
   contents: write
 jobs:
   sync:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,3 +24,4 @@ jobs:
             git commit -m "Sync release version labels"
             git push
           fi
+

@@ -59,7 +59,10 @@
   .seven-bubble{border:2px solid #111114;padding:10px 18px 10px 11px}
   .seven-bubble img{width:42px;height:42px}
   @media(max-width:719px){.seven-bubble{padding:8px 14px 8px 9px}}
-      </style>
+    /* Release 1.18.08: clear full outlines on calculator side panels. */
+.win .historydrawer,.win .infopanel,.win .modemenu{box-sizing:border-box!important;border:1.5px solid #45484c!important}
+.win[data-theme="dark"] .historydrawer,.win[data-theme="dark"] .infopanel,.win[data-theme="dark"] .modemenu{border-color:#a4abb5!important}
+  </style>
 </head>
 <body>
   <button class="seven-bubble" hidden type="button" aria-label="Open SevenTask Calculator" aria-expanded="false" title="Open SevenTask Calculator">
@@ -1826,6 +1829,7 @@
     .win :is(.titlebar,.toolbar,.display,.sci,.infobrand,.infosection:not(:last-child),.theme-choice,.infomade,.mobile-guide-entry,.mobile-feedback-entry,.menuspecial,.modecat:not(:first-child),.histrow,.histclear,.progdisplay,.progbases,.results,.rrow,.rtable td){border-color:var(--ui-divider)!important}
     .win :is(.titlebar,.toolbar,.display,.sci,.infobrand,.infosection:not(:last-child),.theme-choice,.infomade,.mobile-guide-entry,.mobile-feedback-entry,.menuspecial,.modecat:not(:first-child),.histrow,.histclear,.progdisplay,.progbases,.results,.rrow,.rtable td){border-width:1.5px!important}
     .win .infopanel{border-right:1.5px solid var(--ui-divider)!important}
+.win .historydrawer,.win .infopanel,.win .modemenu{box-sizing:border-box!important;border:1.5px solid #45484c!important}.win[data-theme="dark"] .historydrawer,.win[data-theme="dark"] .infopanel,.win[data-theme="dark"] .modemenu{border-color:#a4abb5!important}
     .win[data-theme="dark"]{--ui-divider:#737a84}
     .win[data-theme="soft"]{--ui-divider:#77847c}
     .win[data-theme="cloud"]{--ui-divider:#817888}
@@ -1876,7 +1880,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.07</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.08</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -2810,8 +2814,8 @@
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.07/SevenTask-Calculator-Android-1.18.07.apk?build=25';
-      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.07):',url:apkUrl};
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.08/SevenTask-Calculator-Android-1.18.08.apk?build=26';
+      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.08):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;
         if(typeof nativeApp?.shareApp==='function'){
@@ -3580,3 +3584,5 @@ window.addEventListener('message',event=>{if(event.source!==window.parent||event
 </script>
 </body>
 </html>
+
+

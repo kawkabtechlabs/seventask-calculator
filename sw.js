@@ -1,4 +1,4 @@
-const CACHE = "seventask-calculator-shell-v103";
+const CACHE = "seventask-calculator-shell-1.18.08";
 const CORE = [
   "./",
   "./calculator",
@@ -13,10 +13,10 @@ const CORE = [
   "./promo/product-tour.html",
   "./manifest.webmanifest",
   "./favicon.svg?v=calculator-2",
-  "./icon.svg?v=1.18.07",
-  "./icon-192.png?v=1.18.07-clean-2",
-  "./icon-512.png?v=1.18.07-clean-2",
-  "./apple-touch-icon.png?v=1.18.07-clean-2",
+  "./icon.svg?v=1.18.08",
+  "./icon-192.png?v=1.18.08-clean-2",
+  "./icon-512.png?v=1.18.08-clean-2",
+  "./apple-touch-icon.png?v=1.18.08-clean-2",
   "./assets/fonts/fjalla-one-latin.woff2",
   "./assets/kawkab-tech-labs-logo.svg"
 ];
