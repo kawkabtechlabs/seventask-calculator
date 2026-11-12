@@ -2,7 +2,7 @@ name: Automatically version web changes
 on:
   push:
     branches: [main]
-    paths: ['calculator.html', 'index.html', 'install.html', 'pwa-install.js', 'desktop-download.js', 'manifest.webmanifest', 'sw.js', 'sw-v103.js']
+    paths: ['calculator.html', 'mobile-settings.js', 'index.html', 'install.html', 'pwa-install.js', 'desktop-download.js', 'manifest.webmanifest', 'sw.js', 'sw-v103.js']
 permissions:
   contents: write
 concurrency:

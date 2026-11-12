@@ -1,7 +1,8 @@
-const CACHE = "seventask-calculator-shell-1.18.09";
+const CACHE = "seventask-calculator-shell-1.18.11";
 const CORE = [
   "./",
   "./calculator",
+  "./mobile-settings.js",
   "./install",
   "./privacy-policy.html",
   "./pwa-install.js",

@@ -59,7 +59,7 @@
   .seven-bubble{border:2px solid #111114;padding:10px 18px 10px 11px}
   .seven-bubble img{width:42px;height:42px}
   @media(max-width:719px){.seven-bubble{padding:8px 14px 8px 9px}}
-    /* Release 1.18.08: clear full outlines on calculator side panels. */
+    /* Release 1.18.11: clear full outlines on calculator side panels. */
 .win .historydrawer,.win .infopanel,.win .modemenu{box-sizing:border-box!important;border:1.5px solid #45484c!important}
 .win[data-theme="dark"] .historydrawer,.win[data-theme="dark"] .infopanel,.win[data-theme="dark"] .modemenu{border-color:#a4abb5!important}
   </style>
@@ -1270,7 +1270,7 @@
     .win[data-theme="dark"] .infobrand .info-close-btn:hover{background:#414750;border-color:#a2aab6;color:#fff}
     @media(prefers-reduced-motion:reduce){.infobrand .info-close-btn{transition:none!important}}
     .infobrand svg,.infobrand img{ width:30px; height:30px; flex:0 0 auto; }
-    .infopanel.open .infobrand .info-brand-mark{animation:info-brand-arrive .56s cubic-bezier(.2,.75,.25,1) both,brand-mark-breathe 4.8s ease-in-out .56s infinite;transform-origin:50% 50%}
+    .infopanel.open .infobrand .info-brand-mark{animation:none;transform:none}
     @keyframes info-brand-arrive{from{opacity:.45;transform:translateY(5px) scale(.88) rotate(-5deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
     @media(prefers-reduced-motion:reduce){.infobrand .info-brand-mark{animation:none!important;transform:none!important}}
     .info-brand-mark,.ticon,.kawkab-brand-logo{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}.info-brand-mark,.kawkab-brand-logo{pointer-events:none}
@@ -1835,12 +1835,42 @@
     .win[data-theme="cloud"]{--ui-divider:#817888}
     .win[data-theme="blue"]{--ui-divider:#74858d}
     .win[data-theme="rose"]{--ui-divider:#887c82}
-    .win[data-theme="sand"]{--ui-divider:#898276}</style>
+    .win[data-theme="sand"]{--ui-divider:#898276}
+    .win .histlist{gap:9px;padding:10px 8px}
+    .win .histrow{grid-template-columns:minmax(0,1fr) 36px 36px!important;grid-template-rows:auto auto auto!important;gap:8px!important;min-height:108px;padding:12px!important;border:1.5px solid var(--ui-divider)!important;border-radius:14px!important;background:#fff;box-shadow:0 2px 5px #1111140b}
+    .win .histrow .histfeature{grid-column:1/-1;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip}.win .histrow .histrow-main{grid-column:1/-1;grid-row:2}.win .histrow .histadd{grid-column:2;grid-row:3}.win .histrow .histpin{grid-column:3;grid-row:3}
+    .win .histrow-main{display:flex!important;justify-content:space-between;align-items:baseline;padding:0 2px!important;gap:10px!important}
+    .win .histfeature{font-size:12px;line-height:1.3;font-weight:700}
+    .win .histrow .histexpr{font-size:12px;line-height:1.35;color:#555963}
+    .win .histrow .histres{font-size:15px!important;font-weight:750;letter-spacing:-.02em}
+    .win .histrow .histstamp{grid-column:1;grid-row:3;align-self:center;font-size:10px;line-height:1.35;color:#767b84;white-space:nowrap}
+    .win .histrow :is(.histadd,.histpin){width:36px;height:36px;border:1.5px solid #cbd0d6;border-radius:10px;box-shadow:none}
+    .win .histrow .histadd{border:0;background:transparent;box-shadow:none;color:inherit}.win .histrow .histadd svg{width:16px;height:16px}.win .histrow .histadd:hover{background:#f0f1f3;color:#111114;border:0}
+    .win .histlist .histclear{margin:0 0 4px;padding:8px 4px 10px!important;border:0!important;border-radius:0;background:transparent}
+    .win .histrow .histfeature{grid-column:1/3}.win .histrow .histdelete{grid-column:3;grid-row:1;display:grid;place-items:center;width:36px;height:32px;padding:0;border:0;background:transparent;color:#626772;cursor:pointer}.win .histrow .histdelete svg{width:17px;height:17px}.win .histrow .histdelete:hover{color:#a52a2a;background:#f7eded;border-radius:8px}.win .histrow .histdelete:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+    .win.mobile-app-mode .formview,.win.mobile-app-mode .fgrid,.win.mobile-app-mode .fgrid>*{min-width:0;max-width:100%;box-sizing:border-box}
+    .win.mobile-app-mode .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.win.mobile-app-mode .fgrid :is(input,select,textarea,.app-select){min-width:0;max-width:100%;box-sizing:border-box}
+    @media(max-width:410px){.win.mobile-app-mode .formview{padding-inline:12px}.win.mobile-app-mode .fgrid{grid-template-columns:minmax(0,1fr);gap:12px}.win.mobile-app-mode .fgrid>*{grid-column:1/-1!important}.win.mobile-app-mode .currency-pair{grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr)!important}.win.mobile-app-mode .currency-pair>*{grid-column:auto!important}}
+    .win .histlist{gap:7px;padding:6px 8px}.win .histrow{min-height:0!important;padding:9px 10px!important;gap:3px 7px!important;border-radius:12px!important;box-shadow:0 1px 3px #1111140a}.win .histrow .histrow-main{min-height:28px!important}.win .histrow .histfeature{font-size:11.5px}.win .histrow .histres{font-size:14px!important}.win .histrow :is(.histadd,.histpin){width:30px;height:30px}.win .histrow .histdelete{width:30px;height:27px}.win .histrow .histdelete svg{width:15px;height:15px}
+    .win .histrow .histpin,.win .histrow .histpin.is-pinned{border:0;background:transparent;box-shadow:none}.win .histrow .histpin:hover{border:0;background:#f0f1f3;border-radius:8px}.win .histrow .histpin.is-pinned{color:#111114}.win[data-theme="dark"] .histrow .histpin.is-pinned{color:#fff}
+    .win .histrow .histrow-main{justify-content:flex-start!important;gap:5px!important}.win .histrow .histexpr{flex:0 1 auto;max-width:70%;min-width:0}.win .histrow .histres{flex:0 0 auto}
+    .win .histrow{grid-template-columns:minmax(0,1fr) 28px 28px 28px!important;gap:3px 3px!important}.win .histrow .histfeature{grid-column:1/-1}.win .histrow .histrow-main{grid-column:1/-1}.win .histrow .histadd{grid-column:2;grid-row:3}.win .histrow .histpin{grid-column:3;grid-row:3}.win .histrow .histdelete{grid-column:4;grid-row:3;width:28px;height:30px}.win .histrow .histstamp{grid-column:1;grid-row:3;font-size:9px}
+    .win .histrow .histrow-main{grid-column:1;grid-row:2;min-width:0}.win .histrow .histadd{grid-column:2;grid-row:2}.win .histrow .histpin{grid-column:3;grid-row:2}.win .histrow .histdelete{grid-column:4;grid-row:2}.win .histrow .histstamp{grid-column:1/-1;grid-row:3;font-size:10px}.win .histrow .histexpr{max-width:62%}.win .histrow .histres{font-size:13px!important}
+    .win .historydrawer .infobrand{padding-bottom:8px;margin-bottom:0}.win .historydrawer .histlist{padding-top:0}.win .historydrawer .histclear{padding-top:5px!important;padding-bottom:7px!important;margin-bottom:3px}
+    .win .histrow{grid-template-rows:auto auto!important}.win .histrow .histfeature{grid-column:1;grid-row:1;font-size:10.5px;line-height:1.25}.win .histrow .histstamp{grid-column:2/5;grid-row:1;align-self:center;justify-self:end;text-align:right;font-size:9px;white-space:nowrap}
+    .formview.unit-converter .fgrid>.f{grid-column:1/-1}.formview .unit-pair{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}.formview .unit-pair>.f{min-width:0}.formview .unit-pair :is(select,.app-select){width:100%;min-width:0;box-sizing:border-box}
+    .formview.unit-converter .results{margin-top:16px}.formview.unit-converter .rrow.emph{padding:14px 16px;margin:2px 0;border:1.5px solid var(--ui-divider,#858a91)!important;border-radius:13px;background:#f1f3f6;gap:12px}.formview.unit-converter .rrow.emph b{font-size:clamp(18px,4vw,24px);font-weight:800;color:#111114}.win[data-theme="dark"] .formview.unit-converter .rrow.emph{background:#303640}.win[data-theme="dark"] .formview.unit-converter .rrow.emph b{color:#fff}
+    .formview .form-reset{align-self:flex-end;min-height:36px;padding:6px 2px;border:0;background:transparent;color:#8b3841;font:700 15px system-ui,sans-serif;cursor:pointer}.formview .form-reset:hover{color:#68242c;text-decoration:underline;text-underline-offset:3px}.formview .form-reset:focus-visible{outline:2px solid currentColor;outline-offset:3px}.win[data-theme="dark"] .formview .form-reset{background:transparent;color:#e6a6ad}
+    .win .modebtn{position:relative;flex:0 1 460px;width:min(460px,100%);margin-inline:auto;justify-content:center;padding-inline:34px;text-align:center;border-width:1.5px;border-color:#737880;font-size:16px}.win .modebtn .mlabel{display:block;min-width:0;max-width:100%;text-align:center}.win .modebtn svg{position:absolute;right:12px;top:50%;transform:translateY(-50%)}.win .modebtn.open svg{transform:translateY(-50%) rotate(180deg)}
+    .win .modebtn{min-height:44px;border:2px solid #30343a;border-radius:12px;box-shadow:0 2px 6px #11111412;font-weight:700}.win .modebtn:hover{border-color:#17191d;box-shadow:0 3px 9px #1111141c}.win[data-theme="dark"] .modebtn{border-color:#b8c0ca;box-shadow:0 2px 6px #0005}
+    .win .modemenu{left:50%!important;right:auto!important;width:min(380px,calc(100% - 24px))!important;max-width:calc(100% - 24px)!important;transform:translate(-50%,-4px);transform-origin:top center}.win .modemenu.open{transform:translate(-50%,0) scale(1)}
+    .win.history-add-locked .histrow .histadd{display:none}
+    .win[data-theme="dark"] .histrow{background:#25292f}.win[data-theme="dark"] .histfeature,.win[data-theme="dark"] .histrow .histres{color:#f5f5f5!important}.win[data-theme="dark"] .histrow .histexpr,.win[data-theme="dark"] .histrow .histstamp{color:#bdc3cc}</style>
 
   <div class="win" part="window">
     <div class="titlebar" data-drag>
       <button class="iconbtn dotmenu hamburger-menu" type="button" aria-label="Open menu" aria-controls="app-info-panel" aria-expanded="false" title="Open menu — about SevenTask Calculator">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="st-menu-line st-menu-top" d="M4 6h16"/><path class="st-menu-line st-menu-middle" d="M4 12h16"/><path class="st-menu-line st-menu-bottom" d="M4 18h16"/></svg>
       </button>
       <button class="brand-home" data-action="brand-home" type="button" aria-label="SevenTask Calculator — open Just the calculator" title="SevenTask Calculator · Just the calculator">
         <span class="logobtn" aria-hidden="true"><img class="ticon" src="icon.svg" alt=""></span>
@@ -1880,15 +1910,15 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.09</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.11</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
         <div class="infoabout">Everyday answers, all in one place, with 136+ calculators, saved history, and the freedom to duplicate a calculator to run different tools side by side.</div>
       </div>
       <div class="theme-choice"><span class="theme-label">Theme</span><details class="theme-dropdown"><summary aria-label="Choose theme"><span data-theme-label>Monochrome (Default)</span><svg class="shortcut-chevron theme-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="theme-options" role="group" aria-label="Themes"><button type="button" data-theme-option="monochrome">Monochrome (Default)</button><button type="button" data-theme-option="dark">Dark</button><button type="button" data-theme-option="soft">Sage Garden</button><button type="button" data-theme-option="cloud">Lavender Mist</button><button type="button" data-theme-option="blue">Ocean Breeze</button><button type="button" data-theme-option="rose">Rosewood</button><button type="button" data-theme-option="sand">Sandstone</button></div></details></div>
-      <div class="mobile-guide-entry"><button type="button" data-action="mobile-guide">How to Use <span aria-hidden="true">↗</span></button></div>
-      <div class="info-links"><button type="button" data-action="share-app">Share Android app <span>↗</span></button><button type="button" data-action="check-updates"><span>Check for updates</span><span class="update-icon" aria-hidden="true">sync</span></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <span>↗</span></a>
+      <div class="mobile-guide-entry"><button type="button" data-action="mobile-guide">How to Use <svg class="st-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg></button></div>
+      <div class="info-links"><button type="button" data-action="share-app">Share Android app <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6m-7.6 7 7.6 4.6"/></svg></button><button type="button" data-action="check-updates"><span>Download Latest Version</span><svg class="update-icon st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20 6v5.2c0 5-3.2 8.7-8 10.3-4.8-1.6-8-5.3-8-10.3V6l8-3.5Z"/><path d="M9.5 12.2 11.2 14l3.5-4"/></svg></a>
       <div class="infosection shortcut-section">
         <button class="shortcut-toggle" data-action="shortcuts-toggle" type="button" aria-expanded="false" aria-controls="shortcut-list">
         <span class="infolabel">Keyboard shortcuts</span>
@@ -1905,7 +1935,7 @@
           <div class="shortcut-row"><b class="shortcut-name">Escape</b><div class="shortcut-keys"><div class="shortcut-os"><span>Windows</span><kbd>Esc</kbd> close panel/list, or clear</div><div class="shortcut-os"><span>Mac</span><kbd>Esc</kbd> close panel/list, or clear</div></div></div>
         </div>
       </div>
-      <div class="mobile-feedback-entry"><a href="mailto:kawkabtechlabs@gmail.com?subject=SevenTask%20Calculator%20feedback">Send Feedback <span aria-hidden="true">↗</span></a></div>
+      <div class="mobile-feedback-entry"><a href="mailto:kawkabtechlabs@gmail.com?subject=SevenTask%20Calculator%20feedback">Send Feedback <svg class="st-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg></a></div>
       <div class="infomade">Made by <img class="kawkab-brand-logo" src="assets/kawkab-tech-labs-logo.svg" alt="Kawkab Tech Labs" width="88" height="28"></div></div>
     </div>
     <div class="mobile-guide-backdrop" data-mobile-guide hidden></div>
@@ -1919,8 +1949,8 @@
     <div class="historybackdrop" data-historybackdrop></div>
     <div class="historydrawer" data-historypanel>
       <div class="infobrand">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#111114" stroke-width="1.6"/><path d="M12 7.5V12l3.2 2" stroke="#111114" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <div class="infobrandtext"><b>History</b><span>Recent &amp; pinned · saved on this device</span></div>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 7.7V3.9m0 3.8h3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 7.5A8.5 8.5 0 1 1 3.6 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 7.7v4.6l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="infobrandtext"><b>History</b><span>Saved on this device</span></div>
         <button class="iconbtn" data-action="history-toggle" title="Close">✕</button>
       </div>
       <div class="histlist" data-histlist></div>
@@ -2145,6 +2175,7 @@
       }
 
       this.loadState();
+      if(this.activeCalc()?.fields)this.blankFormInputs();
       try{const theme=localStorage.getItem('stc-preview-theme')||'monochrome';this.$win.dataset.theme=theme;this.setPreviewTheme(theme);}catch(e){}
       this.bindEvents();
       this.updateBaseTabs();
@@ -2288,8 +2319,11 @@
           if(!this.popupMode){
             if(s.w) this.$win.style.setProperty('--tai7-w', s.w);
             if(s.h) this.$win.style.setProperty('--tai7-h', s.h);
+            if(s.x) this.$win.style.setProperty('--tai7-left',s.x);
+            if(s.y) this.$win.style.setProperty('--tai7-top',s.y);
           }
           if(s.mode) this.mode = s.mode;
+          if(typeof s.feature==='string'&&(SPECIAL_LABELS[s.feature]||CALC_MAP[s.feature]))this.feature=s.feature;
           if(Array.isArray(s.inlineHistoryHiddenIds)) this.inlineHistoryHiddenIds = new Set(s.inlineHistoryHiddenIds.filter(id=>typeof id==='string'));
         }
         const savedHistory = JSON.parse(localStorage.getItem(this.HISTORY_KEY) || '[]');
@@ -2301,7 +2335,10 @@
       const s = {
         w: this.$win.style.getPropertyValue('--tai7-w') || cs.width,
         h: this.$win.style.getPropertyValue('--tai7-h') || cs.height,
+        x: this.$win.style.getPropertyValue('--tai7-left'),
+        y: this.$win.style.getPropertyValue('--tai7-top'),
         mode: this.mode,
+        feature: this.feature,
         inlineHistoryHiddenIds: this.history.filter(item=>this.inlineHistoryHiddenIds.has(item.id)).map(item=>item.id),
       };
       try{
@@ -2350,7 +2387,7 @@
       const dismiss=document.querySelector('.seven-bubble-dismiss');if(dismiss)dismiss.hidden=false;
       this.saveState();
     }
-    close(){ this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.$win.classList.remove('open'); this.saveState(); const remaining=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el!==this&&el.shadowRoot?.querySelector('.win.open')); const stillOpen=remaining.length>0; document.body.classList.toggle('calc-open',stillOpen); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded',String(stillOpen)); if(ACTIVE===this) ACTIVE=remaining.at(-1)||null; }
+    close(){ this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.$win.classList.remove('open'); this.saveState(); if(this.id.startsWith('tai7c-copy-'))try{const ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]');localStorage.setItem('tai7c-open-copies',JSON.stringify(ids.filter(id=>id!==this.id)))}catch{} const remaining=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el!==this&&el.shadowRoot?.querySelector('.win.open')); const stillOpen=remaining.length>0; document.body.classList.toggle('calc-open',stillOpen); const bubble=document.querySelector('.seven-bubble'); if(bubble) bubble.setAttribute('aria-expanded',String(stillOpen)); if(ACTIVE===this) ACTIVE=remaining.at(-1)||null; }
     showFirstRunGuide(){
       try { if(localStorage.getItem('stc-mobile-guide-seen') === '1') return; } catch {}
       this.showMobileGuide(false);
@@ -2366,10 +2403,13 @@
       if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature).then(ok=>{if(!ok)this.showToast('You can open up to 7 calculators at once.');}).catch(()=>this.showToast('Could not open another calculator.'));return;}
       const openCount=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el.shadowRoot?.querySelector('.win.open')).length;if(openCount>=7){this.showToast('You can open up to 7 calculators at once.');return;}
       const el = document.createElement('taskai7-calculator');
-      el.feature = 'basic';
+      el.id='tai7c-copy-'+(crypto.randomUUID?.()||Math.random().toString(36).slice(2));
+      el.feature = this.feature;
       if(new URLSearchParams(location.search).has('mobile-preview'))el.setAttribute('preview-copy','');
       document.body.appendChild(el);
       el.open();
+      el.saveState();
+      try{const ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]');localStorage.setItem('tai7c-open-copies',JSON.stringify([...new Set([...ids,el.id])].slice(-6)))}catch{}
       const rect=this.$win.getBoundingClientRect(),gap=16;
       const width=rect.width,height=rect.height;
       let left=rect.left+width+gap;
@@ -2380,6 +2420,7 @@
       el.$win.style.setProperty('--tai7-h',height+'px');
       el.$win.style.setProperty('--tai7-left',left+'px');
       el.$win.style.setProperty('--tai7-top',top+'px');
+      el.saveState();
     }
 
     setPreviewTheme(theme){
@@ -2429,10 +2470,13 @@
         if(featureBtn){ this.selectFeature(featureBtn.dataset.selectFeature); return; }
 
         const histAdd = e.target.closest('[data-hist-add]');
-        if(histAdd){ this.insert(histAdd.dataset.histAdd); this.closeHistoryPanel({restoreFocus:true}); return; }
+        if(histAdd){ e.preventDefault();e.stopPropagation(); if(this.historyAddLocked)return;const now=performance.now(),id=histAdd.closest('[data-history-id]')?.dataset.historyId||histAdd.dataset.histAdd;if(this.lastHistoryAddId===id&&now-(this.lastHistoryAddAt||0)<700)return;this.lastHistoryAddId=id;this.lastHistoryAddAt=now;const value=histAdd.dataset.histAdd,before=this.expr||'0'; if(!['basic','scientific','casio'].includes(this.feature)){this.feature='basic';this.expr='';this.syncMenuSelection();} this.insert(value);this.historyAddLocked=!!this.expr&&this.expr!=='0';this.$win.classList.toggle('history-add-locked',this.historyAddLocked);this.lastHistoryAction=`Added ${value} from history: ${before} → ${this.expr}`;this.renderHistory();this.closeHistoryPanel({restoreFocus:true}); return; }
 
         const histPin = e.target.closest('[data-history-pin]');
         if(histPin){ e.preventDefault(); e.stopPropagation(); this.toggleHistoryPin(histPin.dataset.historyPin); return; }
+        const histDelete = e.target.closest('[data-history-delete]');
+        if(histDelete){ e.preventDefault(); e.stopPropagation(); const id=histDelete.dataset.historyDelete; this.history=this.history.filter(item=>item.id!==id); if(this.activeFormHistoryId===id)this.activeFormHistoryId=null; this.renderHistoryPanel(); this.renderHistory(); this.saveState(); return; }
+        if(e.target.closest('[data-action="reset-form"]')){clearTimeout(this.formHistoryTimer);this.activeFormHistoryId=null;this.lastFormHistoryKey='';this.formValues={};this.blankFormInputs();this.renderForm();this.saveState();return;}
 
         const histPick = e.target.closest('[data-hist-pick]');
         if(histPick){ const item=this.history.find(h=>h.id===histPick.dataset.histPick); if(item?.formValues&&item.featureId){this.feature=item.featureId;this.formValues={...item.formValues};this.syncMenuSelection();this.render();}else if(item){this.pushUndo();this.expr=item.expr;this.showError(false);this.render();}this.saveState();this.closeHistoryPanel({restoreFocus:true});return; }
@@ -2552,7 +2596,8 @@
       // Drag the floating calculator from any quiet surface area. Resize from
       // any edge/corner; interactive controls and scrollable panels keep their
       // normal click, typing and scrolling behavior.
-      let pointerAction=null, px=0, py=0, startRect=null, collapseRequested=false;
+      let pointerAction=null, px=0, py=0, startRect=null, collapseRequested=false,draggedBrand=false,startedOnBrand=false;
+      this.$win.querySelector('.brand-home')?.addEventListener('click',e=>{if(draggedBrand){e.preventDefault();e.stopPropagation();draggedBrand=false;}},true);
       const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
       const snapPixel=value=>Math.round(value*(window.devicePixelRatio||1))/(window.devicePixelRatio||1);
       const getResizeEdge=(e,rect)=>{
@@ -2563,6 +2608,7 @@
         return edge;
       };
       const isInteractive=(target)=>{
+        if(target.closest('.brand-home'))return false;
         if(target.closest('button,input,select,textarea,a,[contenteditable="true"],[role="button"],[role="option"],[role="menuitem"],[data-no-drag],.history span,[data-hist]')) return true;
         for(let node=target;node&&node!==this.$win;node=node.parentElement){
           const style=getComputedStyle(node);
@@ -2578,8 +2624,8 @@
         else if(edge)pointerAction=edge;
         else pointerAction='drag';
         px=e.clientX;py=e.clientY;startRect=rect;collapseRequested=false;
-        this.$win.setPointerCapture(e.pointerId);
-        e.preventDefault();
+        startedOnBrand=!!e.target.closest('.brand-home');draggedBrand=false;
+        if(!startedOnBrand){this.$win.setPointerCapture(e.pointerId);e.preventDefault();}
       });
       this.$win.addEventListener('pointermove',(e)=>{
         if(!pointerAction){
@@ -2592,6 +2638,7 @@
         }
         const dx=e.clientX-px,dy=e.clientY-py,r=startRect;
         if(pointerAction==='drag'){
+          if(startedOnBrand&&Math.abs(dx)+Math.abs(dy)>6){draggedBrand=true;if(!this.$win.hasPointerCapture(e.pointerId))this.$win.setPointerCapture(e.pointerId);}
           this.$win.style.setProperty('--tai7-left',snapPixel(clamp(r.left+dx,0,Math.max(0,window.innerWidth-60)))+'px');
           this.$win.style.setProperty('--tai7-top',snapPixel(clamp(r.top+dy,0,Math.max(0,window.innerHeight-40)))+'px');
           this.$win.style.cursor='grabbing';
@@ -2734,13 +2781,13 @@
     undoDomain(){ return this.feature==='programmer' ? 'prog' : 'expr'; }
     captureEditState(domain){
       if(domain==='prog') return {value:this.progValue,entry:this.progEntry,acc:this.progAcc,op:this.progOp,base:this.progBase,fresh:this.progFresh};
-      return {expr:this.expr};
+      return {expr:this.expr,historyAction:this.lastHistoryAction||''};
     }
     applyEditState(domain,state){
       if(domain==='prog'){
         this.progValue=state.value; this.progEntry=state.entry; this.progAcc=state.acc; this.progOp=state.op; this.progBase=state.base; this.progFresh=state.fresh;
         this.renderProg(); this.saveState();
-      } else { this.expr=state.expr; this.showError(false); this.render(); this.saveState(); }
+      } else { this.expr=state.expr; this.lastHistoryAction=state.historyAction||''; this.showError(false); this.render(); this.renderHistory(); this.saveState(); }
       this.updateUndoRedoButtons();
     }
     pushUndo(domain=this.undoDomain()){
@@ -2750,6 +2797,7 @@
     }
     undoAction(){ const d=this.undoDomain(), from=this.undoStacks[d]; if(!from.length)return; this.redoStacks[d].push(this.captureEditState(d)); this.applyEditState(d,from.pop()); }
     redoAction(){ const d=this.undoDomain(), from=this.redoStacks[d]; if(!from.length)return; this.undoStacks[d].push(this.captureEditState(d)); this.applyEditState(d,from.pop()); }
+    clearUndoRedoHistory(){ this.undoStacks={expr:[],prog:[]}; this.redoStacks={expr:[],prog:[]}; this.updateUndoRedoButtons(); }
     updateUndoRedoButtons(){
       if(!this.shadowRoot)return;
       const d=this.undoDomain();
@@ -2795,7 +2843,7 @@
         case 'mobile-guide-close': this.closeMobileGuide(); break;
         case 'mobile-overlay-minimize': if(window.SevenTaskNative?.minimizeFloatingCalculator)window.SevenTaskNative.minimizeFloatingCalculator(); break;
         case 'mobile-overlay-close': if(window.SevenTaskNative?.closeFloatingCalculator)window.SevenTaskNative.closeFloatingCalculator(); break;
-        case 'history-clear': clearTimeout(this.previewHistoryTimer); this.history=this.history.filter(item=>item.pinned===true); this.renderHistoryPanel(); this.renderHistory(); this.saveState(); break;
+        case 'history-clear': clearTimeout(this.previewHistoryTimer); clearTimeout(this.formHistoryTimer); this.activeFormHistoryId=null; this.history=this.history.filter(item=>item.pinned===true); this.lastHistoryAction=''; for(const stack of [this.undoStacks.expr,this.redoStacks.expr])for(const state of stack)state.historyAction=''; this.historyAddLocked=false;this.$win.classList.remove('history-add-locked');this.renderHistoryPanel(); this.renderHistory(); this.saveState(); break;
         case 'mode-deg': this.mode='deg'; this.updateModeChips(); this.saveState(); break;
         case 'mode-rad': this.mode='rad'; this.updateModeChips(); this.saveState(); break;
         case 'clear': if(this.expr){ this.pushUndo(); this.expr=''; } this.showError(false); this.render(); break;
@@ -2814,8 +2862,8 @@
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.08/SevenTask-Calculator-Android-1.18.08.apk?build=26';
-      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.08):',url:apkUrl};
+      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.11/SevenTask-Calculator-Android-1.18.11.apk?build=27';
+      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.11):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;
         if(typeof nativeApp?.shareApp==='function'){
@@ -2864,11 +2912,15 @@
           const currentBuild=Number(nativeApp.getVersionCode());
           const latestBuild=Number(release.versionCode);
           if(target.protocol!=='https:'||target.hostname!=='seventaskcalculator.in'||!target.pathname.startsWith('/downloads/mobile-')||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
+          const size=Number(release.apkSizeBytes);
+          const sizeText=Number.isFinite(size)&&size>0?` · ${ (size/1048576).toFixed(2) } MB`:'';
+          const currentVersion=String(nativeApp.getVersionName()||'').trim();
           if(latestBuild>currentBuild){
             this.pendingApkUpdate=target.href;
-            status.textContent=`Version ${release.versionName} is available. Download it to update.`;
+            status.textContent=`Update available: ${currentVersion||'current version'} → ${release.versionName}${sizeText}.`;
+            if(download)download.textContent=`Download update${sizeText}`;
             if(download)download.hidden=false;
-          }else status.textContent='You have the latest version.';
+          }else status.textContent=`You have the latest version: ${currentVersion||release.versionName}.`;
         }else if(capacitor?.isNativePlatform?.()){
           const app=capacitor.registerPlugin('App');
           const info=await app.getInfo();
@@ -2879,14 +2931,20 @@
           const currentBuild=Number(info.build);
           const latestBuild=Number(release.versionCode);
           if(target.protocol!=='https:'||target.hostname!=='seventaskcalculator.in'||!target.pathname.startsWith('/downloads/mobile-')||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
+          const size=Number(release.apkSizeBytes);
+          const sizeText=Number.isFinite(size)&&size>0?` · ${ (size/1048576).toFixed(2) } MB`:'';
           if(latestBuild>currentBuild){
             this.pendingApkUpdate=target.href;
-            status.textContent=`Version ${release.versionName} is available. Download it to update.`;
+            status.textContent=`Update available: ${info.version||'current version'} → ${release.versionName}${sizeText}.`;
+            if(download)download.textContent=`Download update${sizeText}`;
             if(download)download.hidden=false;
-          }else status.textContent='You have the latest version.';
+          }else status.textContent=`You have the latest version: ${info.version||release.versionName}.`;
         }else{
+          const releaseResponse=await fetch('https://seventaskcalculator.in/release.json',{cache:'no-store',credentials:'omit'});
+          const webRelease=releaseResponse.ok?await releaseResponse.json():null;
+          const latestVersion=String(webRelease?.versionName||this.shadowRoot.querySelector('.version-number')?.textContent||'').trim();
           if(!('serviceWorker'in navigator)){
-            status.textContent='This browser updates the app automatically when a new version is available.';
+            status.textContent=`Latest web version: ${latestVersion}. This browser applies updates automatically.`;
             return;
           }
           const hadController=Boolean(navigator.serviceWorker.controller);
@@ -2908,15 +2966,15 @@
           }
           const updateFound=hadController&&(foundWaiting||Boolean(candidate&&candidate.state!=='redundant'));
           if(updateFound){
-            status.textContent='A new version is ready.';
+            status.textContent=`Version ${latestVersion} is ready. Reload to update.`;
             if(reload)reload.hidden=false;
-          }else status.textContent='You have the latest version.';
+          }else status.textContent=`You have the latest version: ${latestVersion}.`;
         }
       }catch{
         status.textContent=navigator.onLine?'Could not check for updates. Try again shortly.':'Connect to the internet to check for updates.';
       }finally{
         button.disabled=false;
-        if(label)label.textContent='Check for updates';
+        if(label)label.textContent='Download Latest Version';
       }
     }
 
@@ -2943,9 +3001,11 @@
     insert(token, special){
       if(special==='back'){ if(this.expr){ this.pushUndo(); this.expr=this.expr.slice(0,-1); } this.render(); return; }
       this.pushUndo();
+      this.lastHistoryAction='';
       this.showError(false);
       this.expr += token;
       this.render();
+      this.renderHistory();
     }
 
     setModeLabel(text){
@@ -2980,7 +3040,7 @@
       this.feature = id;
       this.syncMenuSelection();
       this.formValues = {};
-      clearTimeout(this.formHistoryTimer); this.lastFormHistoryKey='';
+      clearTimeout(this.formHistoryTimer); this.lastFormHistoryKey=''; this.activeFormHistoryId=null;
       this.calendarState = {};
       setTimeout(()=>{
         this.closeModeMenu();
@@ -2992,6 +3052,8 @@
 
     // ---------- master render ----------
     render(){
+      if(this.historyAddLocked&&(!this.expr||this.expr==='0'))this.historyAddLocked=false;
+      this.$win.classList.toggle('history-add-locked',!!this.historyAddLocked);
       const isKeypad = this.feature==='basic' || this.feature==='scientific' || this.feature==='casio';
       const isProg = this.feature==='programmer';
       this.$kpview.classList.toggle('show', isKeypad);
@@ -3119,15 +3181,17 @@
         const feature=document.createElement('span'); feature.className='histfeature'; feature.textContent=h.featureName||'Calculator';
         const expr=document.createElement('span'); expr.className='histexpr'; expr.textContent=h.expr;
         const result=document.createElement('b'); result.className='histres'; result.textContent='= '+h.result;
-        const stamp=document.createElement('small'); stamp.className='histstamp'; stamp.textContent=h.createdAt ? new Date(h.createdAt).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}) : 'Saved calculation';
-        pick.append(feature,expr,result,stamp);
+        const stamp=document.createElement('small'); stamp.className='histstamp'; stamp.textContent=h.createdAt ? new Intl.DateTimeFormat('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit',hour12:true}).format(new Date(h.createdAt)) : 'Saved calculation';
+        pick.append(expr,result);
         const pin=document.createElement('button'); pin.type='button'; pin.className='histpin'+(h.pinned===true?' is-pinned':''); pin.dataset.historyPin=h.id; pin.setAttribute('aria-pressed',String(h.pinned===true)); pin.setAttribute('aria-label',`${h.pinned===true?'Unpin':'Pin'} ${h.featureName||'calculator'} history item`); pin.title=h.pinned===true?'Unpin history item':'Pin history item';
         pin.innerHTML=PIN_ICON;
         const add=document.createElement('button'); add.type='button'; add.className='histadd'; add.dataset.histAdd=h.result; add.setAttribute('aria-label',`Add result ${h.result} to current calculation`); add.title='Add result to current calculation';
         add.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-        row.append(pick,pin,add); this.$histList.appendChild(row);
+        const remove=document.createElement('button'); remove.type='button'; remove.className='histdelete'; remove.dataset.historyDelete=h.id; remove.setAttribute('aria-label',`Delete ${h.featureName||'calculator'} history item`); remove.title='Delete this history item';
+        remove.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg>';
+        row.append(feature,remove,pick,pin,add,stamp); this.$histList.appendChild(row);
       }
-      if(this.history.some(item=>item.pinned!==true)){const clear=document.createElement('button'); clear.type='button'; clear.className='histclear'; clear.dataset.action='history-clear'; clear.textContent=this.history.some(item=>item.pinned===true)?'Clear unpinned history':'Clear all history'; this.$histList.appendChild(clear);}
+      if(this.history.some(item=>item.pinned!==true)){const clear=document.createElement('button'); clear.type='button'; clear.className='histclear'; clear.dataset.action='history-clear'; clear.textContent=this.history.some(item=>item.pinned===true)?'Clear unpinned history':'Clear all history'; this.$histList.prepend(clear);}
       if(previousPositions&& !matchMedia('(prefers-reduced-motion: reduce)').matches){const rows=[...this.$histList.querySelectorAll('.histrow[data-history-id]')];for(const row of rows){const old=previousPositions.get(row.dataset.historyId);if(!old)continue;const next=row.getBoundingClientRect(),dy=old.top-next.top;if(Math.abs(dy)<1)continue;row.style.transition='none';row.style.transform=`translateY(${dy}px)`;void row.offsetHeight;requestAnimationFrame(()=>{row.style.transition='transform .2s cubic-bezier(.2,.8,.3,1)';row.style.transform='translateY(0)';row.addEventListener('transitionend',()=>{row.style.removeProperty('transition');row.style.removeProperty('transform');},{once:true});});}}
     }
 
@@ -3395,10 +3459,11 @@
     renderCustomLibrary(){
       let saved=[];
       try{saved=JSON.parse(localStorage.getItem('seventask_custom_calculators')||'[]');}catch(e){}
-      const head='<div class="custom-library-head"><b>Build a calculator that fits your work</b><span>Use A–H inputs · + − × ÷ ^ % · parentheses · sqrt, sin, cos, tan, log, ln, abs, pow</span></div>'; 
+      const head='<div class="custom-library-head"><b>Build a calculator that fits your work</b><span>Use A–H inputs · + − × ÷ ^ % · parentheses · sqrt, sin, cos, tan, log, ln, abs, pow</span></div>';
       if(!Array.isArray(saved)||!saved.length)return '<div class="custom-library">'+head+'<p>No saved formulas yet. Set your inputs and formula, then save it.</p></div>';
       return '<div class="custom-library">'+head+'<div class="custom-preset-list">'+saved.map((item,i)=>'<button type="button" class="custom-preset" data-custom-load="'+i+'"><b>'+escapeHtml(item.name||'Custom calculator')+'</b><span>'+escapeHtml(item.formula||'')+'</span></button>').join('')+'</div></div>';
     }
+    blankFormInputs(){const def=this.activeCalc();if(!def?.fields)return;for(const field of def.fields)if(field.type!=='select')this.formValues[field.key]='';}
     renderForm(){
       const def = this.activeCalc();
       if(!def || !def.fields){ this.$formview.innerHTML=''; return; }
@@ -3418,12 +3483,16 @@
         }
       });
       let html = def.fields.map(f=>this.renderField(f)).join('');
+      this.$formview.classList.toggle('unit-converter',def.id==='unitconverter');
       const isCurrencyForm=def.id==='currency'||(def.id==='unitconverter'&&this.formValues.cat==='Currency');
-      if(isCurrencyForm){
+      if(def.id==='unitconverter'){
+        const fields=Object.fromEntries(def.fields.map(f=>[f.key,f]));
+        html=`${this.renderField(fields.cat)}<div class="unit-pair">${this.renderField(fields.from)}${this.renderField(fields.to)}</div>${this.renderField(fields.value)}`;
+      }else if(isCurrencyForm){
         const fields=Object.fromEntries(def.fields.map(f=>[f.key,f]));
         html=`${fields.cat?this.renderField(fields.cat):''}${this.renderField(fields.value)}<div class="currency-pair">${this.renderField(fields.from)}<button class="currency-swap" type="button" data-action="currency-swap" aria-label="Swap currencies" title="Swap currencies"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8h14m0 0-3-3m3 3-3 3M20 16H6m0 0 3 3m-3-3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>${this.renderField(fields.to)}</div>`;
       }
-      this.$formview.innerHTML = `<div class="fgrid">${html}</div>${def.id==='customcalc'?this.renderCustomLibrary()+'<button type="button" class="custom-save-button" data-custom-save>Save calculator</button>':''}<div class="results" data-results role="group" aria-label="Result"></div>`;
+      this.$formview.innerHTML = `<div class="fgrid">${html}</div><button type="button" class="form-reset" data-action="reset-form" aria-label="Reset calculator values">Reset Values</button>${def.id==='customcalc'?this.renderCustomLibrary()+'<button type="button" class="custom-save-button" data-custom-save>Save calculator</button>':''}<div class="results" data-results role="group" aria-label="Result"></div>`;
       if(isCurrencyForm&&!CURRENCY_READY){
         loadCurrencyCodes().then(()=>{if((this.activeCalc()?.id==='currency'||(this.activeCalc()?.id==='unitconverter'&&this.formValues.cat==='Currency')))this.renderForm();});
       }
@@ -3523,14 +3592,17 @@
         const resultNode=this.$formview.querySelector('.rrow.emph b')||this.$formview.querySelector('.rrow b');
         const result=resultNode?.textContent?.trim();if(!result||/^(enter|loading|check your inputs|error|—)/i.test(result))return;
         this.lastFormHistoryKey=key;
-        this.pushHistory(summary||current.name,result,{featureId,featureName:current.name,formValues});
+        const existing=this.history.find(item=>item.id===this.activeFormHistoryId);
+        if(existing){Object.assign(existing,{expr:summary||current.name,result,formValues,createdAt:Date.now()});this.renderHistory();this.saveState();if(this.$historyPanel.classList.contains('open'))this.renderHistoryPanel();}
+        else this.activeFormHistoryId=this.pushHistory(summary||current.name,result,{featureId,featureName:current.name,formValues});
       },650);
     }
     historyPositions(){return new Map([...this.$histList.querySelectorAll('.histrow[data-history-id]')].map(row=>[row.dataset.historyId,row.getBoundingClientRect()]));}
     toggleHistoryPin(id){const item=this.history.find(entry=>entry.id===id);if(!item)return;const animateFrom=this.historyPositions();item.pinned=item.pinned!==true;if(item.pinned)item.pinnedAt=Date.now();else delete item.pinnedAt;this.saveState();this.renderHistoryPanel({animateFrom});}
     pruneHistory(now=Date.now()){ const cutoff=now-86400000,previous=this.history.length;this.history=this.history.filter(h=>h&&Number.isFinite(Number(h.createdAt))&&Number(h.createdAt)<=now+60000&&(h.pinned===true||Number(h.createdAt)>=cutoff));const unpinned=this.history.reduce((count,h)=>count+(h.pinned===true?0:1),0),excess=Math.max(0,unpinned-100);if(excess){let remove=excess;this.history=this.history.filter(h=>{if(h.pinned===true)return true;if(remove>0){remove--;return false;}return true;});}return this.history.length!==previous; }
-    pushHistory(expr,result,metadata={}){ this.pruneHistory(); const now=Date.now();let id;try{id=crypto.randomUUID();}catch{id=`${now}-${Math.random().toString(36).slice(2,9)}`;}const numeric=typeof result==='number'?this.formatNumber(result):String(result);this.history.push({id,expr:String(expr),result:numeric,createdAt:now,featureId:metadata.featureId||this.feature,featureName:metadata.featureName||this.historyFeatureName(),...(metadata.autoPreview?{autoPreview:true}:{}),...(metadata.formValues?{formValues:metadata.formValues}:{})});this.pruneHistory(now); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); }
+    pushHistory(expr,result,metadata={}){ this.pruneHistory(); const now=Date.now();let id;try{id=crypto.randomUUID();}catch{id=`${now}-${Math.random().toString(36).slice(2,9)}`;}const numeric=typeof result==='number'?this.formatNumber(result):String(result);this.history.push({id,expr:String(expr),result:numeric,createdAt:now,featureId:metadata.featureId||this.feature,featureName:metadata.featureName||this.historyFeatureName(),...(metadata.autoPreview?{autoPreview:true}:{}),...(metadata.formValues?{formValues:metadata.formValues}:{})});this.pruneHistory(now); this.renderHistory(); this.saveState(); if(this.$historyPanel.classList.contains('open')) this.renderHistoryPanel(); return id; }
     schedulePreviewHistory(){
+      return; // Save a calculator action only when the user completes it with equals.
       clearTimeout(this.previewHistoryTimer);
       const expr=this.expr,feature=this.feature,mode=this.mode;
       if(!expr || !/[+×÷−*/^%]/.test(expr))return;
@@ -3551,7 +3623,8 @@
     renderHistory(){
       this.pruneHistory();
       this.$history.replaceChildren();
-      for(const h of this.history.filter(item=>!this.inlineHistoryHiddenIds.has(item.id)).slice(-2)){
+      if(this.lastHistoryAction){const action=document.createElement('span');action.textContent=this.lastHistoryAction;action.title=this.lastHistoryAction;this.$history.appendChild(action);}
+      for(const h of (this.lastHistoryAction?[]:this.history.filter(item=>!this.inlineHistoryHiddenIds.has(item.id)).slice(-2))){
         const item=document.createElement('span'); item.dataset.hist=h.result; item.textContent=`${h.expr} = ${h.result}`;
         this.$history.appendChild(item);
       }
@@ -3582,7 +3655,8 @@ window.addEventListener('message',event=>{if(event.source!==window.parent||event
 <script>
 (()=>{const slides=[{title:'Calculate everything. Move with clarity.',copy:'Everyday math, money, science and work tools in one calm calculator.',label:'A clearer way to calculate'},{title:'Quick answers for everyday sums.',copy:'Work out percentages, discounts, ratios and time without switching tools.',label:'Everyday calculator'},{title:'Make the numbers make sense.',copy:'Explore savings, interest and other practical money calculations.',label:'Money & finance'},{title:'Go beyond the basic keypad.',copy:'Scientific functions, programmer tools and reusable custom formulas are ready when you need them.',label:'Science & formulas'},{title:'Keep business calculations close.',copy:'Handle prices, margins, stock and practical shop calculations in one workspace.',label:'Business tools'},{title:'Pick up where you left off.',copy:'Calculation history, undo and redo help you revisit work and continue from the result.',label:'History & control'},{title:'136+ focused tools. One workspace.',copy:'Open SevenTask Calculator on the web and find the right calculator for the task.',label:'SevenTask Calculator'}];const panel=document.getElementById('st-ad-break');if(!panel)return;const title=document.getElementById('st-ad-title'),copy=document.getElementById('st-ad-copy'),index=document.getElementById('st-ad-index'),dots=document.getElementById('st-ad-dots'),done=document.getElementById('st-ad-continue');let active=0,timer=0,successes=0,lastHistory='';function show(i){active=(i+slides.length)%slides.length;const s=slides[active];title.textContent=s.title;copy.textContent=s.copy;index.textContent=`${String(active+1).padStart(2,'0')} / 07 · ${s.label}`;[...dots.children].forEach((b,n)=>b.setAttribute('aria-current',String(n===active)))}slides.forEach((_,i)=>{const b=document.createElement('button');b.className='ad-dot';b.type='button';b.setAttribute('aria-label',`Advertisement slide ${i+1}`);b.setAttribute('aria-current',String(i===0));b.addEventListener('click',()=>show(i));dots.append(b)});function close(){panel.hidden=true;panel.setAttribute('aria-hidden','true');document.body.style.overflow='';window.clearInterval(timer);timer=0;done.focus({preventScroll:true})}done.addEventListener('click',close);document.addEventListener('keydown',e=>{if(!panel.hidden&&e.key==='Escape')close()});function open(){panel.hidden=false;panel.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';let previous=0;try{const saved=Number(localStorage.getItem('st-ad-slide')||'0');if(Number.isInteger(saved)&&saved>=0)previous=saved}catch{}active=(previous+1)%slides.length;show(active);try{localStorage.setItem('st-ad-slide',String(active))}catch{}window.clearInterval(timer);timer=window.setInterval(()=>show(active+1),5000);done.focus({preventScroll:true})}document.addEventListener('click',e=>{const path=e.composedPath?.()||[];if(!path.some(el=>el?.dataset&&(el.dataset.action==='equals'||el.dataset.progAction==='equals')))return;window.setTimeout(()=>{const el=document.querySelector('taskai7-calculator'),root=el?.shadowRoot,result=root?.querySelector('[data-result]'),text=result?.textContent?.trim(),history=root?.querySelector('[data-history]')?.textContent?.trim()||'';if(!text||text==='Error'||history===lastHistory)return;lastHistory=history;successes++;if(successes>=10){successes=0;open()}},120)},true)})();
 </script>
-</body>
+<script>(()=>{if(window.sevenTaskDesktop||new URLSearchParams(location.search).has('native'))return;customElements.whenDefined('taskai7-calculator').then(()=>{let ids=[];try{ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]')}catch{}if(!Array.isArray(ids))return;for(const id of ids.slice(0,6)){if(typeof id!=='string'||!/^tai7c-copy-[a-z0-9-]+$/i.test(id)||document.getElementById(id))continue;const el=document.createElement('taskai7-calculator');el.id=id;if(new URLSearchParams(location.search).has('mobile-preview'))el.setAttribute('preview-copy','');document.body.appendChild(el);el.open()}})})();</script>
+<script src="mobile-settings.js?preview=3"></script></body>
 </html>
 
 
