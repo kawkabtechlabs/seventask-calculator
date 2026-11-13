@@ -7,6 +7,9 @@ const root = path.resolve(__dirname, '..');
 for (const [file, route] of [
   ['index.html', '/'],
   ['calculator.html', '/calculator'],
+  ['max.html', '/max'],
+  ['keyboard-shortcuts.html', '/keyboard-shortcuts'],
+  ['pricing.html', '/pricing'],
   ['install.html', '/install'],
   ['privacy-policy.html', '/privacy-policy'],
 ]) {
@@ -17,6 +20,8 @@ for (const [file, route] of [
   if (file !== 'calculator.html') assert.ok(/<h1[\s>]/i.test(html), `${file}: missing H1`);
 }
 const sitemap = fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8');
-assert.ok(sitemap.includes('<loc>https://seventaskcalculator.in/calculator</loc>'));
+for (const route of ['/calculator', '/max', '/keyboard-shortcuts', '/pricing']) {
+  assert.ok(sitemap.includes(`<loc>https://seventaskcalculator.in${route}</loc>`), `sitemap: missing ${route}`);
+}
 assert.ok(!sitemap.includes('<loc>https://seventaskcalculator.in/calculator.html</loc>'));
 console.log('SEO route checks passed');

@@ -2,7 +2,7 @@ name: Automatically version web changes
 on:
   push:
     branches: [main]
-    paths: ['calculator.html', 'calculator-core.js', 'mobile-settings.js', 'index.html', 'install.html', 'pwa-install.js', 'desktop-download.js', 'manifest.webmanifest', 'sw.js', 'sw-v103.js']
+    paths: ['calculator.html', 'calculator-core.js', 'mobile-settings.js', 'index.html', 'max.html', 'keyboard-shortcuts.html', 'pricing.html', 'install.html', 'pwa-install.js', 'desktop-download.js', 'manifest.webmanifest', 'sw.js', 'sw-v103.js']
 permissions:
   contents: write
 concurrency:
@@ -25,7 +25,7 @@ jobs:
           if ! git diff --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add release.json calculator-core.js index.html SevenTask-Calculator-Last-Final-Design-Preview.html sw.js sw-v103.js scripts/.web-release-state.json
+            git add release.json calculator-core.js calculator.html index.html max.html SevenTask-Calculator-Last-Final-Design-Preview.html sw.js sw-v103.js scripts/.web-release-state.json
             git commit -m 'Automatically update web release version'
             git push
           fi

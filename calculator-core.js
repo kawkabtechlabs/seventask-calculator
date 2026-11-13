@@ -1871,7 +1871,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.25</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.27</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -2703,7 +2703,7 @@
         return;
       }
       if(target && (target.tagName==='INPUT' || target.tagName==='TEXTAREA' || target.isContentEditable)) return;
-      if(e.key.toLowerCase()==='c' && !(this.feature==='programmer'&&this.progBase==='HEX')){ e.preventDefault();e.stopPropagation();this.openModeMenu();this.$modeSearch.value='';this.filterMenu('');return; }
+      if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.toLowerCase()==='c' && !(this.feature==='programmer'&&this.progBase==='HEX')){ e.preventDefault();e.stopPropagation();this.openModeMenu();this.$modeSearch.value='';this.filterMenu('');return; }
       if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.length===1&&/[a-z]/i.test(e.key)){
         const now=Date.now(); this.commandBuffer=(now-(this.commandAt||0)<1400?(this.commandBuffer||''):'')+e.key.toLowerCase(); this.commandAt=now;
         if('calculator'.startsWith(this.commandBuffer)){ if(this.commandBuffer==='calculator'){ e.preventDefault(); e.stopPropagation(); this.openModeMenu(); this.$modeSearch.value=''; this.filterMenu(''); this.commandBuffer=''; } return; }
@@ -2714,7 +2714,7 @@
 
       if(this.feature==='programmer'){
         const key = e.key.toUpperCase();
-        if(/[0-9]/.test(e.key)) this.progInput(e.key);
+        if(/^[0-9]$/.test(e.key)) this.progInput(e.key);
         else if(/^[A-F]$/.test(key) && this.progBase==='HEX') this.progInput(key);
         else if(e.key==='+') this.progPressOp('+');
         else if(e.key==='-') this.progPressOp('−');
@@ -2730,7 +2730,7 @@
 
       if(this.feature!=='basic' && this.feature!=='scientific' && this.feature!=='casio') return;
       const map = { '*':'×', '/':'÷', '-':'−' };
-      if(/[0-9.+()%]/.test(e.key)) this.insert(e.key);
+      if(/^[0-9.+()%]$/.test(e.key)) this.insert(e.key);
       else if(map[e.key]) this.insert(map[e.key]);
       else if(e.key==='Enter' || e.key==='=') { e.preventDefault(); this.evaluate(); }
       else if(e.key==='Backspace') this.insert(null,'back');

@@ -22,6 +22,18 @@
 /calculator.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
+/max
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/max.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/keyboard-shortcuts
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/pricing
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
 /mobile-settings.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
