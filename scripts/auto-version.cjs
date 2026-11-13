@@ -22,6 +22,8 @@ if(state&&!process.argv.includes('--baseline')){
  }
  const homePath=path.join(root,'index.html');
  if(fs.existsSync(homePath))fs.writeFileSync(homePath,fs.readFileSync(homePath,'utf8').replace(/(<span class="version-mark"><span>TOUHID<\/span><b>)[^<]+/,'$1'+release.versionName));
+ const calculatorPath=path.join(root,'calculator.html');
+ if(fs.existsSync(calculatorPath))fs.writeFileSync(calculatorPath,fs.readFileSync(calculatorPath,'utf8').replace(/(<span class="web-page-footer-right">[\s\S]*?<span class="version-mark"><span>TOUHID<\/span><b>)[^<]+/,'$1'+release.versionName));
 }
 for(const file of ['sw.js','sw-v103.js']){const p=path.join(root,file);fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/const CACHE = "[^"]+"/,`const CACHE = "seventask-calculator-shell-${release.versionName}"`));}
 fs.writeFileSync(releasePath,JSON.stringify(release,null,2)+'\n');
