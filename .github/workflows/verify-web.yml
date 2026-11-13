@@ -29,6 +29,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --check calculator-core.js && node --check sw.js
+      - run: node scripts/smoke-web.cjs
       - run: node audit-calculators.cjs
       - run: node scripts/verify-seo.cjs
       - run: node scripts/verify-service-worker.cjs
