@@ -1841,7 +1841,7 @@
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 7.7V3.9m0 3.8h3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 7.5A8.5 8.5 0 1 1 3.6 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 7.7v4.6l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <button class="iconbtn title-float-btn" data-action="preview-floating" type="button" aria-label="Toggle floating calculator" title="Floating calculator"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4l6 6M4 10h6V4m10 16-6-6m6 0h-6v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="iconbtn title-duplicate-btn" data-action="duplicate" title="Open a second calculator">
+      <button class="iconbtn title-duplicate-btn" data-action="duplicate" type="button" aria-label="Open a second calculator" title="Open a second calculator">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="13" height="14" rx="2.5" fill="#FFFFFF" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="1.6"/></svg>
       </button>
       <button class="iconbtn" data-action="close" type="button" aria-label="Close calculator" title="Close"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -1871,7 +1871,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.27</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.28</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -2360,22 +2360,19 @@
 
     duplicate(){
       if(this.nativeAppMode && window.SevenTaskNative?.duplicateFloatingCalculator){window.SevenTaskNative.duplicateFloatingCalculator();return;}
-      if(this.popupMode && new URLSearchParams(location.search).has('mobile-preview')){this.popupMode=false;this.$win.classList.remove('popup-mode');this.centerWindow();}
-      if(this.popupMode) return;
       if(window.sevenTaskDesktop?.duplicateCalculator){window.sevenTaskDesktop.duplicateCalculator(this.feature).then(ok=>{if(!ok)this.showToast('You can open up to 7 calculators at once.');}).catch(()=>this.showToast('Could not open another calculator.'));return;}
       const openCount=[...document.querySelectorAll('taskai7-calculator')].filter(el=>el.shadowRoot?.querySelector('.win.open')).length;if(openCount>=7){this.showToast('You can open up to 7 calculators at once.');return;}
       const el = document.createElement('taskai7-calculator');
-      el.id='tai7c-copy-'+(crypto.randomUUID?.()||Math.random().toString(36).slice(2));
+      el.id='tai7c-copy-'+(globalThis.crypto?.randomUUID?.()||Math.random().toString(36).slice(2));
       el.feature = this.feature;
-      if(new URLSearchParams(location.search).has('mobile-preview'))el.setAttribute('preview-copy','');
+      if(new URLSearchParams(location.search).has('mobile-preview') || this.popupMode)el.setAttribute('preview-copy','');
       document.body.appendChild(el);
       el.open();
-      el.saveState();
-      try{const ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]');localStorage.setItem('tai7c-open-copies',JSON.stringify([...new Set([...ids,el.id])].slice(-6)))}catch{}
       const rect=this.$win.getBoundingClientRect(),gap=16;
-      const width=rect.width,height=rect.height;
+      const width=Math.min(this.popupMode?400:rect.width,window.innerWidth-16);
+      const height=Math.min(this.popupMode?560:rect.height,window.innerHeight-16);
       let left=rect.left+width+gap;
-      if(left+width>window.innerWidth-8) left=rect.left-width-gap;
+      if(this.popupMode || left+width>window.innerWidth-8) left=rect.left-width-gap;
       left=Math.min(Math.max(8,left),Math.max(8,window.innerWidth-width-8));
       const top=Math.min(Math.max(8,rect.top+gap),Math.max(8,window.innerHeight-height-8));
       el.$win.style.setProperty('--tai7-w',width+'px');
@@ -2383,6 +2380,7 @@
       el.$win.style.setProperty('--tai7-left',left+'px');
       el.$win.style.setProperty('--tai7-top',top+'px');
       el.saveState();
+      try{const ids=JSON.parse(localStorage.getItem('tai7c-open-copies')||'[]');localStorage.setItem('tai7c-open-copies',JSON.stringify([...new Set([...ids,el.id])].slice(-6)))}catch{}
     }
 
     setPreviewTheme(theme,persist=true){

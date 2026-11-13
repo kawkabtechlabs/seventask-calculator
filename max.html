@@ -76,8 +76,8 @@ body[data-theme="dark"] .enterprise-brand img{filter:invert(1)}
 .enterprise-card p{max-width:340px;margin:auto}
 @keyframes enterprise-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @media(prefers-reduced-motion:reduce){.enterprise-card{animation:none}}
-body[data-theme] .enterprise-view{background-color:var(--work-panel);background-image:radial-gradient(var(--work-border) .7px,transparent 1px);background-size:22px 22px}
-body[data-theme="dark"] .enterprise-view{background-image:radial-gradient(#ffffff30 .7px,transparent 1px)}
+body[data-theme] .enterprise-view{background-color:var(--work-panel);background-image:radial-gradient(circle,color-mix(in srgb,var(--work-frame) 21%,transparent) 1.35px,transparent 1.6px);background-size:32px 32px}
+body[data-theme="dark"] .enterprise-view{background-image:radial-gradient(circle,#ffffff35 1.35px,transparent 1.6px)}
 .enterprise-view::before{display:none}
 .enterprise-card{width:min(560px,calc(100% - 24px));min-height:235px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:999px;padding:34px 48px}
 @media(max-width:560px){.enterprise-card{min-height:210px;padding:28px 30px}.enterprise-card h1{font-size:clamp(34px,10vw,48px)}}
@@ -97,6 +97,49 @@ body[data-theme="dark"] .enterprise-view{background-image:radial-gradient(#fffff
 .max-back:focus-visible{outline:3px solid #2879d8;outline-offset:2px}
 .max-back svg{width:17px;height:17px;stroke-width:2;flex:none}
 @media(max-width:560px){.max-back{min-width:38px;padding:7px}.max-back span{display:none}}
+/* The MAX workspace keeps the calculator full size on phones and tablets.
+   The library and history remain available as accessible slide-out panels. */
+.mobile-workspace-nav,.mobile-panel-backdrop{display:none}
+body.enterprise-open .mobile-workspace-nav{display:none}
+@media(max-width:980px){
+  .shell{display:grid;width:100%;height:100dvh;min-height:0;margin:0;border:0;border-radius:0;grid-template-rows:58px 44px minmax(0,1fr)}
+  .shell>header{z-index:51;display:flex;min-width:0;padding:0 12px;gap:8px}
+  .shell>header>.brand{min-width:0}
+  .brand-title-line{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .workspace-switch{position:static;left:auto;transform:none;margin-left:auto;flex:none}
+  .workspace-switch button{min-width:68px;min-height:32px;padding:0 7px}
+  .header-actions{gap:4px;flex:none}
+  .max-back{min-width:36px;min-height:36px;padding:6px}
+  .max-back span{display:none}
+  .header-menu summary.menu-icon{width:36px;height:36px}
+  .header-menu-content{top:42px}
+  .mobile-workspace-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:5px 12px;border-bottom:1.5px solid var(--work-border);background:var(--work-surface)}
+  .mobile-workspace-nav button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:0;border:1.5px solid var(--work-frame);border-radius:9px;background:var(--work-control);color:var(--work-text);font:700 12px/1 "DM Sans",system-ui,sans-serif}
+  .mobile-workspace-nav button[aria-expanded="true"]{background:var(--work-hover)}
+  .mobile-workspace-nav svg{width:17px;height:17px;flex:none}
+  .workspace{position:relative;display:grid;grid-template-columns:minmax(0,1fr);height:100%;min-width:0;min-height:0;overflow:hidden}
+  .workspace .center{display:flex;height:100%;min-width:0;min-height:0;padding:0}
+  .workspace .calculator-stage{flex:1;min-width:0;min-height:0;height:100%;border:0;border-radius:0}
+  .workspace .left,.workspace .right{display:flex;flex-direction:column;position:fixed;top:102px;bottom:0;z-index:42;width:min(340px,88vw);height:auto;min-height:0;overflow:hidden;visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s;box-shadow:0 12px 32px #11111424}
+  .workspace .left{left:0;transform:translateX(-105%);border-left:0;border-right:2px solid var(--work-frame)}
+  .workspace .right{right:0;transform:translateX(105%);border-right:0;border-left:2px solid var(--work-frame)}
+  .workspace .nav.original-menu{display:block;min-height:0;overflow-y:auto;overflow-x:hidden}
+  body.tools-open .workspace .left,body.info-open .workspace .right{visibility:visible;transform:translateX(0);transition:transform .22s ease,visibility 0s}
+  .mobile-panel-backdrop{position:fixed;inset:102px 0 0;z-index:41;border:0;background:#11111455}
+  body.tools-open .mobile-panel-backdrop,body.info-open .mobile-panel-backdrop{display:block}
+  .enterprise-view{height:100%;min-height:0}
+  body.enterprise-open .shell{grid-template-rows:58px minmax(0,1fr)}
+}
+@media(max-width:600px){
+  .shell>header>.brand .brand-title-line{display:none}
+  .shell>header>.brand img{width:25px;height:25px}
+  .workspace-switch{margin-inline:auto}
+  .workspace-switch button{min-width:62px;padding:0 5px;font-size:11px}
+  .enterprise-view{padding:18px}
+}
+@media(max-height:500px) and (max-width:980px){.shell{grid-template-rows:48px 38px minmax(0,1fr)}.workspace .left,.workspace .right{top:86px}.mobile-panel-backdrop{inset:86px 0 0}}
+@media(max-height:500px) and (max-width:980px){body.enterprise-open .shell{grid-template-rows:48px minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.workspace .left,.workspace .right{transition:none}}
 </style>
 </head>
 <body>
@@ -107,10 +150,29 @@ body[data-theme="dark"] .enterprise-view{background-image:radial-gradient(#fffff
 <script src="calculator-core.js" defer></script>
 <script src="mobile-settings.js" defer></script>
 <script>
+(()=>{
+  const header=document.querySelector('.shell>header'),workspace=document.querySelector('#max-workspace');
+  const nav=document.createElement('div');nav.className='mobile-workspace-nav';nav.setAttribute('aria-label','MAX workspace panels');
+  nav.innerHTML='<button id="mobile-tools" type="button" aria-controls="max-tool-panel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Calculators</button><button id="mobile-history" type="button" aria-controls="max-info-panel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 3v5h5M12 7v5l3 2"/></svg>History &amp; settings</button>';
+  header.after(nav);
+  workspace.querySelector('.left').id='max-tool-panel';workspace.querySelector('.right').id='max-info-panel';
+  const backdrop=document.createElement('button');backdrop.type='button';backdrop.className='mobile-panel-backdrop';backdrop.setAttribute('aria-label','Close panel');workspace.append(backdrop);
+  const tools=nav.querySelector('#mobile-tools'),info=nav.querySelector('#mobile-history');
+  function closePanels(){document.body.classList.remove('tools-open','info-open');tools.setAttribute('aria-expanded','false');info.setAttribute('aria-expanded','false')}
+  function togglePanel(name){const wasOpen=document.body.classList.contains(name+'-open');closePanels();if(!wasOpen){document.body.classList.add(name+'-open');(name==='tools'?tools:info).setAttribute('aria-expanded','true')}}
+  tools.addEventListener('click',()=>togglePanel('tools'));info.addEventListener('click',()=>togglePanel('info'));backdrop.addEventListener('click',closePanels);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')closePanels()});
+  document.querySelector('#tool-nav').addEventListener('click',event=>{if(event.target.closest('[data-select-feature]'))closePanels()});
+  document.querySelector('#show-settings').addEventListener('click',()=>{closePanels();if(matchMedia('(max-width:980px)').matches)togglePanel('info')});
+  document.querySelector('#switch-enterprise').addEventListener('click',closePanels);
+  addEventListener('resize',()=>{if(innerWidth>980)closePanels()});
+})();
+</script>
+<script>
 customElements.whenDefined('taskai7-calculator').then(()=>{
   const calc=document.querySelector('#tai7-calc'),nav=document.querySelector('#tool-nav'),list=document.querySelector('#history-list');
   const maxButton=document.querySelector('#switch-max'),enterpriseButton=document.querySelector('#switch-enterprise');
-  function switchWorkspace(enterprise){document.querySelector('#max-workspace').hidden=enterprise;document.querySelector('#enterprise-workspace').hidden=!enterprise;maxButton.setAttribute('aria-pressed',String(!enterprise));enterpriseButton.setAttribute('aria-pressed',String(enterprise))}
+  function switchWorkspace(enterprise){document.querySelector('#max-workspace').hidden=enterprise;document.querySelector('#enterprise-workspace').hidden=!enterprise;document.body.classList.toggle('enterprise-open',enterprise);maxButton.setAttribute('aria-pressed',String(!enterprise));enterpriseButton.setAttribute('aria-pressed',String(enterprise))}
   maxButton.addEventListener('click',()=>switchWorkspace(false));enterpriseButton.addEventListener('click',()=>switchWorkspace(true));
   calc.open();calc.ensureMenuBuilt();
   const historyIcon=calc.shadowRoot.querySelector('.title-history svg')?.cloneNode(true);if(historyIcon)document.querySelector('#history-view .right-head h2').prepend(historyIcon);
