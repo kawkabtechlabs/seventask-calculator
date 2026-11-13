@@ -5,10 +5,11 @@ const SHELL_PREFIX = "seventask-calculator-shell-";
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await Promise.allSettled(CORE.map(async path => {
+    await Promise.all(CORE.map(async path => {
       const request = new Request(path, { cache: "no-store" });
       const response = await fetch(request);
-      if (response.ok) await cache.put(request, response);
+      if (!response.ok) throw new Error(`Core asset unavailable: ${path} (${response.status})`);
+      await cache.put(request, response);
     }));
     await self.skipWaiting();
   })());

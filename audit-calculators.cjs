@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 const html = fs.readFileSync(path.join(__dirname, 'calculator.html'), 'utf8');
 const marker = "window.addEventListener('message',event=>";
-const core = fs.readFileSync(path.join(__dirname, 'calculator-core.js'), 'utf8');
+const core = fs.readFileSync(process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, 'calculator-core.js'), 'utf8');
 assert.ok(html.includes('src="calculator-core.js"') && core.includes(marker) && core.includes('const CATEGORIES = ['), 'calculator logic script exists');
 
 const injectedChecks = `
@@ -80,6 +80,12 @@ const injectedChecks = `
   expect(Math.abs(money(zeroRateCar,'Monthly EMI') - amount(zeroRateCar)/12) < 0.02, 'zero-rate car loan uses straight principal division');
   const paidOffCar = carResult({...car,downPayment:5000000,tradeIn:0});
   expect(amount(paidOffCar) === 0 && money(paidOffCar,'Total interest') === 0, 'car loan caps down payment and prevents negative financing');
+  const emiTool=CATEGORIES.flatMap(category=>category.items).find(tool=>tool.id==='emi');
+  expect(money(emiTool.compute({principal:1200,rate:0,years:1}),'Monthly EMI')===100, 'zero-rate EMI divides principal by months');
+  const gstTool=CATEGORIES.flatMap(category=>category.items).find(tool=>tool.id==='gst');
+  expect(money(gstTool.compute({amount:100,rate:18,type:'Exclusive'}),'Total amount')===118, 'exclusive GST adds tax');
+  expect(money(gstTool.compute({amount:118,rate:18,type:'Inclusive'}),'Total GST')===18, 'inclusive GST extracts tax');
+  expect(money(gstTool.compute({amount:118,rate:18,type:'Inclusive'}),'Total amount')===118, 'inclusive GST preserves entered total');
   const annual = xirrCalc([{amount:-10000,date:new Date('2024-01-01')},{amount:12100,date:new Date('2025-12-31')}]);
   expect(Math.abs(annual - 10) < 0.01, 'two-year XIRR should be 10%');
   expect(!Number.isFinite(xirrCalc([{amount:0,date:new Date('2024-01-01')},{amount:100,date:new Date('2025-01-01')}])) , 'invalid XIRR input is rejected');
@@ -87,11 +93,32 @@ const injectedChecks = `
   expect(xirrTool.compute({amt1:100,amt2:121,date1:'2025-01-01',date2:'2024-01-01'})[0].value.includes('final date after investment'), 'XIRR rejects reversed dates');
   expect(evalCustomFormula('(A+B)*C',{a:-2.5,b:4,c:3})===4.5, 'custom formula handles negatives and decimals');
   expect(evalCustomFormula('pow(A,2)+sqrt(B)',{a:3,b:16})===13, 'custom formula supports bounded math functions');
+  expect(evalCustomFormula('-2^2',{})===-4, 'exponentiation precedes unary minus');
+  expect(evalCustomFormula('(-2)^2',{})===4, 'parentheses override unary exponent precedence');
+  expect(evalCustomFormula('2^-2',{})===0.25, 'negative exponent remains supported');
+  expect(evalCustomFormula('2^3^2',{})===512, 'exponentiation remains right-associative');
+  expect(parseCalendarDate('2024-02-29')?.day===29, 'leap-day date is valid');
+  expect(parseCalendarDate('2025-02-29')===null, 'non-leap February 29 is rejected');
+  expect(parseCalendarDate('2026-02-30')===null, 'overflowing date is rejected');
+  const janEndAge=calendarAge(parseCalendarDate('2025-01-31'),parseCalendarDate('2025-03-01'));
+  expect(janEndAge.years===0&&janEndAge.months===1&&janEndAge.days===1, 'age handles a short month after January 31');
+  const leapAge=calendarAge(parseCalendarDate('2000-02-29'),parseCalendarDate('2021-02-28'));
+  expect(leapAge.years===21&&leapAge.months===0&&leapAge.days===0, 'February 29 anniversary uses February 28 in non-leap years');
+  const dateDifference=CATEGORIES.flatMap(category=>category.items).find(tool=>tool.id==='datedifference');
+  expect(dateDifference.compute({date1:'2024-02-28',date2:'2024-03-01'})[0].value==='2', 'date difference counts leap day');
+  expect(dateDifference.compute({date1:'2026-02-30',date2:'2026-03-01'})[0].value==='Enter valid dates.', 'date difference rejects invalid dates');
+  const workdays=CATEGORIES.flatMap(category=>category.items).find(tool=>tool.id==='workingdays');
+  expect(workdays.compute({date1:'2024-02-29',date2:'2024-03-04'})[0].value==='3', 'working days span leap day and weekend');
+  expect(workdays.compute({date1:'2026-02-30',date2:'2026-03-01'})[0].value==='Enter valid dates.', 'working days reject invalid dates');
+  expect(workdays.compute({date1:'2026-03-02',date2:'2026-03-01'})[0].value.includes('End date'), 'working days reject reversed dates');
   for(const payload of ['globalThis.alert(1)','constructor.constructor(1)','A;alert(1)','A[0]']) {
     let rejected=false;try{evalCustomFormula(payload,{a:1});}catch{rejected=true;}
     expect(rejected, 'custom formula rejects JavaScript syntax: '+payload);
   }
   const converter = CATEGORIES.flatMap(category => category.items).find(tool => tool.id === 'unitconverter');
+  expect(converter.compute({cat:'Length',from:'m',to:'cm',value:1})[0].value==='100 cm', 'one metre is 100 centimetres');
+  expect(converter.compute({cat:'Length',from:'cm',to:'m',value:1})[0].value==='0.01 m', 'one centimetre is 0.01 metres');
+  expect(converter.compute({cat:'Temperature',from:'°C',to:'°F',value:0})[0].value==='32 °F', 'zero Celsius is 32 Fahrenheit');
   let conversionPairs = 0;
   for (const [category, table] of Object.entries(UNITS)) for (const from of Object.keys(table)) for (const to of Object.keys(table)) {
     const result = converter.compute({cat:category,from,to,value:1})[0].value;
@@ -103,7 +130,7 @@ const injectedChecks = `
     expect(!/NaN|undefined/.test(result), 'temperature conversion ' + from + ' → ' + to);
   }
   if (audit.failures.length) throw new Error(audit.failures.join('\\n'));
-  console.log(JSON.stringify({catalogTools: audit.total, defaultRunsPassed: audit.total, populatedRunsPassed: audit.total, zeroBoundaryRunsPassed: audit.total, conversionPairs, temperaturePairs: 16, targetedChecks: 19, failures: audit.failures.length}));
+  console.log(JSON.stringify({catalogTools: audit.total, defaultRunsPassed: audit.total, populatedRunsPassed: audit.total, zeroBoundaryRunsPassed: audit.total, conversionPairs, temperaturePairs: 16, targetedChecks: 40, failures: audit.failures.length}));
 `;
 
 const source = core.replace(marker, injectedChecks + '\n  ' + marker);

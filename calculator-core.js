@@ -132,15 +132,35 @@
   }
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const DAY_MS = 86400000;
+  function parseCalendarDate(value){
+    const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value||''));
+    if(!match) return null;
+    const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+    const date=new Date(Date.UTC(year,month-1,day));
+    if(date.getUTCFullYear()!==year||date.getUTCMonth()+1!==month||date.getUTCDate()!==day) return null;
+    return {year,month,day,serial:date.getTime()/DAY_MS};
+  }
+  function calendarAge(birth,today){
+    let months=(today.year-birth.year)*12+today.month-birth.month;
+    const anniversary=count=>{
+      const monthIndex=birth.month-1+count,year=birth.year+Math.floor(monthIndex/12),month=monthIndex%12+1;
+      const lastDay=new Date(Date.UTC(year,month,0)).getUTCDate();
+      return Date.UTC(year,month-1,Math.min(birth.day,lastDay))/DAY_MS;
+    };
+    if(months<0||today.serial<birth.serial) return null;
+    if(anniversary(months)>today.serial) months--;
+    return {years:Math.floor(months/12),months:months%12,days:today.serial-anniversary(months)};
+  }
   function evalCustomFormula(source, values){
     const text=String(source||'').trim(); if(!text||text.length>180) throw new Error('Enter a formula under 180 characters.');
     const tokens=[]; const re=/\s*(?:(\d+(?:\.\d*)?|\.\d+)|([A-Za-z]+)|([()+\-*/%^,]))/gy; let pos=0,m;
     while(pos<text.length){re.lastIndex=pos;m=re.exec(text);if(!m)throw new Error('Use numbers, A–H, + − × ÷ ^ %, parentheses or supported functions.');tokens.push(m[1]!==undefined?{type:'number',value:Number(m[1])}:m[2]!==undefined?{type:'word',value:m[2].toUpperCase()}:{type:m[3],value:m[3]});pos=re.lastIndex;}
     let i=0;const peek=()=>tokens[i],take=()=>tokens[i++];
     function primary(){const t=take();if(!t)throw new Error('Formula is incomplete.');if(t.type==='number')return t.value;if(t.type==='('){const x=expr();if(take()?.type!==')')throw new Error('Add a closing parenthesis.');return x;}if(t.type==='word'){const name=t.value;if('ABCDEFGH'.includes(name)&&name.length===1)return num(values[name.toLowerCase()]);if(name==='PI')return Math.PI;if(name==='E')return Math.E;if(take()?.type!=='(')throw new Error('Functions need parentheses, for example sqrt(A).');const a=expr();let b;if(peek()?.type===','){take();b=expr();}if(take()?.type!==')')throw new Error('Add a closing parenthesis.');const f={SQRT:()=>Math.sqrt(a),SIN:()=>Math.sin(a),COS:()=>Math.cos(a),TAN:()=>Math.tan(a),LOG:()=>Math.log10(a),LN:()=>Math.log(a),ABS:()=>Math.abs(a),POW:()=>Math.pow(a,b)}[name];if(!f||((name==='POW')!==(b!==undefined)))throw new Error('Supported functions: sqrt, sin, cos, tan, log, ln, abs, pow.');return f();}throw new Error('Expected a number, variable or parenthesized expression.');}
-    function unary(){if(peek()?.type==='+'){take();return unary();}if(peek()?.type==='-'){take();return -unary();}return primary();}
-    function power(){let a=unary();if(peek()?.type==='^'){take();a=Math.pow(a,power());}return a;}
-    function term(){let a=power();while(['*','/','%'].includes(peek()?.type)){const op=take().type,b=power();a=op==='*'?a*b:op==='/'?a/b:a%b;}return a;}
+    function unary(){if(peek()?.type==='+'){take();return unary();}if(peek()?.type==='-'){take();return -unary();}return power();}
+    function power(){let a=primary();if(peek()?.type==='^'){take();a=Math.pow(a,unary());}return a;}
+    function term(){let a=unary();while(['*','/','%'].includes(peek()?.type)){const op=take().type,b=unary();a=op==='*'?a*b:op==='/'?a/b:a%b;}return a;}
     function expr(){let a=term();while(['+','-'].includes(peek()?.type)){const op=take().type,b=term();a=op==='+'?a+b:a-b;}return a;}
     const result=expr();if(i!==tokens.length)throw new Error('Check the formula syntax.');if(!Number.isFinite(result))throw new Error('This formula has no finite result.');return result;
   }
@@ -173,11 +193,11 @@
       }},
     { id:'age', name:'Age calculator', fields:[ {key:'dob', label:'Date of birth', type:'date', default:''} ],
       compute:v=>{ if(!v.dob) return [{label:'Age', value:'—', emphasis:true}];
-        const dob=new Date(v.dob), now=new Date();
-        let y=now.getFullYear()-dob.getFullYear(), m=now.getMonth()-dob.getMonth(), d=now.getDate()-dob.getDate();
-        if(d<0){ m--; d+=new Date(now.getFullYear(),now.getMonth(),0).getDate(); }
-        if(m<0){ y--; m+=12; }
-        return [{label:'Age', value:`${y}y ${m}m ${d}d`, emphasis:true}];
+        const dob=parseCalendarDate(v.dob),now=new Date();
+        const today=parseCalendarDate(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`);
+        if(!dob) return [{label:'Age', value:'Enter a valid birth date.', emphasis:true}];
+        const age=calendarAge(dob,today);
+        return [{label:'Age', value:age?`${age.years}y ${age.months}m ${age.days}d`:'Birth date must not be in the future.', emphasis:true}];
       }},
     { id:'time', name:'Time calculator', fields:[
         {key:'t1', label:'Start time', type:'time', default:''},
@@ -852,19 +872,30 @@
     { id:'datedifference', name:'Date Difference', fields:[
         {key:'date1', label:'Start date', type:'date', default:''}, {key:'date2', label:'End date', type:'date', default:''},
       ], compute:v=>{ if(!v.date1||!v.date2) return [{label:'Difference', value:'—', emphasis:true}];
-        const d1=new Date(v.date1), d2=new Date(v.date2), days=Math.round((d2-d1)/86400000);
+        const d1=parseCalendarDate(v.date1),d2=parseCalendarDate(v.date2);
+        if(!d1||!d2) return [{label:'Difference', value:'Enter valid dates.', emphasis:true}];
+        const days=d2.serial-d1.serial;
       return [ {label:'Days', value:String(days), emphasis:true}, {label:'Weeks', value:fmtNum(days/7)}, {label:'Months (approx)', value:fmtNum(days/30.44)}, {label:'Years (approx)', value:fmtNum(days/365.2425)} ];
       }},
     { id:'workingdays', name:'Working Days', fields:[
         {key:'date1', label:'Start date', type:'date', default:''}, {key:'date2', label:'End date', type:'date', default:''},
       ], compute:v=>{ if(!v.date1||!v.date2) return [{label:'Working days', value:'—', emphasis:true}];
-        let d=new Date(v.date1); const end=new Date(v.date2); let count=0;
-        while(d<=end){ const day=d.getDay(); if(day!==0&&day!==6) count++; d.setDate(d.getDate()+1); }
+        const start=parseCalendarDate(v.date1),end=parseCalendarDate(v.date2);
+        if(!start||!end) return [{label:'Working days', value:'Enter valid dates.', emphasis:true}];
+        if(end.serial<start.serial) return [{label:'Working days', value:'End date must be after start date.', emphasis:true}];
+        let count=0;
+        for(let serial=start.serial;serial<=end.serial;serial++){
+          const day=new Date(serial*DAY_MS).getUTCDay();if(day!==0&&day!==6) count++;
+        }
         return [{label:'Working days', value:String(count), emphasis:true}];
       }},
     { id:'countdown', name:'Countdown', fields:[ {key:'targetDate', label:'Target date', type:'date', default:''} ],
       compute:v=>{ if(!v.targetDate) return [{label:'Remaining', value:'—', emphasis:true}];
-        const now=new Date(), target=new Date(v.targetDate); const days=Math.ceil((target-now)/86400000);
+        const target=parseCalendarDate(v.targetDate);
+        if(!target) return [{label:'Remaining', value:'Enter a valid date.', emphasis:true}];
+        const now=new Date();
+        const today=parseCalendarDate(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`);
+        const days=target.serial-today.serial;
         return [{label:'Days remaining', value:String(days), emphasis:true}];
       }},
     { id:'fuelcost', name:'Fuel Cost', fields:[

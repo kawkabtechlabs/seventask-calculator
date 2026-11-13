@@ -53,3 +53,19 @@ Scope: source and live HTTP checks for web/PWA, Android, and Windows. UI/UX Step
 - Test PWA install/update/offline on Chrome and Android. The service worker is network-first and caches shell assets, but cached data persistence and offline handling need browser tests.
 - Review all source-controlled external links and response headers. CSP is currently absent; adding it requires testing Google Fonts, dynamic script execution, and embedded/native contexts before rollout.
 - Measure Lighthouse and Core Web Vitals on live mobile and desktop under repeatable conditions before making score claims or changing caching strategy.
+
+## Local implementation batch — preview only
+
+The following changes are in local web source and the matching Windows calculator source. They have not been deployed or packaged into Android/Windows release artifacts. The Android wrapper loads the live web calculator, so it will receive calculation changes only after a later approved web deployment.
+
+| Priority | Reproduction and fix | Verification |
+| --- | --- | --- |
+| P0 correctness | Custom formula `-2^2` returned `4` because unary minus ran before exponentiation. The parser now applies exponentiation first while preserving parentheses, negative exponents, and right-associative chains. | Formula regression checks in `audit-calculators.cjs`. |
+| P0 correctness | Age could produce negative day components for dates such as 31 January to 1 March; invalid dates such as 30 February could silently normalize in date tools. Strict calendar parsing and month-end-aware age calculation now cover Age, Date Difference, Working Days, and Countdown. | Leap day, invalid date, month-end, reversed range, and working-day regression checks. |
+| P1 PWA reliability | `sw.js` used `Promise.allSettled` for core pre-cache, so a failed core fetch could still activate a worker and delete the old offline cache. The install now rejects if any core response fails. | `node scripts/verify-service-worker.cjs` simulates failed and successful installation and cache migration. Browser upgrade test remains NOT TESTED. |
+
+Latest local commands: `node audit-calculators.cjs` PASS (136 tools, 1,846 unit conversion pairs, 40 targeted checks); the same command with `../work/desktop-release-build/app/calculator-core.js` PASS; `node scripts/verify-service-worker.cjs` PASS; `node scripts/verify-seo.cjs` PASS; `node scripts/sync-release.cjs --check` PASS; `git diff --check` PASS. No Android AAB or Windows installer was built. No Lighthouse/Core Web Vitals measurements were taken. Current source sizes: `index.html` 80,633 bytes, `calculator.html` 25,406 bytes, `calculator-core.js` 345,408 bytes, `sw.js` 2,582 bytes; these are size observations, not speed results.
+
+Desktop dependency audit: `npm audit --audit-level=high --json` exited 0 and reported 6 moderate findings in the Electron builder/minimatch toolchain, with no high or critical findings. This is not an assertion that the packaged binary is vulnerability-free. A limited repository secret-pattern scan found no matching file paths; credential safety still needs a dedicated review before release.
+
+Release decision for this batch: **BLOCKED for Android Play submission** by target SDK 35 and debug release signing; **NOT TESTED** for offline browser upgrades, Android devices, Windows installer rebuild, and performance. Local calculator preview is available for review. Rollback of this batch is possible by reverting its local commit; no production rollback is needed because nothing was deployed.
