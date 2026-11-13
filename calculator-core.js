@@ -1871,7 +1871,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.29</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.30</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
