@@ -8,8 +8,7 @@
       else if(!window.SevenTaskHaptics)navigator.vibrate?.(12);
     }
   }, true);
-  function mount() {
-    const app=document.querySelector('taskai7-calculator');
+  function mount(app) {
     const root=app?.shadowRoot;
     const panel=root?.querySelector('.infopanel');
     if (!panel || panel.querySelector('.st-settings')) return false;
@@ -116,5 +115,8 @@
     sync();
     return true;
   }
-  let count=0; const timer=setInterval(()=>{if(mount()||++count>40)clearInterval(timer)},250);
+  const mountAll=()=>document.querySelectorAll('taskai7-calculator').forEach(mount);
+  mountAll();
+  new MutationObserver(mountAll).observe(document.body,{childList:true});
+  customElements.whenDefined('taskai7-calculator').then(mountAll);
 })();
