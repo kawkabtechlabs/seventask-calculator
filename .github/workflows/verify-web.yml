@@ -1,0 +1,32 @@
+name: Verify web calculator
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'calculator-core.js'
+      - 'calculator.html'
+      - 'index.html'
+      - 'install.html'
+      - 'privacy-policy.html'
+      - 'sitemap.xml'
+      - 'sw.js'
+      - 'release.json'
+      - 'audit-calculators.cjs'
+      - 'scripts/**'
+      - '.github/workflows/verify-web.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check calculator-core.js && node --check sw.js
+      - run: node audit-calculators.cjs
+      - run: node scripts/verify-seo.cjs
+      - run: node scripts/verify-service-worker.cjs
+      - run: node scripts/sync-release.cjs --check
