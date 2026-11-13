@@ -1,4 +1,4 @@
-const CACHE = "seventask-calculator-shell-1.18.17";
+const CACHE = "seventask-calculator-shell-1.18.18";
 const CORE = ["./", "./calculator", "./calculator-core.js", "./mobile-settings.js", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
 const SHELL_PREFIX = "seventask-calculator-shell-";
 

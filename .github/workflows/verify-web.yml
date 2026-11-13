@@ -12,6 +12,9 @@ on:
       - 'sitemap.xml'
       - 'sw.js'
       - 'release.json'
+      - 'mobile-update.json'
+      - 'desktop-download.js'
+      - 'downloads/**'
       - 'audit-calculators.cjs'
       - 'scripts/**'
       - '.github/workflows/verify-web.yml'
@@ -29,4 +32,5 @@ jobs:
       - run: node audit-calculators.cjs
       - run: node scripts/verify-seo.cjs
       - run: node scripts/verify-service-worker.cjs
+      - run: node scripts/verify-release-artifacts.cjs
       - run: node scripts/sync-release.cjs --check
