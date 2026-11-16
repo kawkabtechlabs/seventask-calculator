@@ -1,0 +1,11 @@
+**
+!calculator-core.js
+!chatgpt-plugin/
+!chatgpt-plugin/package.json
+!chatgpt-plugin/package-lock.json
+!chatgpt-plugin/src/
+!chatgpt-plugin/src/**
+!chatgpt-plugin/public/
+!chatgpt-plugin/public/**
+**/node_modules/
+**/.env

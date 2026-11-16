@@ -1,0 +1,18 @@
+{
+  "name": "@kawkab-tech-labs/seventask-chatgpt-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Official SevenTask Calculator MCP plugin for ChatGPT",
+  "engines": { "node": ">=22.6.0" },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/catalog.mjs && node --check src/server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  }
+}
