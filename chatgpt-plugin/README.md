@@ -15,6 +15,17 @@ This is a separate server for ChatGPT; it does not alter the static website or i
 
 The server is stateless, has no user accounts, stores no inputs, and uses no OpenAI API key. The plugin is not an investment, tax or medical adviser. Results are estimates; current rules and assumptions must be verified.
 
+## Live Cloudflare Worker
+
+- **MCP URL:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
+- **Health:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/healthz
+- **Worker name:** `seventask-calculator-mcp`
+- **Status:** deployed 2026-11-16; live HTTP initialization, seven tools, EMI call and HTML resource verified.
+
+This is a new Worker with its own workers.dev hostname. It does **not** replace or route traffic away from the original Cloudflare Pages site. The Worker is reachable publicly, but ChatGPT private installation and the separate public-plugin review are not yet complete.
+
+The Worker is built from the same source with `npm run build:worker`. `scripts/build-worker.mjs` compiles the trusted calculation catalog into `dist/worker.mjs`, using `worker/handler.js` for stateless MCP HTTP. The Node runtime uses `node:vm`; the Worker invokes the static, precompiled formulas directly after input validation and tenure bounds. Do not treat the Worker or Node VM as a secure sandbox for untrusted calculator source.
+
 ## Run locally
 
 Requires Node.js >= 22.6 and the repo-root `calculator-core.js` file.
@@ -32,8 +43,8 @@ To test the MCP endpoint use the official [MCP Inspector](https://github.com/mod
 
 ### Try it in ChatGPT
 
-1. Deploy the container to an HTTPS host. **Do not point ChatGPT at the static website**; it does not run this MCP server.
-2. In ChatGPT Plugins, add a custom MCP server using `https://YOUR-HOST/mcp`.
+1. Open ChatGPT Plugins and add a custom MCP server with `https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp`. **Do not point ChatGPT at the static website**; it does not run this MCP server.
+2. Connect and inspect the seven tool descriptors. No sign-in is required for calculations.
 3. Install the resulting private plugin and test, for example:
    - `@SevenTask Calculate the EMI on ₹10,00,000 at 9% for 5 years.`
    - `@SevenTask What is the GST-inclusive breakdown for ₹118 at 18%?`
@@ -59,7 +70,7 @@ The hosting provider should map HTTPS to port `8787` and continuously run the se
 - [x] Reuse the original calculator formulas
 - [x] Stateless no-login MVP with strict input validation
 - [x] Smoke tests for 136+ calculator catalog and core tools
-- [ ] Deploy server to stable public HTTPS hosting
+- [x] Deploy server to stable public HTTPS hosting (Cloudflare Worker)
 - [ ] Connect and verify the endpoint in ChatGPT, including widget interaction
 - [ ] Verify Privacy Policy and Terms cover ChatGPT plugin traffic
 - [ ] Test categories with financial/tax/health assumptions and add any current-rate notices

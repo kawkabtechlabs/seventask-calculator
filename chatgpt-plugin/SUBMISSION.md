@@ -8,7 +8,7 @@
 
 **Privacy policy:** https://seventaskcalculator.in/privacy-policy
 
-**MCP endpoint:** `https://YOUR-PUBLIC-HOST/mcp` (replace after deployment)
+**MCP endpoint:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
 
 **Short description:** Calculate EMI, SIP, GST, business costs, daily maths, conversions and more with 136+ focused calculators from SevenTask.
 
@@ -27,7 +27,7 @@
 
 **Before submitting:**
 
-- Replace MCP endpoint placeholder after hosting is live.
+- Validate the deployed MCP endpoint and branded widget in the ChatGPT private test connection.
 - Confirm brand name/icon rights and production support email.
 - Confirm public Privacy Policy and Terms accurately state plugin data practices and currency provider.
 - Review current Indian tax and finance assumptions, including the website's assessment-year labels.

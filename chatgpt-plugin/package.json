@@ -7,8 +7,9 @@
   "engines": { "node": ">=22.6.0" },
   "scripts": {
     "start": "node src/server.mjs",
-    "test": "node --test test/*.test.mjs",
-    "check": "node --check src/catalog.mjs && node --check src/server.mjs"
+    "build:worker": "node scripts/build-worker.mjs",
+    "test": "npm run build:worker && node --test test/*.test.mjs",
+    "check": "node --check src/catalog.mjs && node --check src/server.mjs && npm run build:worker && node --check dist/worker.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.1",
