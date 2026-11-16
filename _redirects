@@ -1,6 +1,4 @@
 /open-source-licenses /privacy-policy#open-source-licenses 301
-/about /about.html 200
-/contact /contact.html 200
 /open-source-licenses.html /privacy-policy#open-source-licenses 301
 # Redirect legacy promo and product-tour URLs to the updated 10-slide presentation.
 /promo /promo/product-presentation 301
