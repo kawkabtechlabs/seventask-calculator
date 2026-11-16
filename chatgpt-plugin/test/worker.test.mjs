@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { Script } from 'node:vm';
 import worker from '../dist/worker.mjs';
 import { calculate, catalogSize, getCalculator, listCalculators } from '../src/catalog.mjs';
 
@@ -50,10 +51,18 @@ test('Cloudflare Worker health, discovery, UI and direct tool call', async () =>
     const actual = await rpc('tools/call', { name, arguments: arguments_ });
     assert.deepEqual(actual.structuredContent.results, calculate(id, inputs).results, name);
   }
-  assert.equal(tools.tools.find(t => t.name === 'calculate_emi')._meta.ui.resourceUri, 'ui://seventask-calculator/results-v1.html');
-  const resource = await rpc('resources/read', { uri: 'ui://seventask-calculator/results-v1.html' });
+  assert.equal(tools.tools.find(t => t.name === 'calculate_emi')._meta.ui.resourceUri, 'ui://seventask-calculator/results-v2.html');
+  const resource = await rpc('resources/read', { uri: 'ui://seventask-calculator/results-v2.html' });
   assert.match(resource.contents[0].mimeType, /mcp-app/);
   assert.match(resource.contents[0].text, /SevenTask Calculator/);
+  assert.match(resource.contents[0].text, /data:image\/png;base64,/);
+  assert.match(resource.contents[0].text, /ui\/notifications\/size-changed/);
+  assert.match(resource.contents[0].text, /Edit inputs/);
+  assert.match(resource.contents[0].text, /Recalculate/);
+  assert.doesNotMatch(resource.contents[0].text, /__STC_ICON_DATA_URI__/);
+  const inlineScript = resource.contents[0].text.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(inlineScript, 'MCP Apps result card must include its bridge script');
+  assert.doesNotThrow(() => new Script(inlineScript), 'The interactive card must contain valid JavaScript');
   const unsupported = await worker.fetch(new Request('https://example.org/mcp', { method: 'GET' }));
   assert.equal(unsupported.status, 405);
 });

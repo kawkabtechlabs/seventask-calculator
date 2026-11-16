@@ -17,7 +17,7 @@ The listing icon and composer icon use `assets/seventask-icon.png` (1024×1024 P
 - Returns the exact inputs, defaults and choices needed by each calculator.
 - Runs all of the site's synchronous calculators by reading `../calculator-core.js` at startup and evaluating **only the pure calculation catalog**. This avoids copying 136+ formulas into a second codebase.
 - Offers first-class EMI, SIP, GST, percentage, discount, age, BMI, business margin, fuel cost and average tools, plus both curated and all-calculators browsing.
-- Shows a branded, interactive result card inside ChatGPT. Result editing calls back to the same MCP server.
+- Offers a premium compact black-and-white MCP Apps result card with the SevenTask logo, highlighted answer, input summary, **Edit inputs** and **Recalculate**. Interactive edits call the same MCP server; ChatGPT hosts that do not render MCP Apps still receive a readable plain-text result.
 - Converts currencies with Frankfurter's daily public reference-rate API, which needs Internet access.
 
 The server is stateless, has no user accounts, stores no inputs, and uses no OpenAI API key. The plugin is not an investment, tax or medical adviser. Results are estimates; current rules and assumptions must be verified.
@@ -27,9 +27,9 @@ The server is stateless, has no user accounts, stores no inputs, and uses no Ope
 - **MCP URL:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
 - **Health:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/healthz
 - **Worker name:** `seventask-calculator-mcp`
-- **Status:** v0.2 deployed 2026-11-16 with 14 tools, 5 curated collections, all 136 calculators and the new logo. ChatGPT custom connections may need **Refresh tools** to discover new tool definitions; public listing updates require a ZIP upload/review.
+- **Status:** v0.3 deployed 2026-11-17 with 14 tools, 5 curated collections, all 136 calculators and the premium compact result card (`ui://seventask-calculator/results-v2.html`). ChatGPT custom connections may need **Refresh tools** and a new chat to discover the updated card; public listing updates require a ZIP upload/review.
 
-This is a new Worker with its own workers.dev hostname. It does **not** replace or route traffic away from the original Cloudflare Pages site. The Worker is reachable publicly, but ChatGPT private installation and the separate public-plugin review are not yet complete.
+This is a separate Worker with its own workers.dev hostname. It does **not** replace or route traffic away from the original Cloudflare Pages site. The Worker is reachable publicly and already used by the private ChatGPT plugin. The separate public-directory submission and review are still pending.
 
 The Worker is built from the same source with `npm run build:worker`. `scripts/build-worker.mjs` compiles the trusted calculation catalog into `dist/worker.mjs`, using `worker/handler.js` for stateless MCP HTTP. The Node runtime uses `node:vm`; the Worker invokes the static, precompiled formulas directly after input validation and tenure bounds. Do not treat the Worker or Node VM as a secure sandbox for untrusted calculator source.
 
@@ -58,6 +58,8 @@ To test the MCP endpoint use the official [MCP Inspector](https://github.com/mod
    - `@SevenTask Show daily-use calculators, then calculate 20% off ₹2,500.`
    - `@SevenTask Find the shop profit margin calculator and calculate a sale of ₹20,000 with ₹15,000 costs.`
 4. Test all relevant calculators before submitting to the public plugin directory.
+
+For the updated card, use the plugin's **Settings → Refresh tools** if the earlier plain-text result or cached card persists. In a new chat, try `@SevenTask 22 lakh ka 20 percent`, then tap **Edit inputs**, change the number, and tap **Recalculate**. Interactive card rendering is controlled by the ChatGPT host; text-only hosts retain the numeric answer.
 
 Official setup: https://developers.openai.com/plugins/build/app-quickstart
 

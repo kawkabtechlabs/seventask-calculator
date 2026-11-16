@@ -45,8 +45,9 @@ catalog = catalog.replaceAll('export const ', 'const ').replaceAll('export funct
   .replaceAll('export async function ', 'async function ');
 
 const handler = read('chatgpt-plugin/worker/handler.js');
-const widget = read('chatgpt-plugin/public/result-widget.html');
 const iconBase64 = readFileSync(resolve(pluginRoot, 'assets/seventask-icon.png')).toString('base64');
+const widget = replaceRequired(read('chatgpt-plugin/public/result-widget.html'),
+  '__STC_ICON_DATA_URI__', `data:image/png;base64,${iconBase64}`);
 const output = [
   '// GENERATED. Edit scripts/build-worker.mjs and worker/handler.js, then rebuild.',
   `const __engine = (() => {\nconst window = { setTimeout, clearTimeout };\n${engine}\nreturn { categories: CATEGORIES, map: CALC_MAP };\n})();`,

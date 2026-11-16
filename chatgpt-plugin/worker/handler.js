@@ -1,6 +1,6 @@
 // Worker-native, stateless MCP Streamable HTTP adapter. The calculation
 // catalog and branded HTML widget are injected by scripts/build-worker.mjs.
-const MCP_URI = 'ui://seventask-calculator/results-v1.html';
+const MCP_URI = 'ui://seventask-calculator/results-v2.html';
 const MCP_MIME = 'text/html;profile=mcp-app';
 const INPUT_VALUE = { oneOf: [{ type: 'string' }, { type: 'number' }] };
 const INPUTS = { type: 'object', additionalProperties: INPUT_VALUE };
@@ -175,7 +175,7 @@ async function mcpMessage(message) {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: {
-        name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.2.0', websiteUrl: 'https://seventaskcalculator.in',
+        name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.3.0', websiteUrl: 'https://seventaskcalculator.in',
         icons: [{ src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png', mimeType: 'image/png', sizes: ['1024x1024'] }],
       },
       instructions: 'Use list_calculators and get_calculator to discover inputs. Use calculate or direct tools. Financial/tax results are estimates.',

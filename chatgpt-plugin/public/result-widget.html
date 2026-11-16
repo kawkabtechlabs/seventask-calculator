@@ -3,52 +3,50 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="color-scheme" content="light" />
   <title>SevenTask Calculator</title>
   <style>
-    :root { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color-scheme: light; }
+    :root { font-family: "DM Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color-scheme: light; }
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 4px; background: transparent; color: #121714; }
-    .card { border: 1px solid #dfe4df; background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 9px 28px #1c322412; }
-    .top { background: #111a14; color: #fff; padding: 22px 24px 20px; }
+    body { margin: 0; padding: 4px; background: transparent; color: #16161b; }
+    .card { max-width: 560px; border: 1px solid #e7e7ea; background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 9px 28px #1111140c; }
+    .top { background: #111114; color: #fff; padding: 20px 22px; }
     .brandline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .brand { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; letter-spacing: -.02em; }
-    .icon { width: 35px; height: 35px; border: 1px solid #526e5a; border-radius: 11px; display: grid; grid-template-columns: repeat(2, 6px); grid-template-rows: repeat(2, 6px); align-content: center; justify-content: center; gap: 4px; background: #19291e; }
-    .icon b { background: #a7eb8f; border-radius: 2px; }
-    .icon b:nth-child(2) { opacity: .56; }
-    .badge { color: #b2ddb7; border: 1px solid #46674f; border-radius: 999px; font-size: 10px; letter-spacing: .06em; font-weight: 700; padding: 6px 10px; text-transform: uppercase; white-space: nowrap; }
-    .eyebrow { margin: 24px 0 8px; color: #aec4b1; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .14em; }
-    h1 { font-size: clamp(20px, 4.5vw, 28px); letter-spacing: -.045em; line-height: 1.16; margin: 0; font-weight: 800; }
-    .hero-value { margin-top: 18px; font-size: clamp(27px, 6.8vw, 39px); font-weight: 780; line-height: 1.18; color: #c7f8a9; letter-spacing: -.05em; overflow-wrap: anywhere; }
-    .hero-label { font-size: 12px; color: #c2d0c3; margin-top: 6px; }
+    .icon { width: 35px; height: 35px; border: 1px solid #e7e7e7; border-radius: 10px; background: #fff; object-fit: contain; }
+    .badge { color: #d4d4d8; border: 1px solid #49494e; border-radius: 999px; font-size: 10px; letter-spacing: .04em; font-weight: 700; padding: 6px 10px; white-space: nowrap; }
+    .eyebrow { margin: 19px 0 7px; color: #bbbbc2; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+    h1 { font-size: clamp(18px, 4.5vw, 23px); letter-spacing: -.045em; line-height: 1.2; margin: 0; font-weight: 800; }
+    .hero-value { margin-top: 12px; font-size: clamp(28px, 7vw, 42px); font-weight: 850; line-height: 1.13; color: #fff; letter-spacing: -.055em; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    .hero-label { font-size: 12px; color: #bdbdc4; margin-top: 6px; }
     .results { padding: 4px 23px 2px; }
-    .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 14px 1px; border-bottom: 1px solid #e9eee9; font-size: 13px; }
+    .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 12px 1px; border-bottom: 1px solid #ededf0; font-size: 12px; }
     .row:last-child { border-bottom: 0; }
-    .row span:first-child { color: #5b6860; }
-    .row strong { text-align: right; font-weight: 800; color: #13251b; overflow-wrap: anywhere; }
+    .row span:first-child { color: #73737c; }
+    .row strong { text-align: right; font-weight: 800; color: #18181b; overflow-wrap: anywhere; }
     .table-head { padding: 18px 24px 4px; font-weight: 800; font-size: 13px; }
     .table-wrap { overflow-x: auto; padding: 0 23px 10px; }
     table { border-collapse: collapse; font-size: 11px; width: 100%; min-width: 300px; }
-    th, td { padding: 9px 7px; border-bottom: 1px solid #e8eee7; text-align: right; }
+    th, td { padding: 9px 7px; border-bottom: 1px solid #eeeef0; text-align: right; }
     th:first-child, td:first-child { text-align: left; }
-    th { color: #6d7d70; background: #f6f9f6; }
-    .foot { padding: 16px 23px 20px; background: #f6f9f5; border-top: 1px solid #e5ece5; }
-    .note { color: #6b796e; font-size: 11px; line-height: 1.5; margin: 0 0 13px; }
+    th { color: #696972; background: #f7f7f8; }
+    .foot { padding: 14px 23px 17px; background: #f8f8f9; border-top: 1px solid #ededf0; }
+    .note { color: #86868f; font-size: 10px; line-height: 1.5; margin: 10px 0 0; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    button, a.button { border: 1px solid #cbd8ca; border-radius: 11px; background: #fff; padding: 10px 13px; font: inherit; font-size: 12px; font-weight: 750; color: #193521; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
-    button.primary { background: #16271b; color: #e2f8dc; border-color: #16271b; }
+    button, a.button { border: 1px solid #d8d8de; border-radius: 10px; background: #fff; padding: 9px 12px; font: inherit; font-size: 11px; font-weight: 800; color: #222229; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    button.primary { background: #151519; color: #fff; border-color: #151519; }
     button:disabled { opacity: .55; cursor: wait; }
-    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #83bb69; outline-offset: 2px; }
-    #editor { display: none; padding: 4px 23px 20px; background: #f9fbf8; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #88889b; outline-offset: 2px; }
+    #editor { display: none; padding: 13px 23px 18px; background: #fafafa; border-top: 1px solid #ededf0; }
     #editor.open { display: block; }
     #editor h2 { font-size: 15px; margin: 14px 0; }
     .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 11px; margin-bottom: 15px; }
-    label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #536558; }
-    input { min-width: 0; width: 100%; border: 1px solid #cbd7ca; border-radius: 9px; padding: 10px; font: inherit; font-size: 13px; background: #fff; color: #142219; }
+    label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #656570; text-transform: capitalize; }
+    input { min-width: 0; width: 100%; border: 1px solid #d6d6db; border-radius: 9px; padding: 10px; font: inherit; font-size: 13px; background: #fff; color: #16161b; }
     #error { font-size: 12px; color: #9b3329; margin: 10px 0; min-height: 0; }
-    .empty { padding: 24px; font-size: 13px; line-height: 1.6; color: #55685b; }
-    .empty strong { color: #15351f; }
-    @media (prefers-color-scheme: dark) { .card { border-color: #46554a; } }
+    .empty { padding: 20px; font-size: 12px; line-height: 1.6; color: #71717b; }
+    .empty strong { color: #222228; }
+    [hidden] { display: none !important; }
     @media (max-width: 410px) { .top { padding: 18px; } .results, .table-wrap { padding-left: 17px; padding-right: 17px; } .foot, #editor { padding-left: 17px; padding-right: 17px; } }
   </style>
 </head>
@@ -56,28 +54,29 @@
   <main class="card">
     <header class="top">
       <div class="brandline">
-        <div class="brand"><div class="icon" aria-hidden="true"><b></b><b></b><b></b><b></b></div><span>SevenTask Calculator</span></div>
+        <div class="brand"><img class="icon" alt="" src="__STC_ICON_DATA_URI__" width="35" height="35" /><span>SevenTask Calculator</span></div>
         <span class="badge">Kawkab Tech Labs</span>
       </div>
-      <div class="eyebrow" id="category">Calculation workspace</div>
-      <h1 id="title">Calculate anything with clarity.</h1>
-      <div class="hero-value" id="hero">136+ tools</div>
-      <div class="hero-label" id="hero-label">Ask ChatGPT for a calculation</div>
+      <div class="eyebrow" id="category">Your calculation</div>
+      <h1 id="title">Smart results, beautifully simple.</h1>
+      <div class="hero-value" id="hero">136+</div>
+      <div class="hero-label" id="hero-label">Calculators for everyday life</div>
     </header>
     <section id="results" class="results" aria-live="polite"><div class="empty">Your calculation will appear here. Try <strong>“Calculate EMI for ₹10 lakh at 9% for 5 years”</strong>.</div></section>
     <section id="tables"></section>
     <form id="editor" novalidate>
-      <h2>Edit inputs</h2>
+      <h2>Edit inputs &amp; recalculate</h2>
       <div id="fields" class="input-grid"></div>
       <div id="error" role="alert"></div>
       <button class="primary" id="recalculate" type="submit">Recalculate →</button>
     </form>
     <footer class="foot">
-      <p class="note" id="note">Built on the original SevenTask calculation engine.</p>
       <div class="actions">
-        <button id="edit" type="button" hidden>Edit values</button>
+        <button id="edit" type="button" hidden>✎ Edit inputs</button>
+        <button id="quick" type="button" class="primary" hidden>↻ Recalculate</button>
         <a class="button" href="https://seventaskcalculator.in/calculator" target="_blank" rel="noopener noreferrer">Explore all calculators ↗</a>
       </div>
+      <p class="note" id="note">Calculated by the original SevenTask engine.</p>
     </footer>
   </main>
   <script>
@@ -89,19 +88,37 @@
       const rpcNotify = (method, params) => window.parent.postMessage({ jsonrpc: '2.0', method, params }, '*');
       const rpcRequest = (method, params) => new Promise((resolve, reject) => {
         const id = ++rpcId;
-        pending.set(id, { resolve, reject });
+        const timer = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error('ChatGPT connection timed out. Start a new chat and try again.'));
+        }, 12000);
+        pending.set(id, { resolve, reject, timer });
         window.parent.postMessage({ jsonrpc: '2.0', id, method, params }, '*');
       });
+      const syncSize = () => requestAnimationFrame(() => rpcNotify('ui/notifications/size-changed', {
+        width: Math.ceil(document.documentElement.getBoundingClientRect().width),
+        height: Math.ceil(document.documentElement.getBoundingClientRect().height),
+      }));
+      if (typeof ResizeObserver !== 'undefined') new ResizeObserver(syncSize).observe(document.body);
+      const readable = key => key.replaceAll(/([A-Z])/g, ' $1').replaceAll('_', ' ').trim();
+      const formatInput = value => typeof value === 'number' && Number.isFinite(value)
+        ? new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(value) : String(value ?? '');
+      const summary = data => {
+        if (data.id === 'percentage' && Number.isFinite(Number(data.inputs?.a)) && Number.isFinite(Number(data.inputs?.b)))
+          return `${formatInput(Number(data.inputs.a))}% of ${formatInput(Number(data.inputs.b))}`;
+        return Object.entries(data.inputs || {}).slice(0, 3)
+          .map(([key, value]) => `${readable(key)}: ${formatInput(value)}`).join(' · ') || 'Calculation complete';
+      };
 
       function update(reply) {
         const data = reply?.structuredContent ?? reply;
         if (!data || !Array.isArray(data.results)) return;
         current = data;
-        $('category').textContent = data.category || 'SevenTask';
+        $('category').textContent = `${data.category || 'Everyday'} · Calculation complete`;
         $('title').textContent = data.name || 'Calculation';
         const focus = data.results.find(r => r.emphasis && r.type !== 'table') || data.results.find(r => r.type !== 'table');
         $('hero').textContent = String(focus?.value ?? 'Complete');
-        $('hero-label').textContent = String(focus?.label ?? 'Result');
+        $('hero-label').textContent = summary(data);
         const rows = data.results.filter(r => r.type !== 'table' && r !== focus);
         $('results').replaceChildren(...rows.map(row => {
           const el = document.createElement('div'); el.className = 'row';
@@ -126,9 +143,11 @@
           }
           table.append(tbody); wrap.append(table); $('tables').append(heading, wrap);
         }
-        $('note').textContent = data.disclaimer || 'Powered by the SevenTask Calculator engine.';
-        $('edit').hidden = !data.inputs || !Object.keys(data.inputs).length;
+        $('note').textContent = data.disclaimer || 'Calculated by SevenTask Calculator · Kawkab Tech Labs';
+        $('edit').hidden = !(data.id && data.inputs && Object.keys(data.inputs).length);
+        $('quick').hidden = !data.id;
         $('editor').classList.remove('open');
+        syncSize();
       }
 
       window.addEventListener('message', event => {
@@ -139,14 +158,15 @@
           const resolver = pending.get(message.id);
           if (!resolver) return;
           pending.delete(message.id);
+          clearTimeout(resolver.timer);
           if (message.error) resolver.reject(message.error); else resolver.resolve(message.result);
         } else if (message.method === 'ui/notifications/tool-result') update(message.params);
       }, { passive: true });
 
       const bridgeReady = rpcRequest('ui/initialize', {
-        appInfo: { name: 'seventask-results', version: '0.1.0' },
+        appInfo: { name: 'seventask-results', version: '0.3.0' },
         appCapabilities: {}, protocolVersion: '2026-01-26',
-      }).then(() => rpcNotify('ui/notifications/initialized', {})).catch(() => {});
+      }).then(() => { rpcNotify('ui/notifications/initialized', {}); syncSize(); return true; }).catch(() => false);
 
       if (window.openai?.toolOutput) update({ structuredContent: window.openai.toolOutput });
 
@@ -154,7 +174,7 @@
         if (!current) return;
         $('fields').replaceChildren();
         for (const [key, value] of Object.entries(current.inputs || {})) {
-          const label = document.createElement('label'); label.textContent = key.replaceAll(/([A-Z])/g, ' $1').replaceAll('_', ' ');
+          const label = document.createElement('label'); label.textContent = readable(key);
           const field = document.createElement('input'); field.name = key;
           field.type = typeof value === 'number' ? 'number' : 'text';
           if (typeof value === 'number') field.step = 'any';
@@ -162,25 +182,47 @@
         }
         $('error').textContent = '';
         $('editor').classList.toggle('open');
+        syncSize();
       });
 
-      $('editor').addEventListener('submit', async event => {
-        event.preventDefault();
+      async function runCalculation(inputs) {
         if (!current) return;
-        const button = $('recalculate'); button.disabled = true;
+        const button = $('recalculate');
+        button.disabled = true;
+        $('quick').disabled = true;
         $('error').textContent = '';
         try {
-          await bridgeReady;
-          const inputs = {};
-          for (const field of $('fields').querySelectorAll('input')) {
-            inputs[field.name] = field.type === 'number' ? Number(field.value) : field.value;
-          }
-          const result = await rpcRequest('tools/call', { name: 'calculate', arguments: { calculator_id: current.id, inputs } });
+          const ready = await bridgeReady;
+          const args = { calculator_id: current.id, inputs };
+          let result;
+          if (typeof window.openai?.callTool === 'function') result = await window.openai.callTool('calculate', args);
+          else if (ready) result = await rpcRequest('tools/call', { name: 'calculate', arguments: args });
+          else throw new Error('Interactive recalculation is unavailable in this ChatGPT view. Start a new calculation in chat.');
           if (result?.isError) throw new Error(result.content?.[0]?.text || 'Calculation error');
+          if (!result?.structuredContent?.results && !result?.results) throw new Error('No result received. Please try in chat.');
           update(result);
-        } catch (error) { $('error').textContent = String(error?.message || error); }
-        finally { button.disabled = false; }
+        } catch (error) {
+          $('error').textContent = String(error?.message || error);
+          $('editor').classList.add('open');
+        } finally { button.disabled = false; $('quick').disabled = false; syncSize(); }
+      }
+
+      $('quick').addEventListener('click', () => { if (current) void runCalculation(current.inputs || {}); });
+      $('editor').addEventListener('submit', event => {
+        event.preventDefault();
+        if (!current) return;
+        const inputs = {};
+        for (const field of $('fields').querySelectorAll('input')) {
+          if (field.type === 'number' && !field.value.trim()) {
+            $('error').textContent = `Please enter ${readable(field.name)}.`;
+            field.focus();
+            return;
+          }
+          inputs[field.name] = field.type === 'number' ? Number(field.value) : field.value;
+        }
+        void runCalculation(inputs);
       });
+      syncSize();
     })();
   </script>
 </body>

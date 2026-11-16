@@ -9,8 +9,10 @@ import { calculate, calculateCurrency, catalogSize, categories, featuredCollecti
 
 const PORT = Number(process.env.PORT || 8787);
 const MCP_PATH = '/mcp';
-const WIDGET_URI = 'ui://seventask-calculator/results-v1.html';
-const widget = readFileSync(new URL('../public/result-widget.html', import.meta.url), 'utf8');
+const WIDGET_URI = 'ui://seventask-calculator/results-v2.html';
+const icon = readFileSync(new URL('../assets/seventask-icon.png', import.meta.url)).toString('base64');
+const widget = readFileSync(new URL('../public/result-widget.html', import.meta.url), 'utf8')
+  .replace('__STC_ICON_DATA_URI__', `data:image/png;base64,${icon}`);
 
 const inputValue = z.union([z.string(), z.number()]);
 const inputsSchema = z.record(inputValue);
@@ -39,7 +41,7 @@ async function safeCalculation(callback) {
 export function createSevenTaskServer() {
   const server = new McpServer({
     name: 'SevenTask Calculator by Kawkab Tech Labs',
-    version: '0.2.0',
+    version: '0.3.0',
     websiteUrl: 'https://seventaskcalculator.in',
     icons: [{
       src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png',

@@ -51,7 +51,7 @@ test('HTTP health, MCP discovery, tool execution and UI resource', async () => {
     });
     assert.equal(generic.result.structuredContent.results.find(row => row.label === 'Total GST').value, '₹18');
 
-    const resources = await rpc('resources/read', { uri: 'ui://seventask-calculator/results-v1.html' });
+    const resources = await rpc('resources/read', { uri: 'ui://seventask-calculator/results-v2.html' });
     assert.match(resources.result.contents[0].mimeType, /mcp-app/);
     assert.match(resources.result.contents[0].text, /SevenTask Calculator/);
   } finally {
