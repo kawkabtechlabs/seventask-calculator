@@ -41,6 +41,11 @@ export function createSevenTaskServer() {
     name: 'SevenTask Calculator by Kawkab Tech Labs',
     version: '0.1.0',
     websiteUrl: 'https://seventaskcalculator.in',
+    icons: [{
+      src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png',
+      mimeType: 'image/png',
+      sizes: ['1024x1024'],
+    }],
   });
 
   registerAppResource(server, 'seventask-results', WIDGET_URI, {}, async () => ({

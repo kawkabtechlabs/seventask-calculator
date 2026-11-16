@@ -23,6 +23,8 @@
         "privacyPolicyURL": "https://seventaskcalculator.in/privacy-policy",
         "termsOfServiceURL": "https://seventaskcalculator.in/terms",
         "brandColor": "#16271B",
+        "logo": "./assets/seventask-icon.png",
+        "composerIcon": "./assets/seventask-icon.png",
         "defaultPrompt": [
           "Calculate my monthly EMI for ₹10 lakh at 9% interest for 5 years.",
           "How much will my monthly ₹5,000 SIP grow in 10 years at an assumed 11% return?",

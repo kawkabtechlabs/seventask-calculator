@@ -23,6 +23,11 @@ test('Cloudflare Worker health, discovery, UI and direct tool call', async () =>
   const initialize = await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
   assert.match(initialize.serverInfo.name, /SevenTask/);
   assert.equal(initialize.serverInfo.websiteUrl, 'https://seventaskcalculator.in');
+  assert.equal(initialize.serverInfo.icons[0].mimeType, 'image/png');
+  const icon = await worker.fetch(new Request('https://example.org/icon.png'));
+  assert.equal(icon.status, 200);
+  assert.equal(icon.headers.get('content-type'), 'image/png');
+  assert.ok((await icon.arrayBuffer()).byteLength > 10000);
   const tools = await rpc('tools/list');
   assert.equal(tools.tools.length, 7);
   const result = await rpc('tools/call', {

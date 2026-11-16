@@ -124,7 +124,10 @@ async function mcpMessage(message) {
     return success(id, {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
-      serverInfo: { name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.1.0', websiteUrl: 'https://seventaskcalculator.in' },
+      serverInfo: {
+        name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.1.0', websiteUrl: 'https://seventaskcalculator.in',
+        icons: [{ src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png', mimeType: 'image/png', sizes: ['1024x1024'] }],
+      },
       instructions: 'Use list_calculators and get_calculator to discover inputs. Use calculate or direct tools. Financial/tax results are estimates.',
     });
   }
@@ -152,6 +155,9 @@ const respondJson = (data, status = 200) => new Response(json(data), { status, h
 export default {
   async fetch(request) {
     const pathname = new URL(request.url).pathname;
+    if (pathname === '/icon.png' && request.method === 'GET') {
+      return new Response(ICON_BYTES, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' } });
+    }
     if ((pathname === '/' || pathname === '/healthz') && request.method === 'GET') {
       return respondJson({ name: 'SevenTask Calculator MCP', status: 'ok', calculators: catalogSize, categories: categories.length });
     }

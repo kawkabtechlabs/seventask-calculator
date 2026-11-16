@@ -6,6 +6,8 @@ This is a separate server for ChatGPT; it does not alter the static website or i
 
 The portable public plugin package is `plugin.json` + `mcp.json` in this directory; private ChatGPT custom-MCP registration and public directory submission are separate steps.
 
+The listing icon and composer icon use `assets/seventask-icon.png` (1024×1024 PNG). The same icon is served publicly at `/icon.png` and advertised in MCP `initialize.serverInfo.icons`; refresh the registered ChatGPT MCP connection to pick up server metadata changes.
+
 ## What it does
 
 - Searches the **original** SevenTask calculator catalog by name/category.
