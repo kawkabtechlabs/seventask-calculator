@@ -205,6 +205,14 @@ const respondJson = (data, status = 200) => new Response(json(data), { status, h
 export default {
   async fetch(request) {
     const pathname = new URL(request.url).pathname;
+    if (pathname === '/explore' && request.method === 'GET') {
+      const page = await fetch('https://seventaskcalculator.in/calculator');
+      if (!page.ok) return new Response('Calculator is temporarily unavailable. Please visit seventaskcalculator.in/calculator.', { status: 502 });
+      return new HTMLRewriter().on('head', { element(element) {
+        element.prepend('<base href="https://seventaskcalculator.in/">', { html: true });
+        element.append('<style>html,body,body.website-dotted-canvas{background:#fff!important;background-image:none!important}</style>', { html: true });
+      }}).transform(new Response(page.body, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }));
+    }
     if (pathname === '/icon.png' && request.method === 'GET') {
       return new Response(ICON_BYTES, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' } });
     }
