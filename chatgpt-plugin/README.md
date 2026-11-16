@@ -4,6 +4,8 @@ Official MCP plugin by **Kawkab Tech Labs** for [SevenTask Calculator](https://s
 
 This is a separate server for ChatGPT; it does not alter the static website or its Cloudflare Pages deployment.
 
+The portable public plugin package is `plugin.json` + `mcp.json` in this directory; private ChatGPT custom-MCP registration and public directory submission are separate steps.
+
 ## What it does
 
 - Searches the **original** SevenTask calculator catalog by name/category.
@@ -52,6 +54,8 @@ To test the MCP endpoint use the official [MCP Inspector](https://github.com/mod
 4. Test all relevant calculators before submitting to the public plugin directory.
 
 Official setup: https://developers.openai.com/plugins/build/app-quickstart
+
+Public package format: https://developers.openai.com/plugins/build/plugins
 
 ### Docker
 

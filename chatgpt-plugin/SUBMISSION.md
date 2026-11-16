@@ -10,6 +10,10 @@
 
 **MCP endpoint:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
 
+**Portable plugin manifest:** `chatgpt-plugin/plugin.json`
+
+**Portable MCP configuration:** `chatgpt-plugin/mcp.json`
+
 **Short description:** Calculate EMI, SIP, GST, business costs, daily maths, conversions and more with 136+ focused calculators from SevenTask.
 
 **Full description:** SevenTask Calculator brings Kawkab Tech Labs' versatile calculator library into ChatGPT. Search for the right tool, inspect its input fields, calculate with the original website's engine, and read clear, branded results. Common finance and tax outputs are estimates, not advice. Daily currency reference rates use Frankfurter.

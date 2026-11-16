@@ -1,0 +1,34 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "seventask-calculator",
+  "version": "0.1.0",
+  "description": "Calculate EMI, SIP, GST, business costs, unit conversions and more with 136 SevenTask calculators.",
+  "author": {
+    "name": "Kawkab Tech Labs",
+    "email": "kawkabtechlabs@gmail.com",
+    "url": "https://seventaskcalculator.in/"
+  },
+  "homepage": "https://seventaskcalculator.in/",
+  "repository": "https://github.com/kawkabtechlabs/seventask-calculator",
+  "keywords": ["calculator", "finance", "mathematics", "units", "india", "gst"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "SevenTask Calculator",
+        "shortDescription": "136 calculators for everyday maths, finance and business",
+        "longDescription": "Run Kawkab Tech Labs' SevenTask calculators directly in ChatGPT. Estimate EMI and SIP, break down GST, convert units, calculate business costs and explore specialized tools with clear inputs and branded results. Outputs are estimates, not financial, tax or medical advice.",
+        "developerName": "Kawkab Tech Labs",
+        "capabilities": ["Read"],
+        "websiteURL": "https://seventaskcalculator.in/",
+        "privacyPolicyURL": "https://seventaskcalculator.in/privacy-policy",
+        "termsOfServiceURL": "https://seventaskcalculator.in/terms",
+        "brandColor": "#16271B",
+        "defaultPrompt": [
+          "Calculate my monthly EMI for ₹10 lakh at 9% interest for 5 years.",
+          "How much will my monthly ₹5,000 SIP grow in 10 years at an assumed 11% return?",
+          "Calculate the GST-inclusive breakdown of ₹1,180 at 18%."
+        ]
+      }
+    }
+  }
+}
