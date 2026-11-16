@@ -48,6 +48,7 @@
       .st-settings-body .theme-choice{padding:8px 0 12px;margin:0;border-bottom:1px solid #d9dce0;animation:none!important}
       .st-settings-toggle[aria-expanded="true"]{border-radius:11px 11px 0 0}
       .st-settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:8px 0;border-bottom:1px solid #d9dce0}
+      .st-settings-row[hidden]{display:none!important}
       .st-settings-label{font:650 13px/1.2 system-ui,sans-serif}
       .st-size-control{display:grid;gap:2px;flex:none;width:112px;color:#686d75}.st-size-control input{width:100%;height:18px;margin:0;accent-color:#17181b;cursor:pointer}.st-size-labels{display:flex;justify-content:space-between;font:700 10px system-ui,sans-serif}.win[data-theme="dark"] .st-size-control{color:#c7cbd2}.win[data-theme="dark"] .st-size-control input{accent-color:#dfe3ea}
       .st-dropdown-align{position:relative;flex:none;width:112px}.st-dropdown-align summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:38px;padding:7px 10px;border:1.5px solid #45484c;border-radius:10px;background:var(--theme-menu,#fff);color:inherit;font:650 12px system-ui,sans-serif;cursor:pointer}.st-dropdown-align summary::-webkit-details-marker{display:none}.st-dropdown-align summary svg{width:14px;height:14px;transition:transform .18s}.st-dropdown-align[open] summary svg{transform:rotate(180deg)}.st-dropdown-align summary:hover{background:var(--theme-hover,#f1f2f4)}.st-dropdown-options{position:absolute;top:calc(100% + 4px);right:0;z-index:60;width:100%;padding:4px;border:1.5px solid #45484c;border-radius:10px;background:var(--theme-menu,#fff);box-shadow:0 8px 20px #0002}.st-dropdown-options button{display:block;width:100%;padding:8px;border:0;border-radius:7px;background:transparent;color:inherit;text-align:left;font:650 12px system-ui,sans-serif;cursor:pointer}.st-dropdown-options button:hover,.st-dropdown-options button[aria-pressed="true"]{background:var(--theme-hover,#eceef1)}.st-dropdown-options button[aria-pressed="true"]::after{content:"✓";float:right}
@@ -67,13 +68,15 @@
       .infopanel .update-status:not([hidden]){display:block;margin:4px 0 6px;padding:10px 12px;border:1.5px solid var(--ui-divider,#45484c);border-radius:10px;background:var(--theme-surface,#f6f7f8);color:inherit;font:600 11px/1.45 system-ui,sans-serif}
       .infopanel [data-action="download-app-update"]:not([hidden]),.infopanel [data-action="reload-web-update"]:not([hidden]){border-width:1.5px!important;font-weight:700!important}
     `;
-    if(window.sevenTaskDesktop)style.textContent+=' .win.popup-mode{top:0!important;left:0!important;width:100%!important;height:100%!important}';
+    if(window.sevenTaskDesktop||new URLSearchParams(location.search).has('native'))style.textContent+=' .win.popup-mode{top:0!important;left:0!important;width:100%!important;height:100%!important}';
     root.appendChild(style);
     const section=document.createElement('section'); section.className='st-settings'; section.setAttribute('aria-label','App settings');
     section.innerHTML=`<button class="st-settings-toggle" type="button" aria-expanded="false" aria-controls="st-settings-body"><span class="st-settings-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.5 2.2c.6.2 1.2.4 1.7.7l2-1.1 2.8 2.8-1.1 2c.3.5.5 1.1.7 1.7L22 10v4l-2.2.5c-.2.6-.4 1.2-.7 1.7l1.1 2-2.8 2.8-2-1.1c-.5.3-1.1.5-1.7.7L14 22h-4l-.5-2.2c-.6-.2-1.2-.4-1.7-.7l-2 1.1-2.8-2.8 1.1-2c-.3-.5-.5-1.1-.7-1.7L2 14v-4l2.2-.5c.2-.6.4-1.2.7-1.7l-1.1-2L6.6 3l2 1.1c.5-.3 1.1-.5 1.7-.7L10 2Z"/></svg><span>Settings</span></span><svg class="st-settings-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg></button><div class="st-settings-body" id="st-settings-body" hidden>
       <div class="st-settings-row"><label class="st-settings-label" for="st-dropdown-size">Dropdown Size</label><span class="st-size-control"><input id="st-dropdown-size" type="range" min="0" max="2" step="1" value="2" aria-label="Dropdown size"><span class="st-size-labels" aria-hidden="true"><span>S</span><span>M</span><span>L</span></span></span></div>
       <div class="st-settings-row"><span class="st-settings-label">Notifications</span><button class="st-switch" type="button" role="switch" aria-label="Notifications" data-st-notifications aria-checked="false"></button></div>
       <div class="st-settings-row"><span class="st-settings-label">Vibration</span><button class="st-switch" type="button" role="switch" aria-label="Vibration" data-st-vibration aria-checked="true"></button></div>
+      <div class="st-settings-row"><span class="st-settings-label">Auto-Update<small style="display:block;font-weight:400;margin-top:4px">Checks for new versions; Android confirms installation.</small></span><button class="st-switch" type="button" role="switch" aria-label="Auto-Update" data-st-auto-update aria-checked="true"></button></div>
+      <div class="update-status" data-st-auto-update-status hidden></div>
       <div class="st-settings-row"><span class="st-settings-label">Undo/Redo (History)</span><button type="button" data-st-clear-undo aria-label="Clear undo and redo history">Clear</button></div></div>`;
     section.querySelector('[data-st-clear-undo]').addEventListener('click',()=>{ panel.getRootNode().host?.clearUndoRedoHistory?.(); });
     const alignment=section.querySelector('#st-dropdown-size'),win=root.querySelector('.win');
@@ -93,6 +96,23 @@
     });
     const notify=section.querySelector('[data-st-notifications]');
     const vibrate=section.querySelector('[data-st-vibration]');
+    const auto=section.querySelector('[data-st-auto-update]'),updateStatus=section.querySelector('[data-st-auto-update-status]');
+    auto.closest('.st-settings-row').hidden=!new URLSearchParams(location.search).has('native');
+    auto.setAttribute('aria-checked',String(localStorage.getItem('stc-auto-update')!=='false'));
+    const checkUpdate=async()=>{
+      if(auto.getAttribute('aria-checked')!=='true'||!window.SevenTaskNative?.getVersionCode)return;
+      try{
+        const response=await fetch('/mobile-update.json',{cache:'no-store'});
+        if(!response.ok)return;
+        const release=await response.json(),current=Number(window.SevenTaskNative.getVersionCode());
+        const url=new URL(release.apkUrl);
+        if(!Number.isSafeInteger(release.versionCode)||release.versionCode<=current||url.protocol!=='https:'||url.hostname!=='seventaskcalculator.in'||!/^\/downloads\/mobile-[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname))return;
+        updateStatus.hidden=false;updateStatus.textContent=`Version ${release.versionName} is available. `;
+        const button=document.createElement('button');button.type='button';button.textContent='Download update';button.addEventListener('click',()=>window.SevenTaskNative.openUpdate?.(url.href));updateStatus.append(button);
+      }catch{}
+    };
+    auto.addEventListener('click',()=>{const next=auto.getAttribute('aria-checked')!=='true';auto.setAttribute('aria-checked',String(next));localStorage.setItem('stc-auto-update',String(next));if(next)checkUpdate();else updateStatus.hidden=true;});
+    checkUpdate();
     const sync=()=>{
       try { notify.setAttribute('aria-checked', String(window.SevenTaskNative?.notificationsEnabled?.() ?? (localStorage.getItem('stc-notifications-enabled')==='true'))); } catch {}
       try { vibrate.setAttribute('aria-checked', String(window.SevenTaskNative?.vibrationEnabled?.() ?? window.SevenTaskHaptics?.enabled?.() ?? (localStorage.getItem('stc-vibration-enabled')!=='false'))); } catch {}
