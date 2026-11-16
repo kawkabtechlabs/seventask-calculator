@@ -34,6 +34,40 @@ export const categories = catalog.categories.map(category => ({
   count: category.items.length,
 }));
 
+// Curated entry points only: every original calculator remains available.
+const featured = [
+  { id: 'daily', name: 'Daily essentials', ids: ['percentage', 'discount', 'age', 'unitconverter', 'currency', 'splitbill', 'unitprice', 'datedifference', 'workingdays', 'fuelcost', 'electricitybill', 'incomesummary', 'recurringcost'] },
+  { id: 'basic', name: 'Basic maths', ids: ['percentage', 'fraction', 'ratio', 'average', 'rounding', 'powerroot', 'lcmhcf', 'linearequation', 'circlecalc', 'standarddeviation'] },
+  { id: 'finance', name: 'Money, loans & tax', ids: ['emi', 'sip', 'gst', 'simpleinterest', 'compoundinterest', 'fd', 'rd', 'savingsgoal', 'creditcardinterest', 'homeloan', 'debtpayoff', 'inflation', 'cagr', 'roi', 'incometax'] },
+  { id: 'business', name: 'Business & shopping', ids: ['profitmargin', 'grossmargin', 'markup', 'breakeven', 'retailmargin', 'kiranainvoice', 'shopinvoice', 'marketplaceprofit', 'wholesaleretail', 'khataamount', 'netmargin', 'cashflow', 'onlinecompare'] },
+  { id: 'home', name: 'Home, health & travel', ids: ['bmi', 'bmr', 'waterintake', 'calorietarget', 'areacalc', 'paintcalc', 'tilecalc', 'concretecalc', 'fuelcost', 'tripbudget', 'electricitybill', 'evchargingcost'] },
+];
+
+for (const group of featured) {
+  for (const id of group.ids) {
+    if (!ids.has(id)) throw new Error(`Featured calculator ${id} no longer exists in the original catalog.`);
+  }
+}
+
+export const featuredCollections = featured.map(({ id, name, ids: items }) => ({ id, name, count: items.length }));
+
+export function listFeaturedCalculators({ collection = '', limit = 30, offset = 0 } = {}) {
+  const group = collection ? featured.find(item => item.id === collection) : undefined;
+  if (collection && !group) throw new Error(`Unknown collection: ${collection}. Choose daily, basic, finance, business or home.`);
+  const idsInOrder = group ? group.ids : [...new Set(featured.flatMap(item => item.ids))];
+  return {
+    total: idsInOrder.length,
+    catalogTotal: catalogSize,
+    offset,
+    calculators: idsInOrder.slice(offset, offset + limit).map(id => {
+      const item = all.find(candidate => candidate.id === id);
+      return { ...item, collections: featured.filter(g => g.ids.includes(id)).map(g => g.id) };
+    }),
+    collections: featuredCollections,
+    website: 'https://seventaskcalculator.in/calculator',
+  };
+}
+
 export function listCalculators({ query = '', category = '', limit = 20, offset = 0 } = {}) {
   const q = query.toLowerCase().trim();
   const matches = all.filter(item =>

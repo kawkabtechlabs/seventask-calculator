@@ -1,10 +1,12 @@
 # SevenTask Calculator — Public Plugin Submission Draft
 
-**Name:** SevenTask Calculator
+**Name:** STC - SevenTask Calculator
 
 **Developer:** Kawkab Tech Labs
 
 **Homepage:** https://seventaskcalculator.in/
+
+**Support:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/support
 
 **Privacy policy:** https://seventaskcalculator.in/privacy-policy
 
@@ -14,9 +16,9 @@
 
 **Portable MCP configuration:** `chatgpt-plugin/mcp.json`
 
-**Short description:** Calculate EMI, SIP, GST, business costs, daily maths, conversions and more with 136+ focused calculators from SevenTask.
+**Short description:** 136 SevenTask calculators, with popular daily-use and basic maths tools up front.
 
-**Full description:** SevenTask Calculator brings Kawkab Tech Labs' versatile calculator library into ChatGPT. Search for the right tool, inspect its input fields, calculate with the original website's engine, and read clear, branded results. Common finance and tax outputs are estimates, not advice. Daily currency reference rates use Frankfurter.
+**Full description:** SevenTask Calculator brings Kawkab Tech Labs' versatile 136-calculator library into ChatGPT. Browse daily essentials, basic maths, money and loans, business, and home/health collections; run discounts, age, EMI, SIP, GST, BMI, fuel cost, averages and more directly. Search for any specialist tool, inspect its inputs, calculate with the website's original engine, and read branded results. Financial/tax outputs are estimates, not advice. Daily currency reference rates use Frankfurter.
 
 **Example prompts:**
 
@@ -26,6 +28,8 @@
 4. `Find the Kirana multi-item bill calculator and show its fields.`
 5. `How much paint will I need for 400 sq ft? Find the correct calculator.`
 6. `Convert 3 kilometres to metres with SevenTask.`
+7. `Show me SevenTask's daily essentials and basic maths calculators.`
+8. `Calculate a 15% discount on ₹3,000 with 5% tax.`
 
 **Data processing summary:** Tool parameters are processed in server memory to calculate answers and are not persisted by the plugin. Network requests are only used for currency reference rates. Host-level access logs, if enabled by the deployment provider, must be configured not to store tool input bodies or personal data. ChatGPT itself processes plugin calls under its own privacy terms.
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculate, catalogSize, getCalculator, listCalculators } from '../src/catalog.mjs';
+import { calculate, catalogSize, featuredCollections, getCalculator, listCalculators, listFeaturedCalculators } from '../src/catalog.mjs';
 
 function numeric(rows, label) {
   const value = rows.find(row => row.label === label)?.value;
@@ -12,6 +12,21 @@ test('all original calculators are discoverable', () => {
   assert.equal(catalogSize, 136);
   assert.equal(listCalculators({ query: 'EMI' }).calculators[0].id, 'emi');
   assert.ok(listCalculators({ query: 'dairy' }).calculators.some(item => item.id === 'milkledger'));
+});
+
+test('curated daily and basic collections preserve full 136-calculator access', () => {
+  assert.deepEqual(featuredCollections.map(group => group.id), ['daily', 'basic', 'finance', 'business', 'home']);
+  const daily = listFeaturedCalculators({ collection: 'daily' });
+  assert.ok(daily.calculators.some(item => item.id === 'age'));
+  assert.ok(daily.calculators.some(item => item.id === 'discount'));
+  const basic = listFeaturedCalculators({ collection: 'basic' });
+  assert.ok(basic.calculators.some(item => item.id === 'fraction'));
+  assert.ok(basic.calculators.some(item => item.id === 'average'));
+  const featured = listFeaturedCalculators({ limit: 200 });
+  assert.equal(new Set(featured.calculators.map(item => item.id)).size, featured.total);
+  assert.ok(featured.total > 40 && featured.total < catalogSize);
+  assert.equal(listCalculators({ limit: 200 }).calculators.length, 136);
+  assert.throws(() => listFeaturedCalculators({ collection: 'nonexistent' }), /Unknown collection/);
 });
 
 test('EMI and zero-rate repayments match original site', () => {

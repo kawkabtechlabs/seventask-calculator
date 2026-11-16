@@ -1111,6 +1111,40 @@ const categories = catalog.categories.map(category => ({
   count: category.items.length,
 }));
 
+// Curated entry points only: every original calculator remains available.
+const featured = [
+  { id: 'daily', name: 'Daily essentials', ids: ['percentage', 'discount', 'age', 'unitconverter', 'currency', 'splitbill', 'unitprice', 'datedifference', 'workingdays', 'fuelcost', 'electricitybill', 'incomesummary', 'recurringcost'] },
+  { id: 'basic', name: 'Basic maths', ids: ['percentage', 'fraction', 'ratio', 'average', 'rounding', 'powerroot', 'lcmhcf', 'linearequation', 'circlecalc', 'standarddeviation'] },
+  { id: 'finance', name: 'Money, loans & tax', ids: ['emi', 'sip', 'gst', 'simpleinterest', 'compoundinterest', 'fd', 'rd', 'savingsgoal', 'creditcardinterest', 'homeloan', 'debtpayoff', 'inflation', 'cagr', 'roi', 'incometax'] },
+  { id: 'business', name: 'Business & shopping', ids: ['profitmargin', 'grossmargin', 'markup', 'breakeven', 'retailmargin', 'kiranainvoice', 'shopinvoice', 'marketplaceprofit', 'wholesaleretail', 'khataamount', 'netmargin', 'cashflow', 'onlinecompare'] },
+  { id: 'home', name: 'Home, health & travel', ids: ['bmi', 'bmr', 'waterintake', 'calorietarget', 'areacalc', 'paintcalc', 'tilecalc', 'concretecalc', 'fuelcost', 'tripbudget', 'electricitybill', 'evchargingcost'] },
+];
+
+for (const group of featured) {
+  for (const id of group.ids) {
+    if (!ids.has(id)) throw new Error(`Featured calculator ${id} no longer exists in the original catalog.`);
+  }
+}
+
+const featuredCollections = featured.map(({ id, name, ids: items }) => ({ id, name, count: items.length }));
+
+function listFeaturedCalculators({ collection = '', limit = 30, offset = 0 } = {}) {
+  const group = collection ? featured.find(item => item.id === collection) : undefined;
+  if (collection && !group) throw new Error(`Unknown collection: ${collection}. Choose daily, basic, finance, business or home.`);
+  const idsInOrder = group ? group.ids : [...new Set(featured.flatMap(item => item.ids))];
+  return {
+    total: idsInOrder.length,
+    catalogTotal: catalogSize,
+    offset,
+    calculators: idsInOrder.slice(offset, offset + limit).map(id => {
+      const item = all.find(candidate => candidate.id === id);
+      return { ...item, collections: featured.filter(g => g.ids.includes(id)).map(g => g.id) };
+    }),
+    collections: featuredCollections,
+    website: 'https://seventaskcalculator.in/calculator',
+  };
+}
+
 function listCalculators({ query = '', category = '', limit = 20, offset = 0 } = {}) {
   const q = query.toLowerCase().trim();
   const matches = all.filter(item =>
@@ -1301,6 +1335,11 @@ const tools = [
     inputSchema: schema({ query: str(), category: str(), offset: { type: 'integer', minimum: 0, maximum: 1000 }, limit: { type: 'integer', minimum: 1, maximum: 30 } }),
   },
   {
+    name: 'popular_calculators', title: 'Popular and daily-use calculators',
+    description: `Browse featured ${catalogSize}-calculator catalog using daily, basic, finance, business or home collections. All original calculators remain available through list_calculators.`,
+    inputSchema: schema({ collection: { type: 'string', enum: ['daily', 'basic', 'finance', 'business', 'home'] }, offset: { type: 'integer', minimum: 0, maximum: 1000 }, limit: { type: 'integer', minimum: 1, maximum: 30 } }),
+  },
+  {
     name: 'get_calculator', title: 'Get calculator input fields',
     description: 'Look up the field keys, defaults and choices for a calculator ID before calculating.',
     inputSchema: schema({ calculator_id: str(), selections: INPUTS }, ['calculator_id']),
@@ -1330,6 +1369,36 @@ const tools = [
     description: 'Find X percent of a value, and compare X as a percentage of that value.',
     inputSchema: schema({ percent: numSchema(-1e6, 1e6), of_value: numSchema(-1e12, 1e12) }, ['percent', 'of_value']), _meta: TOOL_UI,
   },
+  {
+    name: 'calculate_discount', title: 'Shopping discount and final price',
+    description: 'Calculate savings, discounted price and optional sales tax.',
+    inputSchema: schema({ original_price: numSchema(0, 1e12), discount_percent: numSchema(0, 100), tax_percent: numSchema(0, 100) }, ['original_price', 'discount_percent']), _meta: TOOL_UI,
+  },
+  {
+    name: 'calculate_age', title: 'Age from date of birth',
+    description: 'Calculate age from a YYYY-MM-DD date of birth.',
+    inputSchema: schema({ date_of_birth: str(10) }, ['date_of_birth']), _meta: TOOL_UI,
+  },
+  {
+    name: 'calculate_bmi', title: 'Body mass index (BMI)',
+    description: 'Calculate BMI with weight in kg and height in cm. Not a diagnosis.',
+    inputSchema: schema({ weight_kg: numSchema(0, 1e5, true), height_cm: numSchema(0, 500, true) }, ['weight_kg', 'height_cm']), _meta: TOOL_UI,
+  },
+  {
+    name: 'calculate_profit_margin', title: 'Business profit margin',
+    description: 'Calculate business profit and margin from revenue and costs.',
+    inputSchema: schema({ revenue: numSchema(0, 1e12), cost: numSchema(0, 1e12) }, ['revenue', 'cost']), _meta: TOOL_UI,
+  },
+  {
+    name: 'calculate_fuel_cost', title: 'Travel fuel cost',
+    description: 'Estimate trip fuel cost from distance, mileage and price per litre.',
+    inputSchema: schema({ distance_km: numSchema(0, 1e9), mileage_km_per_litre: numSchema(0, 1e6, true), price_per_litre: numSchema(0, 1e9) }, ['distance_km', 'mileage_km_per_litre', 'price_per_litre']), _meta: TOOL_UI,
+  },
+  {
+    name: 'calculate_average', title: 'Average of two to five numbers',
+    description: 'Calculate the mean of two to five numbers.',
+    inputSchema: schema({ numbers: { type: 'array', minItems: 2, maxItems: 5, items: { type: 'number' } } }, ['numbers']), _meta: TOOL_UI,
+  },
 ];
 const toolByName = new Map(tools.map(tool => [tool.name, tool]));
 const json = data => JSON.stringify(data);
@@ -1353,6 +1422,11 @@ function validateValue(value, spec) {
       const prop = spec.properties?.[key] ?? spec.additionalProperties;
       if (!prop || prop === false || !validateValue(val, prop)) return false;
     }
+  } else if (spec.type === 'array') {
+    if (!Array.isArray(value)) return false;
+    if (spec.minItems !== undefined && value.length < spec.minItems) return false;
+    if (spec.maxItems !== undefined && value.length > spec.maxItems) return false;
+    if (!value.every(item => validateValue(item, spec.items))) return false;
   }
   if (spec.enum && !spec.enum.includes(value)) return false;
   return true;
@@ -1375,6 +1449,10 @@ async function executeTool(name, args = {}) {
       const result = listCalculators(args);
       return { content: [{ type: 'text', text: json(result) }], structuredContent: result };
     }
+    if (name === 'popular_calculators') {
+      const result = listFeaturedCalculators(args);
+      return { content: [{ type: 'text', text: json(result) }], structuredContent: result };
+    }
     if (name === 'get_calculator') {
       const result = getCalculator(args.calculator_id, args.selections ?? {});
       return { content: [{ type: 'text', text: json(result) }], structuredContent: result };
@@ -1388,7 +1466,13 @@ async function executeTool(name, args = {}) {
     } else if (name === 'calculate_emi') result = calculate('emi', { principal: args.loan_amount, rate: args.annual_rate_percent, years: args.tenure_years });
     else if (name === 'calculate_sip') result = calculate('sip', { monthly: args.monthly_investment, returnRate: args.annual_return_percent, years: args.years });
     else if (name === 'calculate_gst') result = calculate('gst', { amount: args.amount, rate: args.gst_rate_percent, type: args.mode });
-    else result = calculate('percentage', { a: args.percent, b: args.of_value });
+    else if (name === 'calculate_percentage') result = calculate('percentage', { a: args.percent, b: args.of_value });
+    else if (name === 'calculate_discount') result = calculate('discount', { price: args.original_price, discount: args.discount_percent, tax: args.tax_percent ?? 0 });
+    else if (name === 'calculate_age') result = calculate('age', { dob: args.date_of_birth });
+    else if (name === 'calculate_bmi') result = calculate('bmi', { weight: args.weight_kg, height: args.height_cm });
+    else if (name === 'calculate_profit_margin') result = calculate('profitmargin', { revenue: args.revenue, cost: args.cost });
+    else if (name === 'calculate_fuel_cost') result = calculate('fuelcost', { distance: args.distance_km, mileage: args.mileage_km_per_litre, price: args.price_per_litre });
+    else result = calculate('average', Object.fromEntries(args.numbers.map((value, i) => [`v${i + 1}`, value])));
     return toolReply(result);
   } catch (error) { return errorResult(error); }
 }
@@ -1404,7 +1488,7 @@ async function mcpMessage(message) {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: {
-        name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.1.0', websiteUrl: 'https://seventaskcalculator.in',
+        name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.2.0', websiteUrl: 'https://seventaskcalculator.in',
         icons: [{ src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png', mimeType: 'image/png', sizes: ['1024x1024'] }],
       },
       instructions: 'Use list_calculators and get_calculator to discover inputs. Use calculate or direct tools. Financial/tax results are estimates.',
@@ -1436,6 +1520,10 @@ export default {
     const pathname = new URL(request.url).pathname;
     if (pathname === '/icon.png' && request.method === 'GET') {
       return new Response(ICON_BYTES, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (pathname === '/support' && request.method === 'GET') {
+      const page = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SevenTask Calculator Support</title></head><body style="font:16px/1.6 system-ui,sans-serif;max-width:680px;margin:64px auto;padding:0 24px"><h1>SevenTask Calculator Support</h1><p>SevenTask Calculator for ChatGPT is provided by Kawkab Tech Labs.</p><p>For help with calculator results, report an issue or request assistance, email <a href="mailto:kawkabtechlabs@gmail.com">kawkabtechlabs@gmail.com</a>.</p><p>Website: <a href="https://seventaskcalculator.in/">seventaskcalculator.in</a></p></body></html>';
+      return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
     }
     if ((pathname === '/' || pathname === '/healthz') && request.method === 'GET') {
       return respondJson({ name: 'SevenTask Calculator MCP', status: 'ok', calculators: catalogSize, categories: categories.length });

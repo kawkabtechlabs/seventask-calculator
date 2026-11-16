@@ -2,18 +2,21 @@
 
 Official MCP plugin by **Kawkab Tech Labs** for [SevenTask Calculator](https://seventaskcalculator.in/).
 
+Public listing name: **STC - SevenTask Calculator**. Users can search the installed plugin by this name; if ChatGPT shows it in the `@` menu for the short query `STC`, select it there. ChatGPT does not currently document independent `@` aliases, so `@STC` is a naming/search convenience, not a guaranteed standalone alias.
+
 This is a separate server for ChatGPT; it does not alter the static website or its Cloudflare Pages deployment.
 
 The portable public plugin package is `plugin.json` + `mcp.json` in this directory; private ChatGPT custom-MCP registration and public directory submission are separate steps.
 
-The listing icon and composer icon use `assets/seventask-icon.png` (1024×1024 PNG). The same icon is served publicly at `/icon.png` and advertised in MCP `initialize.serverInfo.icons`; refresh the registered ChatGPT MCP connection to pick up server metadata changes.
+The listing icon and composer icon use `assets/seventask-icon.png` (1024×1024 PNG). The same icon is served publicly at `/icon.png` and advertised in MCP `initialize.serverInfo.icons`. Existing ChatGPT custom-app listings may not support logo editing, even when server metadata is refreshed; public plugin branding uses the submitted package/dashboard.
 
 ## What it does
 
 - Searches the **original** SevenTask calculator catalog by name/category.
+- Highlights daily essentials, basic maths, finance, business and home/health calculators in five curated collections. The full 136-calculator catalog remains intact.
 - Returns the exact inputs, defaults and choices needed by each calculator.
 - Runs all of the site's synchronous calculators by reading `../calculator-core.js` at startup and evaluating **only the pure calculation catalog**. This avoids copying 136+ formulas into a second codebase.
-- Offers first-class EMI, SIP, GST and percentage tools, plus an all-calculators tool.
+- Offers first-class EMI, SIP, GST, percentage, discount, age, BMI, business margin, fuel cost and average tools, plus both curated and all-calculators browsing.
 - Shows a branded, interactive result card inside ChatGPT. Result editing calls back to the same MCP server.
 - Converts currencies with Frankfurter's daily public reference-rate API, which needs Internet access.
 
@@ -24,7 +27,7 @@ The server is stateless, has no user accounts, stores no inputs, and uses no Ope
 - **MCP URL:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
 - **Health:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/healthz
 - **Worker name:** `seventask-calculator-mcp`
-- **Status:** deployed 2026-11-16; live HTTP initialization, seven tools, EMI call and HTML resource verified.
+- **Status:** v0.2 deployed 2026-11-16 with 14 tools, 5 curated collections, all 136 calculators and the new logo. ChatGPT custom connections may need **Refresh tools** to discover new tool definitions; public listing updates require a ZIP upload/review.
 
 This is a new Worker with its own workers.dev hostname. It does **not** replace or route traffic away from the original Cloudflare Pages site. The Worker is reachable publicly, but ChatGPT private installation and the separate public-plugin review are not yet complete.
 
@@ -48,10 +51,11 @@ To test the MCP endpoint use the official [MCP Inspector](https://github.com/mod
 ### Try it in ChatGPT
 
 1. Open ChatGPT Plugins and add a custom MCP server with `https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp`. **Do not point ChatGPT at the static website**; it does not run this MCP server.
-2. Connect and inspect the seven tool descriptors. No sign-in is required for calculations.
+2. Connect and inspect the tool descriptors. No sign-in is required for calculations.
 3. Install the resulting private plugin and test, for example:
    - `@SevenTask Calculate the EMI on ₹10,00,000 at 9% for 5 years.`
    - `@SevenTask What is the GST-inclusive breakdown for ₹118 at 18%?`
+   - `@SevenTask Show daily-use calculators, then calculate 20% off ₹2,500.`
    - `@SevenTask Find the shop profit margin calculator and calculate a sale of ₹20,000 with ₹15,000 costs.`
 4. Test all relevant calculators before submitting to the public plugin directory.
 

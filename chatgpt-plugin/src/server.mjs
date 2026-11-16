@@ -5,7 +5,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import { z } from 'zod';
-import { calculate, calculateCurrency, catalogSize, categories, getCalculator, listCalculators } from './catalog.mjs';
+import { calculate, calculateCurrency, catalogSize, categories, featuredCollections, getCalculator, listCalculators, listFeaturedCalculators } from './catalog.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const MCP_PATH = '/mcp';
@@ -39,7 +39,7 @@ async function safeCalculation(callback) {
 export function createSevenTaskServer() {
   const server = new McpServer({
     name: 'SevenTask Calculator by Kawkab Tech Labs',
-    version: '0.1.0',
+    version: '0.2.0',
     websiteUrl: 'https://seventaskcalculator.in',
     icons: [{
       src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png',
@@ -68,6 +68,19 @@ export function createSevenTaskServer() {
     },
   }, async args => {
     const result = listCalculators(args);
+    return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result };
+  });
+
+  server.registerTool('popular_calculators', {
+    title: 'Popular and daily-use calculators',
+    description: `Browse featured SevenTask calculators in ${featuredCollections.map(group => `${group.id} (${group.name})`).join(', ')}. Includes everyday maths, shopping, loans, tax, business, home and health. All ${catalogSize} original calculators remain accessible via list_calculators.`,
+    inputSchema: {
+      collection: z.enum(['daily', 'basic', 'finance', 'business', 'home']).optional(),
+      offset: z.number().int().min(0).max(1000).optional(),
+      limit: z.number().int().min(1).max(30).optional(),
+    },
+  }, async args => {
+    const result = listFeaturedCalculators(args);
     return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result };
   });
 
@@ -146,6 +159,56 @@ export function createSevenTaskServer() {
     inputSchema: { percent: z.number().min(-1e6).max(1e6), of_value: z.number().min(-1e12).max(1e12) },
     _meta: toolMeta,
   }, async args => safeCalculation(() => calculate('percentage', { a: args.percent, b: args.of_value })));
+
+  registerAppTool(server, 'calculate_discount', {
+    title: 'Shopping discount and final price',
+    description: 'Calculate savings, discounted selling price and optional tax on an original price.',
+    inputSchema: {
+      original_price: z.number().nonnegative().max(1e12),
+      discount_percent: z.number().min(0).max(100),
+      tax_percent: z.number().min(0).max(100).optional(),
+    },
+    _meta: toolMeta,
+  }, async args => safeCalculation(() => calculate('discount', { price: args.original_price, discount: args.discount_percent, tax: args.tax_percent ?? 0 })));
+
+  registerAppTool(server, 'calculate_age', {
+    title: 'Age from date of birth',
+    description: 'Calculate age from an ISO calendar date of birth (YYYY-MM-DD).',
+    inputSchema: { date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) },
+    _meta: toolMeta,
+  }, async args => safeCalculation(() => calculate('age', { dob: args.date_of_birth })));
+
+  registerAppTool(server, 'calculate_bmi', {
+    title: 'Body mass index (BMI)',
+    description: 'Calculate BMI from weight in kilograms and height in centimetres. General screening metric, not a diagnosis.',
+    inputSchema: { weight_kg: z.number().positive().max(1e5), height_cm: z.number().positive().max(500) },
+    _meta: toolMeta,
+  }, async args => safeCalculation(() => calculate('bmi', { weight: args.weight_kg, height: args.height_cm })));
+
+  registerAppTool(server, 'calculate_profit_margin', {
+    title: 'Business profit margin',
+    description: 'Calculate profit and margin percentage from total revenue and total costs.',
+    inputSchema: { revenue: z.number().nonnegative().max(1e12), cost: z.number().nonnegative().max(1e12) },
+    _meta: toolMeta,
+  }, async args => safeCalculation(() => calculate('profitmargin', args)));
+
+  registerAppTool(server, 'calculate_fuel_cost', {
+    title: 'Travel fuel cost',
+    description: 'Estimate petrol or diesel trip cost from distance, mileage and fuel price per litre.',
+    inputSchema: {
+      distance_km: z.number().nonnegative().max(1e9),
+      mileage_km_per_litre: z.number().positive().max(1e6),
+      price_per_litre: z.number().nonnegative().max(1e9),
+    },
+    _meta: toolMeta,
+  }, async args => safeCalculation(() => calculate('fuelcost', { distance: args.distance_km, mileage: args.mileage_km_per_litre, price: args.price_per_litre })));
+
+  registerAppTool(server, 'calculate_average', {
+    title: 'Average of two to five numbers',
+    description: 'Find the arithmetic mean of two to five provided values.',
+    inputSchema: { numbers: z.array(z.number().finite()).min(2).max(5) },
+    _meta: toolMeta,
+  }, async args => safeCalculation(() => calculate('average', Object.fromEntries(args.numbers.map((value, i) => [`v${i + 1}`, value])))));
 
   return server;
 }

@@ -31,9 +31,15 @@ test('HTTP health, MCP discovery, tool execution and UI resource', async () => {
 
     const tools = await rpc('tools/list');
     const names = tools.result.tools.map(tool => tool.name);
-    for (const required of ['list_calculators', 'get_calculator', 'calculate', 'calculate_emi', 'calculate_sip', 'calculate_gst', 'calculate_percentage']) {
+    for (const required of ['list_calculators', 'popular_calculators', 'get_calculator', 'calculate', 'calculate_emi', 'calculate_sip', 'calculate_gst', 'calculate_percentage', 'calculate_discount', 'calculate_age', 'calculate_bmi', 'calculate_profit_margin', 'calculate_fuel_cost', 'calculate_average']) {
       assert.ok(names.includes(required), `${required} is not registered`);
     }
+
+    const featured = await rpc('tools/call', { name: 'popular_calculators', arguments: { collection: 'basic' } });
+    assert.ok(featured.result.structuredContent.calculators.some(item => item.id === 'fraction'));
+
+    const discount = await rpc('tools/call', { name: 'calculate_discount', arguments: { original_price: 100, discount_percent: 10 } });
+    assert.equal(discount.result.structuredContent.id, 'discount');
 
     const result = await rpc('tools/call', {
       name: 'calculate_emi', arguments: { loan_amount: 1200, annual_rate_percent: 0, tenure_years: 1 },
