@@ -40,6 +40,7 @@ export function createSevenTaskServer() {
   const server = new McpServer({
     name: 'SevenTask Calculator by Kawkab Tech Labs',
     version: '0.1.0',
+    websiteUrl: 'https://seventaskcalculator.in',
   });
 
   registerAppResource(server, 'seventask-results', WIDGET_URI, {}, async () => ({

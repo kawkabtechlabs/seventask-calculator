@@ -1401,7 +1401,7 @@ async function mcpMessage(message) {
     return success(id, {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
-      serverInfo: { name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.1.0' },
+      serverInfo: { name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.1.0', websiteUrl: 'https://seventaskcalculator.in' },
       instructions: 'Use list_calculators and get_calculator to discover inputs. Use calculate or direct tools. Financial/tax results are estimates.',
     });
   }

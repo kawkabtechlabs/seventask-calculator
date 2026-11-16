@@ -22,6 +22,7 @@ test('Cloudflare Worker health, discovery, UI and direct tool call', async () =>
   assert.equal(health.status, 'ok');
   const initialize = await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
   assert.match(initialize.serverInfo.name, /SevenTask/);
+  assert.equal(initialize.serverInfo.websiteUrl, 'https://seventaskcalculator.in');
   const tools = await rpc('tools/list');
   assert.equal(tools.tools.length, 7);
   const result = await rpc('tools/call', {
