@@ -176,7 +176,7 @@ async function mcpMessage(message) {
       capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: {
         name: 'SevenTask Calculator by Kawkab Tech Labs', version: '0.3.0', websiteUrl: 'https://seventaskcalculator.in',
-        icons: [{ src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png', mimeType: 'image/png', sizes: ['1024x1024'] }],
+        icons: [{ src: 'https://mcp.seventaskcalculator.in/icon.png', mimeType: 'image/png', sizes: ['1024x1024'] }],
       },
       instructions: 'Use list_calculators and get_calculator to discover inputs. Use calculate or direct tools. Financial/tax results are estimates.',
     });
