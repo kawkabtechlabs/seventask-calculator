@@ -24,8 +24,8 @@ The server is stateless, has no user accounts, stores no inputs, and uses no Ope
 
 ## Live Cloudflare Worker
 
-- **MCP URL:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
-- **Health:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/healthz
+- **MCP URL:** https://mcp.seventaskcalculator.in/mcp
+- **Health:** https://mcp.seventaskcalculator.in/healthz
 - **Worker name:** `seventask-calculator-mcp`
 - **Status:** v0.3 deployed 2026-11-17 with 14 tools, 5 curated collections, all 136 calculators and the premium compact result card (`ui://seventask-calculator/results-v2.html`). ChatGPT custom connections may need **Refresh tools** and a new chat to discover the updated card; public listing updates require a ZIP upload/review.
 
@@ -50,7 +50,7 @@ To test the MCP endpoint use the official [MCP Inspector](https://github.com/mod
 
 ### Try it in ChatGPT
 
-1. Open ChatGPT Plugins and add a custom MCP server with `https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp`. **Do not point ChatGPT at the static website**; it does not run this MCP server.
+1. Open ChatGPT Plugins and add a custom MCP server with `https://mcp.seventaskcalculator.in/mcp`. **Do not point ChatGPT at the static website**; it does not run this MCP server.
 2. Connect and inspect the tool descriptors. No sign-in is required for calculations.
 3. Install the resulting private plugin and test, for example:
    - `@SevenTask Calculate the EMI on ₹10,00,000 at 9% for 5 years.`
