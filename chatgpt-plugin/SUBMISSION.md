@@ -6,11 +6,11 @@
 
 **Homepage:** https://seventaskcalculator.in/
 
-**Support:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/support
+**Support:** https://mcp.seventaskcalculator.in/support
 
 **Privacy policy:** https://seventaskcalculator.in/privacy-policy
 
-**MCP endpoint:** https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp
+**MCP endpoint:** https://mcp.seventaskcalculator.in/mcp
 
 **Portable plugin manifest:** `chatgpt-plugin/plugin.json`
 
