@@ -44,7 +44,7 @@ export function createSevenTaskServer() {
     version: '0.3.0',
     websiteUrl: 'https://seventaskcalculator.in',
     icons: [{
-      src: 'https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/icon.png',
+      src: 'https://mcp.seventaskcalculator.in/icon.png',
       mimeType: 'image/png',
       sizes: ['1024x1024'],
     }],
