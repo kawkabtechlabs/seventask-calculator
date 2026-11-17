@@ -21,7 +21,7 @@
         "category": "Other",
         "capabilities": ["Everyday calculations", "Basic maths", "Financial estimates", "Business pricing", "Unit conversions"],
         "websiteURL": "https://seventaskcalculator.in/",
-        "supportURL": "https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/support",
+        "supportURL": "https://mcp.seventaskcalculator.in/support",
         "privacyPolicyURL": "https://seventaskcalculator.in/privacy-policy",
         "termsOfServiceURL": "https://seventaskcalculator.in/terms",
         "brandColor": "#16271B",
