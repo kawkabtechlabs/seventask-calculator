@@ -3,7 +3,7 @@
   "mcpServers": {
     "seventask-calculator": {
       "type": "streamable-http",
-      "url": "https://seventask-calculator-mcp.kawkabtechlabs.workers.dev/mcp",
+      "url": "https://mcp.seventaskcalculator.in/mcp",
       "extensions": {
         "com.openai": {
           "auth": { "type": "none" }
