@@ -151,11 +151,15 @@ export async function handleCalculatorAI(request, env, fetchProvider = fetch) {
         headers: { 'Content-Type': 'application/json', ...provider.headers },
         body: JSON.stringify(provider.body(input)),
       });
-      if (!result.ok) continue;
+      if (!result.ok) {
+        console.warn('Calculator AI upstream status:', result.status);
+        continue;
+      }
       const response = validate(JSON.parse(provider.extract(await result.json())), selected);
       if (response) return respond(response);
-    } catch {
-      // Try the next configured provider. Keep upstream payloads and keys private.
+      console.warn('Calculator AI upstream response did not match the calculator schema');
+    } catch (error) {
+      console.warn('Calculator AI upstream request failed:', error?.name || 'Error');
     }
   }
   return respond({ error: 'unavailable' }, 503);
