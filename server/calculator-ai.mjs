@@ -1,4 +1,4 @@
-import catalog from './calculator-tools.json' with { type: 'json' };
+import catalog from './calculator-tools-data.mjs';
 
 const tools = new Map(catalog.map(tool => [tool.id, tool]));
 const maxBody = 4096;
