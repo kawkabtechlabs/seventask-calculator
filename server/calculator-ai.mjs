@@ -50,7 +50,7 @@ function providerList(env) {
     if (/^gemini-[a-z0-9.-]+$/.test(model)) {
       providers.push({
         url: 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
-        headers: { 'x-goog-api-key': env.GEMINI_API_KEY },
+        headers: { 'x-goog-api-key': env.GEMINI_API_KEY.trim() },
         body: input => ({
           systemInstruction: { parts: [{ text: instructions }] },
           contents: [{ role: 'user', parts: [{ text: input }] }],
@@ -145,9 +145,11 @@ export async function handleCalculatorAI(request, env, fetchProvider = fetch) {
   if (!throttle(ip)) return respond({ error: 'limit' }, 429);
   const input = JSON.stringify({ prompt, selected, catalog: catalogFor(prompt, selected) });
   for (const provider of providers) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const result = await fetchProvider(provider.url, {
-        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+        method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', ...provider.headers },
         body: JSON.stringify(provider.body(input)),
       });
@@ -160,6 +162,8 @@ export async function handleCalculatorAI(request, env, fetchProvider = fetch) {
       console.warn('Calculator AI upstream response did not match the calculator schema');
     } catch (error) {
       console.warn('Calculator AI upstream request failed:', error?.name || 'Error');
+    } finally {
+      clearTimeout(timeout);
     }
   }
   return respond({ error: 'unavailable' }, 503);
