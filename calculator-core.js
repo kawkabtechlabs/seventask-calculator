@@ -1251,9 +1251,23 @@
     .mobile-guide-eyebrow{font-size:9px;font-weight:800;letter-spacing:.14em;color:#777b80}
     .mobile-guide-dialog header button{width:38px;height:38px;border:1px solid #d6d7da;border-radius:11px;background:#f7f7f8;color:#111114;font-size:23px;cursor:pointer}
     .mobile-guide-dialog p{margin:12px 0;color:#62666d}
+    .mobile-guide-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}
+    .mobile-guide-tabs button{min-height:40px;padding:8px 10px;border:1px solid #c9cdd3;border-radius:11px;background:transparent;color:inherit;font:650 12px/1.2 "DM Sans",system-ui,sans-serif;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
+    .mobile-guide-tabs button:hover{transform:translateY(-1px);background:#8881}
+    .mobile-guide-tabs button[aria-pressed="true"]{background:#111114;color:#fff;border-color:#111114;box-shadow:0 2px 6px #1113}
+    .win[data-theme="dark"]~.mobile-guide-dialog .mobile-guide-tabs button[aria-pressed="true"]{background:#f4f5f6;color:#111114;border-color:#f4f5f6}
+    .win[data-theme="dark"]~.mobile-guide-dialog .mobile-guide-tabs button{border-color:#606772}
+    @media(prefers-reduced-motion:reduce){.mobile-guide-tabs button{transition:none}.mobile-guide-tabs button:hover{transform:none}}
     .mobile-guide-dialog video{display:block;width:100%;max-height:58dvh;border-radius:13px;background:#111;object-fit:contain}
     .mobile-guide-done{margin-top:14px;width:100%;min-height:44px;border:0;border-radius:12px;background:#111114;color:#fff;font:700 14px "DM Sans",system-ui,sans-serif;cursor:pointer}
     .win.mobile-app-mode .mobile-guide-entry,.win.mobile-app-mode .mobile-feedback-entry{display:block}
+    .mobile-ai-entry{display:none}
+    .win.mobile-app-mode .mobile-ai-entry{display:block;padding:7px 0;border-bottom:1px solid #d0d0d4}
+    .mobile-ai-entry button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:1px solid #c9cdd3;border-radius:12px;background:transparent;color:inherit;text-align:left;font:600 13px/1.25 "DM Sans",system-ui,sans-serif;cursor:pointer}
+    .mobile-ai-copy{display:flex;flex:1;flex-direction:column;gap:3px}.mobile-ai-copy small{color:#777d85;font:400 10px/1.25 "DM Sans",system-ui,sans-serif}
+    .mobile-ai-switch{position:relative;flex:none;width:42px;height:24px;border:1px solid #111114;border-radius:99px;background:#111114;transition:background .18s}
+    .mobile-ai-switch::after{content:"";position:absolute;top:2px;left:20px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:left .18s}
+    .mobile-ai-entry button:hover{background:#8881}.win[data-theme="dark"] .mobile-ai-entry{border-color:#535963}.win[data-theme="dark"] .mobile-ai-entry button{border-color:#606772;color:#f4f5f6}.win[data-theme="dark"] .mobile-ai-copy small{color:#c0c6cd}
     .win.mobile-app-mode .mobile-guide-entry button,.win.mobile-app-mode .mobile-feedback-entry a{font-family:Manrope,"DM Sans",system-ui,sans-serif;font-weight:650}
     .win[data-theme="dark"] .mobile-guide-entry button,.win[data-theme="dark"] .mobile-feedback-entry a{color:#f4f5f6}
     .win[data-theme="dark"] .mobile-guide-entry,.win[data-theme="dark"] .mobile-feedback-entry{border-color:#535963}
@@ -1871,13 +1885,14 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.33</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.45</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
         <div class="infoabout">Everyday answers, all in one place, with 136+ calculators, saved history, and the freedom to duplicate a calculator to run different tools side by side.</div>
       </div>
       <div class="theme-choice"><span class="theme-label">Theme</span><details class="theme-dropdown"><summary aria-label="Choose theme"><span data-theme-label>Monochrome (Default)</span><svg class="shortcut-chevron theme-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="theme-options" role="group" aria-label="Themes"><button type="button" data-theme-option="monochrome">Monochrome (Default)</button><button type="button" data-theme-option="dark">Dark</button><button type="button" data-theme-option="soft">Sage Garden</button><button type="button" data-theme-option="cloud">Lavender Mist</button><button type="button" data-theme-option="blue">Ocean Breeze</button><button type="button" data-theme-option="rose">Rosewood</button><button type="button" data-theme-option="sand">Sandstone</button></div></details></div>
+      <div class="mobile-ai-entry"><button type="button" data-action="open-ai-calculator" aria-label="Open AI Calculator"><span class="mobile-ai-copy"><strong>AI Calculator</strong><small>Open calculator assistant</small></span><span class="mobile-ai-switch" aria-hidden="true"></span></button></div>
       <div class="mobile-guide-entry"><button type="button" data-action="mobile-guide">How to Use <svg class="st-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg></button></div>
       <div class="info-links"><button type="button" data-action="share-app">Share Android app <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6m-7.6 7 7.6 4.6"/></svg></button><button type="button" data-action="check-updates"><span>Download Latest Version</span><svg class="update-icon st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20 6v5.2c0 5-3.2 8.7-8 10.3-4.8-1.6-8-5.3-8-10.3V6l8-3.5Z"/><path d="M9.5 12.2 11.2 14l3.5-4"/></svg></a>
       <div class="infosection shortcut-section">
@@ -1902,8 +1917,12 @@
     <div class="mobile-guide-backdrop" data-mobile-guide hidden></div>
     <section class="mobile-guide-dialog" data-mobile-guide-dialog role="dialog" aria-modal="true" aria-labelledby="mobile-guide-title" hidden>
       <header><div><span class="mobile-guide-eyebrow">SEVENTASK CALCULATOR</span><h2 id="mobile-guide-title">How to Use</h2></div><button type="button" data-action="mobile-guide-close" aria-label="Close guide">×</button></header>
-      <p>Watch the quick guide, then start calculating.</p>
-      <video controls playsinline preload="metadata" aria-label="How to use SevenTask Calculator"><source src="/promo/media/seventask-calculator-how-to-use.mp4" type="video/mp4">Video playback is not supported on this device.</video>
+      <p data-guide-description>Choose a guide, then start calculating.</p>
+      <div class="mobile-guide-tabs" role="group" aria-label="Choose a guide">
+        <button type="button" data-mobile-guide-choice="calculator" aria-pressed="true">Calculator guide</button>
+        <button type="button" data-mobile-guide-choice="ai" aria-pressed="false">AI Calculator guide</button>
+      </div>
+      <video controls playsinline preload="metadata" aria-label="SevenTask Calculator how-to guide" data-guide-video src="/promo/media/seventask-calculator-how-to-use.mp4">Video playback is not supported on this device.</video>
       <button class="mobile-guide-done" type="button" data-action="mobile-guide-close">Start calculating</button>
     </section>
 
@@ -2144,7 +2163,8 @@
       this.render();
       this.renderHistory();
       const standaloneCalculatorRoute=/\/calculator(?:\.html)?\/?$/.test(location.pathname);
-      if((!document.body.classList.contains('web-calculator-page') || roomyDemo || launchParams.has('embed') || launchParams.has('mobile-preview')) && (this.popupMode || roomyDemo || desktopMode || standaloneCalculatorRoute)) this.open();
+      const startOnBubble=launchParams.get('launch')==='bubble';
+      if(!startOnBubble && ((!document.body.classList.contains('web-calculator-page') || roomyDemo || launchParams.has('embed') || launchParams.has('mobile-preview')) && (this.popupMode || roomyDemo || desktopMode || standaloneCalculatorRoute))) this.open();
       // Show onboarding once for an installed PWA. The native Android shell
       // owns its own first-run guide; ordinary web visits open directly.
       if(this.mobileAppMode && !this.nativeAppMode && !this.overlayMode && !this.nativeCopyMode &&
@@ -2354,7 +2374,7 @@
       try { if(localStorage.getItem('stc-mobile-guide-seen') === '1') return; } catch {}
       this.showMobileGuide(false);
     }
-    showMobileGuide(manual=false){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!backdrop||!dialog)return;backdrop.hidden=false;dialog.hidden=false;const video=dialog.querySelector('video');if(manual&&video){video.currentTime=0;const playback=video.play();if(playback&&typeof playback.catch==='function')playback.catch(()=>{});}dialog.dataset.manual=String(manual);}
+    showMobileGuide(manual=false){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!backdrop||!dialog)return;backdrop.hidden=false;dialog.hidden=false;const video=dialog.querySelector('[data-guide-video]'),choice=dialog.dataset.guide||'calculator';if(video){const src=choice==='ai'?'/promo/media/seventask-ai-calculator-how-to-use.webm':'/promo/media/seventask-calculator-how-to-use.mp4';if(!video.src.endsWith(src))video.src=src;if(manual){video.currentTime=0;const playback=video.play();if(playback&&typeof playback.catch==='function')playback.catch(()=>{});}}dialog.dataset.manual=String(manual);}
     closeMobileGuide(){const backdrop=this.shadowRoot.querySelector('[data-mobile-guide]'),dialog=this.shadowRoot.querySelector('[data-mobile-guide-dialog]');if(!dialog)return;dialog.querySelector('video')?.pause();dialog.hidden=true;if(backdrop)backdrop.hidden=true;try{localStorage.setItem('stc-mobile-guide-seen','1')}catch{}}
     toggle(){ this.$win.classList.contains('open') ? this.close() : this.open(); }
 
@@ -2397,6 +2417,22 @@
 
       R.querySelector('[data-mobile-guide]')?.addEventListener('click',()=>this.closeMobileGuide());
       R.querySelector('[data-mobile-guide-dialog]')?.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();this.closeMobileGuide()}});
+      R.addEventListener('click',e=>{
+        const choice=e.target.closest('[data-mobile-guide-choice]');
+        if(!choice)return;
+        const dialog=R.querySelector('[data-mobile-guide-dialog]');
+        const video=dialog?.querySelector('[data-guide-video]');
+        if(!dialog||!video)return;
+        const guide=choice.dataset.mobileGuideChoice;
+        dialog.dataset.guide=guide;
+        dialog.querySelectorAll('[data-mobile-guide-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button===choice)));
+        const description=dialog.querySelector('[data-guide-description]');
+        if(description)description.textContent=guide==='ai'?'Learn AI Calculator prompts, guided values, and result actions.':'Learn the classic calculator keypad, tools, and history.';
+        video.pause();
+        video.src=guide==='ai'?'/promo/media/seventask-ai-calculator-how-to-use.webm':'/promo/media/seventask-calculator-how-to-use.mp4';
+        video.load();
+        if(dialog.dataset.manual==='true')video.play().catch(()=>{});
+      });
       R.addEventListener('contextmenu',e=>{if(e.composedPath().some(node=>node?.classList?.contains('ticon')||node?.classList?.contains('info-brand-mark')||node?.classList?.contains('kawkab-brand-logo'))){e.preventDefault();e.stopPropagation();}});
 
       R.addEventListener('pointerdown', ()=>{ ACTIVE = this; });
@@ -2419,6 +2455,8 @@
       });
 
       R.addEventListener('click', (e)=>{
+        const aiEntry=e.target.closest('[data-action="open-ai-calculator"]');
+        if(aiEntry){e.preventDefault();e.stopPropagation();const target=this.nativeAppMode?'/ai/index.html?workspace=ai&apk-preview=1':'/ai/?workspace=ai';location.assign(target);return;}
         const brandHome=e.target.closest('[data-action="brand-home"]');
         if(brandHome){this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.selectFeature('basic');return;}
         const selectOption=e.target.closest('[data-select-option]');
