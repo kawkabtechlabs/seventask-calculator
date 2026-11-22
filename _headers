@@ -48,3 +48,14 @@ https://:project.pages.dev/*
 
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
+/ai/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/ai/index.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/ai/calculator-core.js
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+/ai/assistant-demo.js
+  Cache-Control: no-cache, must-revalidate, max-age=0
