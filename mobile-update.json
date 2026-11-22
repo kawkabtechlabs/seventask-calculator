@@ -1,10 +1,7 @@
 {
-  "apkUrl": "https://seventaskcalculator.in/downloads/mobile-1.18.45/SevenTask-Calculator-Android-1.18.45.apk?build=42",
-  "versionCode": 42,
-  "versionName": "1.18.45",
-  "apkSizeBytes": 5871969,
-  "apkSha256": "3bae54dfb702b5588a1f75c6c4253b69a0414510451a15c7cca3b4c7679ef875",
-  "aabUrl": "https://seventaskcalculator.in/downloads/mobile-1.18.45/SevenTask-Calculator-Android-1.18.45.aab",
-  "aabSizeBytes": 5738407,
-  "aabSha256": "6aa8f566359de3e78caae6c6ae1addcbce7faf73e11c81125e2048813c8766c0"
+  "apkUrl": "https://github.com/kawkabtechlabs/seventask-android-releases/releases/download/v1.18.52/SevenTask-Calculator-Android-1.18.52.apk",
+  "versionCode": 49,
+  "versionName": "1.18.52",
+  "apkSizeBytes": 6158499,
+  "apkSha256": "fed2ee387f18e1d691c4c49991bf04d6c50a1aef590299e2318853bae1641ed6"
 }
