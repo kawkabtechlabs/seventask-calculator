@@ -96,7 +96,11 @@
   const fieldNames = field => [...new Set([key(field.key),words(field.label.split(/[·(]/)[0]),...(fieldAliases[field.key]||[])])];
   function typed(field,value,values) {
     if(field.type==='number')return numerical(value);
-    if(field.type==='date')return /^\d{4}-\d\d-\d\d$/.test(value)?value:undefined;
+    if(field.type==='date'){
+      if(!/^\d{4}-\d\d-\d\d$/.test(value))return;
+      const date=new Date(value+'T00:00:00Z');
+      return Number.isFinite(date.valueOf())&&date.toISOString().slice(0,10)===value?value:undefined;
+    }
     if(field.type==='time') {
       const m=value.match(/^(\d{1,2}):([0-5]\d)$/);
       return m&&Number(m[1])<24?m[1].padStart(2,'0')+':'+m[2]:undefined;
@@ -104,7 +108,7 @@
     if(['select','pills'].includes(field.type)){
       const normalized=words(value);
       return optionsFor(field,values).find(o=>String(o.value).toLowerCase()===value.toLowerCase()
-        || (normalized&&(words(o.value)===normalized||words(o.label)===normalized)))?.value;
+        || (normalized&&(words(o.value)===normalized||words(o.label)===normalized||(unitAliases[o.value]||[]).includes(normalized))))?.value;
     }
     return value || undefined;
   }
@@ -140,12 +144,12 @@
     }
     return best;
   }
-  function parseFields(tool,source,previous={}){
+  function parseFields(tool,source,previous={},allowPositional=true){
     const supplied={...previous};
     const problems=[];
     const names=[...new Set(tool.fields.flatMap(field=>[field.key,...fieldNames(field)]))];
     if(tool.id==='percentage')names.push('percent','base');
-    const namePattern=names.filter(Boolean).sort((a,b)=>b.length-a.length).map(name=>name.split(' ').join('[ _-]+')).join('|');
+    const namePattern=names.filter(Boolean).sort((a,b)=>b.length-a.length).map(name=>name.split(' ').map(part=>part.replace(/[.*+?^$${}()|[\]\\]/g,'\\$&')).join('[ _-]+')).join('|');
     const unquoted=source.replace(/"[^"]*"/g, segment=>'#'.repeat(segment.length));
     const pairs=namePattern?[...unquoted.matchAll(new RegExp('(?:^|[;,\\s])('+namePattern+')\\s*[:=]\\s*','giu'))]:[];
     let remainder=pairs.length?source.slice(0,pairs[0].index).trim():source;
@@ -207,7 +211,7 @@
         else values[field.key]=value;
       }else pending.push(field);
     }
-    if(!pairs.length){
+    if(!pairs.length&&allowPositional){
       const dates=remainder.match(/\b\d{4}-\d\d-\d\d\b/g)||[];
       const times=remainder.match(/\b\d{1,2}:[0-5]\d\b/g)||[];
       const numbers=[...remainder.replace(/\b\d{4}-\d\d-\d\d\b|\b\d{1,2}:[0-5]\d\b/g,' ').matchAll(new RegExp(number,'gi'))].map(m=>numerical(m[0]));
@@ -239,9 +243,9 @@
     const tools=app.offlineCommandTools(), byId=Object.fromEntries(tools.map(t=>[t.id,t]));
     const mentionName=tool=>tool.name.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     function suggestions(fragment){
-      const prefix=fragment.toLowerCase();
-      return tools.filter(tool=>[tool.id,mentionName(tool),...(aliases[tool.id]||[])].some(name=>name.startsWith(prefix)))
-        .sort((a,b)=>Number(b.id===prefix)-Number(a.id===prefix)).slice(0,7);
+      const prefix=words(fragment);
+      return tools.filter(tool=>[tool.id,tool.name,mentionName(tool),...(aliases[tool.id]||[])].some(name=>words(name).includes(prefix)))
+        .sort((a,b)=>Number(b.id===prefix)-Number(a.id===prefix));
     }
     function readMention(query){
       const match=query.match(/^@([\w-]+)(?=\s|$)/);
@@ -261,6 +265,7 @@
     function parse(query,{standalone=false}={}){
       const mention=readMention(query);
       if(query.startsWith('@')&&!mention?.tool)return {error:'Choose a calculator from the @ menu or type “list tools”.'};
+      if(mention?.body&&['basic','scientific','casio'].includes(mention.tool.id))return parse(mention.body,{standalone:true});
       if(words(query).match(/^(help|list|tools|list tools|show tools|calculators|list calculators|madad|मदद)$/))return {list:list()};
       const source=normalizeCommand(mention?mention.body:query);
       let m=source.match(new RegExp('^(?:convert\\s+)?('+number+')\\s*([\\p{L}°²³µΩ/ ]+?)\\s+(?:to|in|into|mein|me|में)\\s+([\\p{L}°²³µΩ/ ]+?)(?:\\s+(?:at|rate\\s*[:=]?)\\s*('+number+'))?\\s*[?]?$','iu'));
@@ -348,6 +353,91 @@
       }
       return completed(tool,values);
     }
-    return {parse,convert,tools,suggestions,readMention,fromOnline};
+    function guidedFields(tool,values){
+      const effective={...values};
+      app.applyFieldDefaults(tool,effective);
+      const currency=tool.id==='currency'||(tool.id==='unitconverter'&&effective.cat==='Currency');
+      return tool.fields.filter(field=>field.key!=='exchangeRate'||(currency&&effective.from!==effective.to));
+    }
+    function guidedInput(tool,query,values,field){
+      const source=normalizeCommand(query);
+      if(!source)return {};
+      if(field){
+        const defaults={...values};
+        app.applyFieldDefaults(tool,defaults);
+        let raw=['number','date','time'].includes(field.type)?source:query.trim();
+        if(field.type==='number'){
+          const unit=field.label.match(/\(([a-z]+)\)$/i)?.[1];
+          const suffix=unit&&new RegExp('\\s*'+unit+'s?$','i');
+          if(suffix)raw=raw.replace(suffix,'');
+          raw=raw.replace(/\s*₹$/,'').trim();
+          if(field.key==='years'||field.key==='months'){
+            const duration=source.match(/^(.+?)\s*(years?|yrs?|saal|months?|mos?)$/i);
+            if(duration){
+              const amount=numerical(duration[1]);
+              if(amount!==undefined)raw=String(Number(amount)*(/^mo/i.test(duration[2])?(field.key==='years'?1/12:1):(field.key==='months'?12:1)));
+            }
+          }
+        }
+        // Free-form text fields can contain expressions, so preserve their original text.
+        const namedInput=/^[\w -]+\s*=/.test(query);
+        const value=namedInput?undefined:typed(field,raw,defaults);
+        if(value!==undefined)return {[field.key]:value};
+      }
+      if(!Object.keys(values).length&&(Object.hasOwn(byId,tool.id))){
+        const previous=awaiting;
+        try{
+          const parsed=parse('@'+tool.id+' '+query);
+          const structured=/[:=]/.test(source)||new RegExp('^'+number+'(?:\\s*[,;]\\s*'+number+')*$','i').test(source);
+          const commonPattern=
+            (tool.id==='emi'&&/\d\s*%/.test(source)&&/\b(?:years?|yrs?|saal|months?|mos?)\b/i.test(source))||
+            (tool.id==='percentage'&&/\d\s*%\s*(?:of|ka)\s*\d|\d\s*(?:of|ka)\s*\d+\s*%/i.test(source))||
+            (['discount','gst'].includes(tool.id)&&/%/.test(source)&&(source.match(new RegExp(number,'gi'))||[]).length===2)||
+            (tool.id==='bmi'&&/\bkg\b/i.test(source)&&/\b(?:cm|m)\b/i.test(source))||
+            (tool.id==='unitconverter'&&/\b(?:to|in|into|mein|me)\b/i.test(source));
+          if(parsed.tool===tool&&!parsed.problems.length&&(structured||commonPattern))return parsed.values;
+        }finally{awaiting=previous;}
+      }
+      const parsed=parseFields(tool,source,values,false);
+      if(!parsed.problems.length)return Object.fromEntries(Object.entries(parsed.values).filter(([key,value])=>value!==values[key]));
+      return {};
+    }
+    function guidedOnline(tool,reply,values,allowed){
+      if(reply.kind!=='tool'||reply.tool!==tool.id||!Array.isArray(reply.fields))return {};
+      const result={};
+      const effective={...values};
+      for(const field of tool.fields){
+        if(!allowed.includes(field.key))continue;
+        const raw=reply.fields.find(item=>item.key===field.key)?.value;
+        if(typeof raw!=='string')continue;
+        const value=typed(field,raw.trim(),effective);
+        if(value!==undefined)effective[field.key]=result[field.key]=value;
+      }
+      return result;
+    }
+    function programmerResult(query){
+      const bases={hex:16,dec:10,oct:8,bin:2};
+      const convertNumber=token=>{
+        const sign=token.startsWith('-')?-1:1;
+        const value=token.replace(/^[+-]/,'').toLowerCase();
+        const radix={x:16,b:2,o:8}[value.match(/^0([xbo])/)?.[1]]||10;
+        const digits=radix===10?value:value.slice(2);
+        if(!digits||[...digits].some(digit=>!/[0-9a-f]/.test(digit)||parseInt(digit,16)>=radix))return NaN;
+        return sign*parseInt(digits,radix);
+      };
+      const expression=query.trim().replace(/\s+(?:to|in)\s+(?:binary|hex(?:adecimal)?|octal|decimal)$/i,'');
+      const token='([+-]?(?:0[xbo][0-9a-f]+|[0-9]+))';
+      const match=expression.match(new RegExp('^'+token+'(?:\\s*(AND|OR|XOR|[+−×÷*/-])\\s*'+token+')?$','i'));
+      if(!match)return;
+      const left=convertNumber(match[1]);
+      const right=match[3]&&convertNumber(match[3]);
+      const op=match[2]?.toUpperCase();
+      if(!Number.isSafeInteger(left)||(op&&!Number.isSafeInteger(right)))return;
+      if((op==='÷'||op==='/')&&right===0)return;
+      const result=op?app.progOpApply({'-':'−','*':'×','/':'÷'}[op]||op,left,right):left;
+      if(!Number.isSafeInteger(result))return;
+      return Object.entries(bases).map(([name,radix])=>name.toUpperCase()+': '+result.toString(radix).toUpperCase()).join('\n');
+    }
+    return {parse,convert,tools,suggestions,readMention,fromOnline,guidedFields,guidedInput,guidedOnline,optionsFor,programmerResult,reset:()=>{awaiting=null;}};
   };
 })();

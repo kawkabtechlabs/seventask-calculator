@@ -1871,7 +1871,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.32</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.54</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -2822,8 +2822,8 @@
     }
 
     async shareApp(){
-      const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.11/SevenTask-Calculator-Android-1.18.11.apk?build=27';
-      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.11):',url:apkUrl};
+      const apkUrl='https://github.com/kawkabtechlabs/seventask-android-releases/releases/download/v1.18.52/SevenTask-Calculator-Android-1.18.52.apk';
+      const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.52):',url:apkUrl};
       try{
         const nativeApp=window.SevenTaskNative;
         if(typeof nativeApp?.shareApp==='function'){

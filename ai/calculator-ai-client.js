@@ -7,23 +7,39 @@
   window.sevenTaskOnlineCalculator={
     async available(){
       if(!endpoint)return false;
-      try{
-        const result=await fetch(endpoint,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(2500)});
-        return result.ok&&(await result.json()).available===true;
-      }catch{return false;}
+      for(let attempt=0;attempt<2;attempt++){
+        try{
+          const probe=new URL(endpoint);probe.searchParams.set('_health',String(Date.now()));
+          const result=await fetch(probe,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(3500)});
+          if(result.ok&&(await result.json()).available===true)return true;
+        }catch{}
+        if(attempt===0)await new Promise(resolve=>setTimeout(resolve,180));
+      }
+      return false;
     },
-    async ask(prompt,tool){
+    async ask(prompt,tool,{fast=false,requestedFields}={}){
+      if(!endpoint)throw Error('Online calculator unavailable');
       const result=await fetch(endpoint,{
         method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({prompt,tool}),signal:AbortSignal.timeout(13_000),
+        body:JSON.stringify({prompt,tool,fast,requestedFields}),signal:AbortSignal.timeout(18_000),
       });
       if(result.status===429)return {kind:'limit'};
       if(!result.ok)throw Error('Online calculator unavailable');
       return result.json();
     },
+    async askAudio(data,mimeType,{fast=false}={}){
+      if(!endpoint)throw Error('Online calculator unavailable');
+      const result=await fetch(endpoint,{
+        method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({audio:{data,mimeType},fast}),signal:AbortSignal.timeout(25_000),
+      });
+      if(result.status===429)return {kind:'limit'};
+      if(!result.ok)throw Error('Voice request unavailable');
+      return result.json();
+    },
   };
 
-  window.mountCalculatorMentions=({form,input,commands})=>{
+  window.mountCalculatorMentions=({form,input,commands,onPick})=>{
     const list=document.createElement('div');
     list.id='ai-tool-suggestions';
     list.className='ai-tool-suggestions';
@@ -58,17 +74,24 @@
       options[selected].scrollIntoView({block:'nearest'});
     };
     function pick(tool){
-      input.value='@'+tool.id+' '+draft;
+      const body=draft.trim();
       draft='';
+      close();
+      if(onPick){
+        input.value='@'+tool.id+(body?' '+body:'');
+        form.requestSubmit();
+        return;
+      }
+      input.value='@'+tool.id+' '+body;
       input.focus({preventScroll:true});
       input.setSelectionRange(tool.id.length+2,tool.id.length+2);
-      close();
     }
     function refresh(){
-      const prefix=input.value.match(/^@([\w-]*)$/);
+      const prefix=input.value.match(/^@([^@]*)$/);
       matches=prefix?commands.suggestions(prefix[1]):[];
       if(!matches.length){close();return;}
       list.replaceChildren();
+      list.setAttribute('aria-label','Calculators · '+matches.length+' available');
       selected=0;
       for(const [index,tool] of matches.entries()){
         const item=document.createElement('div'),name=document.createElement('span'),key=document.createElement('small');
