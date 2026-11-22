@@ -1894,7 +1894,7 @@
       <div class="theme-choice"><span class="theme-label">Theme</span><details class="theme-dropdown"><summary aria-label="Choose theme"><span data-theme-label>Monochrome (Default)</span><svg class="shortcut-chevron theme-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="theme-options" role="group" aria-label="Themes"><button type="button" data-theme-option="monochrome">Monochrome (Default)</button><button type="button" data-theme-option="dark">Dark</button><button type="button" data-theme-option="soft">Sage Garden</button><button type="button" data-theme-option="cloud">Lavender Mist</button><button type="button" data-theme-option="blue">Ocean Breeze</button><button type="button" data-theme-option="rose">Rosewood</button><button type="button" data-theme-option="sand">Sandstone</button></div></details></div>
       <div class="mobile-ai-entry"><button type="button" data-action="open-ai-calculator" aria-label="Open AI Calculator"><span class="mobile-ai-copy"><strong>AI Calculator</strong><small>Open calculator assistant</small></span><span class="mobile-ai-switch" aria-hidden="true"></span></button></div>
       <div class="mobile-guide-entry"><button type="button" data-action="mobile-guide">How to Use <svg class="st-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg></button></div>
-      <div class="info-links"><button type="button" data-action="share-app">Share Android app <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6m-7.6 7 7.6 4.6"/></svg></button><button type="button" data-action="check-updates"><span>Download Latest Version</span><svg class="update-icon st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20 6v5.2c0 5-3.2 8.7-8 10.3-4.8-1.6-8-5.3-8-10.3V6l8-3.5Z"/><path d="M9.5 12.2 11.2 14l3.5-4"/></svg></a>
+      <div class="info-links"><button type="button" data-action="share-app"><span data-share-app-label>Share Web App</span><svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6m-7.6 7 7.6 4.6"/></svg></button><button type="button" data-action="check-updates"><span>Download Latest Version</span><svg class="update-icon st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg></button><div class="update-status" data-update-status role="status" aria-live="polite" hidden></div><button type="button" data-action="download-app-update" hidden>Download APK update <span aria-hidden="true">↗</span></button><button type="button" data-action="reload-web-update" hidden>Reload to finish update <span aria-hidden="true">↻</span></button><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="if(location.protocol==='file:')this.href='https://seventaskcalculator.in/privacy-policy.html'">Privacy Policy <svg class="st-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20 6v5.2c0 5-3.2 8.7-8 10.3-4.8-1.6-8-5.3-8-10.3V6l8-3.5Z"/><path d="M9.5 12.2 11.2 14l3.5-4"/></svg></a>
       <div class="infosection shortcut-section">
         <button class="shortcut-toggle" data-action="shortcuts-toggle" type="button" aria-expanded="false" aria-controls="shortcut-list">
         <span class="infolabel">Keyboard shortcuts</span>
@@ -2136,6 +2136,12 @@
       const desktopMode=launchParams.has('desktop') || launchParams.has('mobile-preview');
       this.mobileAppMode=launchParams.has('mobile');
       this.nativeAppMode=this.mobileAppMode && launchParams.has('native');
+      const nativeShareMode=Boolean(window.SevenTaskNative?.shareApp||window.SevenTaskNative?.getVersionCode||this.nativeAppMode||window.Capacitor?.isNativePlatform?.());
+      const shareLabel=this.$infoPanel.querySelector('[data-share-app-label]');
+      if(shareLabel)shareLabel.textContent=nativeShareMode?'Share Android app':'Share Web App';
+      const updatesLabel=this.$infoPanel.querySelector('[data-action="check-updates"] span');
+      const visibleVersion=this.$infoPanel.querySelector('.version-number')?.textContent?.trim();
+      if(updatesLabel)updatesLabel.textContent=`Download Latest Version${nativeShareMode?'':visibleVersion?' · '+visibleVersion:''}`;
       this.overlayMode=this.mobileAppMode && launchParams.has('overlay');
       this.nativeCopyMode=this.nativeAppMode && launchParams.has('copy');
       if(this.mobileAppMode)this.$win.classList.add('mobile-app-mode');
@@ -2860,6 +2866,13 @@
     }
 
     async shareApp(){
+      const nativeShareMode=Boolean(window.SevenTaskNative?.shareApp||window.SevenTaskNative?.getVersionCode||this.nativeAppMode||window.Capacitor?.isNativePlatform?.());
+      if(!nativeShareMode){
+        const shareData={title:'SevenTask Calculator',text:'Open SevenTask Calculator on the web — 136+ calculators in one place.',url:'https://seventaskcalculator.in/calculator'};
+        try{if(typeof navigator.share==='function'){await navigator.share(shareData);return}}catch(error){if(error?.name==='AbortError')return}
+        try{await navigator.clipboard.writeText(shareData.url)}catch{}
+        return;
+      }
       const apkUrl='https://seventaskcalculator.in/downloads/mobile-1.18.11/SevenTask-Calculator-Android-1.18.11.apk?build=27';
       const shareData={title:'SevenTask Calculator',text:'Try SevenTask Calculator — 136+ calculators in one app. Download the Android app (version 1.18.11):',url:apkUrl};
       try{
@@ -2885,7 +2898,6 @@
         await navigator.clipboard.writeText(apkUrl);
       }catch{}
     }
-
     async checkForUpdates(){
       const button=this.shadowRoot.querySelector('[data-action="check-updates"]');
       const label=button?.querySelector('span');
@@ -2941,6 +2953,7 @@
           const releaseResponse=await fetch('https://seventaskcalculator.in/release.json',{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(8000)});
           const webRelease=releaseResponse.ok?await releaseResponse.json():null;
           const latestVersion=String(webRelease?.versionName||this.shadowRoot.querySelector('.version-number')?.textContent||'').trim();
+          if(latestVersion){button.dataset.latestVersion=latestVersion;if(label)label.textContent='Download Latest Version · '+latestVersion;}
           const currentVersion=String(this.shadowRoot.querySelector('.version-number')?.textContent||'').trim();
           if(!('serviceWorker'in navigator)){
             status.textContent=`Latest web version: ${latestVersion}. This browser applies updates automatically.`;
@@ -2973,7 +2986,9 @@
         status.textContent=navigator.onLine?'Could not check for updates. Try again shortly.':'Connect to the internet to check for updates.';
       }finally{
         button.disabled=false;
-        if(label)label.textContent='Download Latest Version';
+        const latestLabelVersion=button.dataset.latestVersion||this.shadowRoot.querySelector('.version-number')?.textContent?.trim()||'';
+        const nativeShareMode=Boolean(window.SevenTaskNative?.shareApp||window.SevenTaskNative?.getVersionCode||this.nativeAppMode||window.Capacitor?.isNativePlatform?.());
+        if(label)label.textContent='Download Latest Version'+(nativeShareMode||!latestLabelVersion?'':' · '+latestLabelVersion);
       }
     }
 
