@@ -1262,12 +1262,17 @@
     .mobile-guide-done{margin-top:14px;width:100%;min-height:44px;border:0;border-radius:12px;background:#111114;color:#fff;font:700 14px "DM Sans",system-ui,sans-serif;cursor:pointer}
     .win.mobile-app-mode .mobile-guide-entry,.win.mobile-app-mode .mobile-feedback-entry{display:block}
     .mobile-ai-entry{display:none}
+    .win:not(.mobile-app-mode) .mobile-ai-entry{display:block;padding:7px 0;border-bottom:1px solid #d0d0d4}
     .win.mobile-app-mode .mobile-ai-entry{display:block;padding:7px 0;border-bottom:1px solid #d0d0d4}
     .mobile-ai-entry button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:1px solid #c9cdd3;border-radius:12px;background:transparent;color:inherit;text-align:left;font:600 13px/1.25 "DM Sans",system-ui,sans-serif;cursor:pointer}
     .mobile-ai-copy{display:flex;flex:1;flex-direction:column;gap:3px}.mobile-ai-copy small{color:#777d85;font:400 10px/1.25 "DM Sans",system-ui,sans-serif}
     .mobile-ai-switch{position:relative;flex:none;width:42px;height:24px;border:1px solid #111114;border-radius:99px;background:#111114;transition:background .18s}
     .mobile-ai-switch::after{content:"";position:absolute;top:2px;left:20px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:left .18s}
-    .mobile-ai-entry button:hover{background:#8881}.win[data-theme="dark"] .mobile-ai-entry{border-color:#535963}.win[data-theme="dark"] .mobile-ai-entry button{border-color:#606772;color:#f4f5f6}.win[data-theme="dark"] .mobile-ai-copy small{color:#c0c6cd}
+    .win:not(.mobile-app-mode) .mobile-ai-switch{border-color:#858a91;background:#e5e7e9}
+    .win:not(.mobile-app-mode) .mobile-ai-switch::after{left:2px}
+    .win:not(.mobile-app-mode) .mobile-ai-entry button[aria-checked="true"] .mobile-ai-switch{background:#111114;border-color:#111114}
+    .win:not(.mobile-app-mode) .mobile-ai-entry button[aria-checked="true"] .mobile-ai-switch::after{left:20px}
+    .mobile-ai-entry button:hover{background:#8881}.win[data-theme="dark"] .mobile-ai-entry{border-color:#535963}.win[data-theme="dark"] .mobile-ai-entry button{border-color:#606772;color:#f4f5f6}.win[data-theme="dark"] .mobile-ai-copy small{color:#c0c6cd}.win[data-theme="dark"]:not(.mobile-app-mode) .mobile-ai-switch{border-color:#767e89;background:#424852}.win[data-theme="dark"]:not(.mobile-app-mode) .mobile-ai-entry button[aria-checked="true"] .mobile-ai-switch{background:#f4f5f6;border-color:#f4f5f6}.win[data-theme="dark"]:not(.mobile-app-mode) .mobile-ai-entry button[aria-checked="true"] .mobile-ai-switch::after{background:#111114}
     .win.mobile-app-mode .mobile-guide-entry button,.win.mobile-app-mode .mobile-feedback-entry a{font-family:Manrope,"DM Sans",system-ui,sans-serif;font-weight:650}
     .win[data-theme="dark"] .mobile-guide-entry button,.win[data-theme="dark"] .mobile-feedback-entry a{color:#f4f5f6}
     .win[data-theme="dark"] .mobile-guide-entry,.win[data-theme="dark"] .mobile-feedback-entry{border-color:#535963}
@@ -2136,6 +2141,7 @@
       const desktopMode=launchParams.has('desktop') || launchParams.has('mobile-preview');
       this.mobileAppMode=launchParams.has('mobile');
       this.nativeAppMode=this.mobileAppMode && launchParams.has('native');
+      if(!this.nativeAppMode){const aiToggle=this.$infoPanel.querySelector('[data-action="open-ai-calculator"]');aiToggle?.setAttribute('role','switch');aiToggle?.setAttribute('aria-checked','false');aiToggle?.setAttribute('aria-label','AI Calculator, off');const aiState=aiToggle?.querySelector('.mobile-ai-copy small');if(aiState)aiState.textContent='Off · Tap to launch';}
       const nativeShareMode=Boolean(window.SevenTaskNative?.shareApp||window.SevenTaskNative?.getVersionCode||this.nativeAppMode||window.Capacitor?.isNativePlatform?.());
       const shareLabel=this.$infoPanel.querySelector('[data-share-app-label]');
       if(shareLabel)shareLabel.textContent=nativeShareMode?'Share Android app':'Share Web App';
@@ -2462,7 +2468,7 @@
 
       R.addEventListener('click', (e)=>{
         const aiEntry=e.target.closest('[data-action="open-ai-calculator"]');
-        if(aiEntry){e.preventDefault();e.stopPropagation();const target=this.nativeAppMode?'/ai/index.html?workspace=ai&apk-preview=1':'/ai/?workspace=ai';location.assign(target);return;}
+        if(aiEntry){e.preventDefault();e.stopPropagation();if(this.nativeAppMode){location.assign('/ai/index.html?workspace=ai&apk-preview=1');return;}aiEntry.setAttribute('aria-checked','true');aiEntry.setAttribute('aria-label','AI Calculator, on');const state=aiEntry.querySelector('.mobile-ai-copy small');if(state)state.textContent='On · Opening AI Calculator';window.addEventListener('pagehide',()=>{aiEntry.setAttribute('aria-checked','false');aiEntry.setAttribute('aria-label','AI Calculator, off');if(state)state.textContent='Off · Tap to launch';},{once:true});location.assign('/ai/?workspace=ai');return;}
         const brandHome=e.target.closest('[data-action="brand-home"]');
         if(brandHome){this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.selectFeature('basic');return;}
         const selectOption=e.target.closest('[data-select-option]');
