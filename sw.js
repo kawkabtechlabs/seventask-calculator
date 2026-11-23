@@ -1,5 +1,5 @@
-const CACHE = "seventask-calculator-shell-1.18.62";
-const CORE = ["./", "./calculator", "./calculator-core.js?v=web-ai-google-speech-1.18.62", "./mobile-settings.js?v=web-ai-google-speech-1.18.62", "./ai/web-mode.js?v=web-ai-google-speech-1.18.62", "./ai/offline-commands.js?v=web-ai-google-speech-1.18.62", "./ai/offline-voice.js?v=web-ai-google-speech-1.18.62", "./ai/calculator-ai-client.js?v=web-ai-google-speech-1.18.62", "./ai/assistant-demo.js?v=web-ai-google-speech-1.18.62", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
+const CACHE = "seventask-calculator-shell-1.18.63";
+const CORE = ["./", "./calculator", "./calculator-core.js?v=web-ai-mic-style-1.18.63", "./mobile-settings.js?v=web-ai-mic-style-1.18.63", "./ai/web-mode.js?v=web-ai-mic-style-1.18.63", "./ai/offline-commands.js?v=web-ai-mic-style-1.18.63", "./ai/offline-voice.js?v=web-ai-mic-style-1.18.63", "./ai/calculator-ai-client.js?v=web-ai-mic-style-1.18.63", "./ai/assistant-demo.js?v=web-ai-mic-style-1.18.63", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
 const SHELL_PREFIX = "seventask-calculator-shell-";
 
 self.addEventListener("install", event => {
