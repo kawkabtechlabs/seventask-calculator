@@ -268,7 +268,8 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       session.start();
       setVoiceState('listening', 'Listening', 'Listening… tap the mic to send, or say “show the answer” when finished');
       setStatus('Listening… tap the mic to send, or say “show the answer” when you’re done.');
-      startCompletionWatcher();
+      // Keep one owner of the microphone stream. Starting Web Speech as a
+      // second listener beside MediaRecorder can steal or mute the recording.
       timer = 0;
     } catch (error) {
       stopTracks();

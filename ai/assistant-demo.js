@@ -687,6 +687,11 @@ function showAI(){
   shell.hidden=false;
   toggle.setAttribute('aria-checked','true');
   setting.querySelector('.ai-setting-status').textContent='On · Chat visible';
+  const aiEntry=root.querySelector('[data-action="open-ai-calculator"]');
+  aiEntry?.setAttribute('aria-checked','true');
+  aiEntry?.setAttribute('aria-label','AI Calculator, on');
+  const aiEntryState=aiEntry?.querySelector('.mobile-ai-copy small');
+  if(aiEntryState)aiEntryState.textContent='On · AI Calculator open';
   document.body.classList.add('ai-workspace-open');
   actions.querySelector('.power-button').focus({preventScroll:true});
 }
@@ -711,6 +716,11 @@ function finishShowCalculator(){
   shell.classList.remove('is-closing');
   toggle.setAttribute('aria-checked','false');
   setting.querySelector('.ai-setting-status').textContent='Off · Chat hidden';
+  const aiEntry=root.querySelector('[data-action="open-ai-calculator"]');
+  aiEntry?.setAttribute('aria-checked','false');
+  aiEntry?.setAttribute('aria-label','AI Calculator, off');
+  const aiEntryState=aiEntry?.querySelector('.mobile-ai-copy small');
+  if(aiEntryState)aiEntryState.textContent='Off · Tap to launch';
   document.body.classList.remove('ai-workspace-open');
   win.classList.remove('ai-view-hidden');
   win.inert=false;
@@ -721,6 +731,9 @@ function finishShowCalculator(){
     if(infoPanel)infoPanel.scrollTop=previousCalculatorMenu.scrollTop;
   }else win.querySelector('.dotmenu')?.focus({preventScroll:true});
   previousCalculatorMenu=null;
+}
+if(!nativeAI&&!mobileLayout){
+  window.SevenTaskWebAI={open:showAI,close:showCalculator,isOpen:()=>!shell.hidden};
 }
 if(mobileLayout){
   const settingKey='st-ai-demo-mobile';

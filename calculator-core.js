@@ -2468,7 +2468,15 @@
 
       R.addEventListener('click', (e)=>{
         const aiEntry=e.target.closest('[data-action="open-ai-calculator"]');
-        if(aiEntry){e.preventDefault();e.stopPropagation();if(this.nativeAppMode){location.assign('/ai/index.html?workspace=ai&apk-preview=1');return;}aiEntry.setAttribute('aria-checked','true');aiEntry.setAttribute('aria-label','AI Calculator, on');const state=aiEntry.querySelector('.mobile-ai-copy small');if(state)state.textContent='On · Opening AI Calculator';window.addEventListener('pagehide',()=>{aiEntry.setAttribute('aria-checked','false');aiEntry.setAttribute('aria-label','AI Calculator, off');if(state)state.textContent='Off · Tap to launch';},{once:true});location.assign('/ai/?workspace=ai&mobile=1');return;}
+        if(aiEntry){
+          e.preventDefault();e.stopPropagation();
+          if(this.nativeAppMode){location.assign('/ai/index.html?workspace=ai&apk-preview=1');return;}
+          const bridge=window.SevenTaskWebAI;
+          if(bridge?.open){bridge.open();return;}
+          const url=new URL(location.href);
+          url.searchParams.set('workspace','ai');url.searchParams.delete('mobile');
+          location.assign(url.href);return;
+        }
         const brandHome=e.target.closest('[data-action="brand-home"]');
         if(brandHome){this.closeAppSelect();this.closeModeMenu();this.closeHistoryPanel();this.closeInfoPanel();this.selectFeature('basic');return;}
         const selectOption=e.target.closest('[data-select-option]');
