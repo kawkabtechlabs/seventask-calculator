@@ -725,11 +725,10 @@ function finishShowCalculator(){
   win.classList.remove('ai-view-hidden');
   win.inert=false;
   if(!win.classList.contains('open'))app.open();
-  if(previousCalculatorMenu?.open){
-    app.openInfoPanel();
-    const infoPanel=win.querySelector('[data-infopanel]');
-    if(infoPanel)infoPanel.scrollTop=previousCalculatorMenu.scrollTop;
-  }else win.querySelector('.dotmenu')?.focus({preventScroll:true});
+  win.querySelector('[data-infopanel]')?.classList.remove('open');
+  win.querySelector('[data-infobackdrop]')?.classList.remove('open');
+  win.querySelector('.dotmenu')?.setAttribute('aria-expanded','false');
+  win.querySelector('.dotmenu')?.focus({preventScroll:true});
   previousCalculatorMenu=null;
 }
 if(!nativeAI&&!mobileLayout){
