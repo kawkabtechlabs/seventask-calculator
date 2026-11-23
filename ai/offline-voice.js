@@ -155,8 +155,8 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
           else interimText = phrase;
         }
         if (finalText) heard = `${heard} ${finalText}`.trim();
-        else if (!heard && interimText) heard = interimText;
-        if (heard) setStatus(heard);
+        const preview = `${heard} ${interimText}`.trim();
+        if (preview) setStatus(preview);
       };
       engine.onspeechend = () => setStatus(heard || 'Listening… tap the mic when you’re done.');
       engine.onerror = event => {
@@ -289,6 +289,11 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       window.SevenTaskNative.startAiVoiceInput();
       return;
     }
+    // Prefer the browser's installed speech service (Google Speech in Chrome
+    // on Android) while keeping the listening UI and theme inside SevenTask.
+    // MediaRecorder remains the fallback for browsers without Web Speech API.
+    if (recognition) { try { recognition.stop(); } catch {} return; }
+    if (startSpeechRecognition()) return;
     if (recorder?.state === 'recording') finishRecording();
     else void startRecording();
   };
