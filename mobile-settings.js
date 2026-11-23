@@ -86,7 +86,9 @@
     applyDropdownSize(dropdownSize);
     alignment.addEventListener('input',()=>{dropdownSize=sizes[Number(alignment.value)]||'large';applyDropdownSize(dropdownSize);try{localStorage.setItem('stc-dropdown-size',dropdownSize)}catch{}});
     const theme=panel.querySelector('.theme-choice');
-    if(theme)theme.after(section); else panel.appendChild(section);
+    // Keep settings beside the AI entry in the compact calculator menu.
+    const menuAnchor=panel.querySelector('.mobile-guide-entry')||panel.querySelector('.info-links')||panel.querySelector('.infomade');
+    if(menuAnchor)menuAnchor.before(section); else if(theme)theme.after(section); else panel.appendChild(section);
     if(theme)section.querySelector('.st-settings-body').prepend(theme);
     panel.querySelector('.shortcut-section')?.remove();
     section.querySelector('.st-settings-toggle').addEventListener('click',event=>{
