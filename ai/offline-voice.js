@@ -277,9 +277,18 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       session.start();
       setVoiceState('listening', 'Listening', 'Listening… tap the mic to send, or say “show the answer” when finished');
       setStatus('Listening… tap the mic to send, or say “show the answer” when you’re done.');
-      // Keep one owner of the microphone stream. Starting Web Speech as a
-      // second listener beside MediaRecorder can steal or mute the recording.
-      timer = 0;
+      // Send the original audio to Gemini so its multilingual audio model,
+      // not the browser's language-limited transcript, interprets the request.
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      const startedAt=Date.now();let lastVoiceAt=startedAt;let heardVoice=false;
+      if(AudioContextClass){
+        audioContext=new AudioContextClass();
+        const analyser=audioContext.createAnalyser();analyser.fftSize=512;
+        audioContext.createMediaStreamSource(stream).connect(analyser);
+        const samples=new Uint8Array(analyser.fftSize);
+        silenceTimer=window.setInterval(()=>{if(recorder!==session||session.state!=='recording')return;analyser.getByteTimeDomainData(samples);let energy=0;for(const sample of samples){const value=(sample-128)/128;energy+=value*value;}const rms=Math.sqrt(energy/samples.length);if(rms>0.025){heardVoice=true;lastVoiceAt=Date.now();}if((heardVoice?Date.now()-lastVoiceAt>22000:Date.now()-startedAt>25000)||Date.now()-startedAt>90000){setStatus('Sending your voice question…');finishRecording();}},180);
+      }else timer=window.setTimeout(()=>finishRecording(),25000);
+      setStatus('Listening… pause when you’re done.');
     } catch (error) {
       stopTracks();
       setVoiceState(error?.name === 'NotAllowedError'?'muted':'error', error?.name === 'NotAllowedError' ? 'Microphone permission required' : 'Voice recording unavailable');
@@ -298,11 +307,9 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       window.SevenTaskNative.startAiVoiceInput();
       return;
     }
-    // Prefer the browser's installed speech service (Google Speech in Chrome
-    // on Android) while keeping the listening UI and theme inside SevenTask.
-    // MediaRecorder remains the fallback for browsers without Web Speech API.
-    if (recognition) { try { recognition.stop(); } catch {} return; }
-    if (startSpeechRecognition()) return;
+    // Keep the mic open as audio and let Gemini handle transcription and
+    // multilingual understanding. A second speech recognizer can steal mic
+    // focus and bypass the configured Gemini audio route.
     if (recorder?.state === 'recording') finishRecording();
     else void startRecording();
   };
@@ -316,3 +323,4 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
   });
   return () => { stopCompletionWatcher(); finishRecording(true); stopTracks(); };
 };
+
