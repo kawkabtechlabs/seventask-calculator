@@ -10,17 +10,14 @@ const css=document.createElement('style');css.textContent=`.ai-dock{position:abs
 `;root.append(css);
 const dock=document.createElement('section');dock.className='ai-dock';dock.innerHTML=`<button class="ai-head" type="button" aria-expanded="true"><span class="ai-badge"><img src="icon.svg" alt=""></span><span class="ai-label">SevenTask AI <small>Offline commands</small></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="ai-content"><div class="ai-chat" aria-live="polite"><p><b>SevenTask AI</b><br>Ask me a calculation. Try “18% of 2500” or “22 + 22”.</p></div><form class="ai-form"><input aria-label="Ask SevenTask AI" placeholder="Ask or enter a calculation…"><button type="button" class="camera" aria-label="Use camera" title="Use camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.2"/></svg></button><button type="button" class="voice" aria-label="Voice command" title="Voice command"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-3 0h6"/></svg></button><button type="submit" class="send">Ask <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button></form><div class="ai-tools"><button type="button" class="attach"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 11-8 8a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7.5-7.5"/></svg> Attach</button><button type="button" class="draw"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4ZM13 7l4 4M3 21h18"/></svg> Draw</button><span class="state" style="font-size:10px;color:#777;align-self:center">Local demo · AI not connected</span></div><input class="file" type="file" accept="image/*" hidden><input class="photo" type="file" accept="image/*" capture="environment" hidden></div>`;
 const shell=document.createElement('section');
-const launchParams=new URLSearchParams(location.search);
-const requestedWorkspace=launchParams.get('workspace');
 const mobileLayout=document.documentElement.dataset.aiLayout==='mobile';
-const nativeAI=Boolean(window.SevenTaskNative)||launchParams.has('apk-preview');
-const standaloneWebAI=!nativeAI&&requestedWorkspace==='ai';
+const nativeAI=Boolean(window.SevenTaskNative)||new URLSearchParams(location.search).has('apk-preview');
 shell.className='ai-shell';
-if(nativeAI||standaloneWebAI)shell.classList.add('native-fullscreen');
+if(nativeAI)shell.classList.add('native-fullscreen');
 shell.hidden=true;
 shell.setAttribute('aria-label','SevenTask AI Calculator');
-if(!mobileLayout||standaloneWebAI)root.append(shell);
-const assistantFrame=mobileLayout&&!standaloneWebAI?win:shell;
+if(!mobileLayout)root.append(shell);
+const assistantFrame=mobileLayout?win:shell;
 assistantFrame.append(dock);
 const shellStyle=document.createElement('style');
 shellStyle.textContent=''+`
@@ -729,7 +726,7 @@ if(mobileLayout){
   const settingKey='st-ai-demo-mobile';
   // The native app opens this bundled page only after the user enables AI.
   // Start its chat dock visible in APK launches; keep the browser preview opt-in.
-  let enabled=nativeAI||standaloneWebAI||localStorage.getItem(settingKey)==='on';
+  let enabled=nativeAI||localStorage.getItem(settingKey)==='on';
   function syncSetting(){
     toggle.setAttribute('aria-checked',String(enabled));
     toggle.title=enabled?'Turn AI Calculator off':'Turn AI Calculator on';
@@ -781,11 +778,11 @@ if(mobileLayout){
   document.querySelector('.web-page-footer-ai')?.addEventListener('click',showAI);
   actions.querySelector('.back-button').remove();
   actions.querySelector('.power-button').onclick=showCalculator;
+  const requestedWorkspace=new URLSearchParams(location.search).get('workspace');
   if(requestedWorkspace==='ai')showAI();
   else if(requestedWorkspace==='calculator')app.open();
   else if(nativeAI)showAI();
 }
-if(standaloneWebAI&&mobileLayout)showAI();
 shell.addEventListener('keydown',event=>{
   if(event.key==='Escape'){
     event.preventDefault();
@@ -1040,7 +1037,7 @@ window.addEventListener('offline',refreshOnline);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshOnline();});
 setInterval(()=>{if(!document.hidden&&navigator.onLine)void refreshOnline();},30000);
 window.mountCalculatorMentions?.({form,input,commands,onPick:!mobileLayout});
-const dockState=dock.querySelector('.state');dockState.textContent='Instant calculations · AI for calculator questions';const dockVersion=document.createElement('span');dockVersion.className='ai-dock-version';const appVersion=String(window.SevenTaskNative?.getVersionName?.()||document.documentElement.dataset.webVersion||'1.18.55');dockVersion.innerHTML='<span>TOUHID</span> <b>'+appVersion+'</b>';dockVersion.setAttribute('aria-label','TOUHID version '+appVersion);dockState.insertAdjacentElement('afterend',dockVersion);const dockVersionStyle=document.createElement('style');dockVersionStyle.textContent=`.ai-dock-version{display:inline-flex;align-items:baseline;gap:3px;flex:none;margin-left:auto!important;color:var(--ai-muted,#71767e);white-space:nowrap;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}.ai-dock-version span{font:400 8px/1 'Fjalla One','DM Sans',sans-serif;letter-spacing:.09em}.ai-dock-version b{color:var(--ui-text,#111114);font:650 9px/1 Manrope,'DM Sans',system-ui,sans-serif;letter-spacing:-.015em}:is(.win,.ai-shell)[data-theme=dark] .ai-dock-version b{color:#f3f4f6}@media(max-width:540px){.ai-dock-version{margin-left:auto!important}.ai-dock-version span{font-size:7px}.ai-dock-version b{font-size:8px}}`;root.append(dockVersionStyle);
+const dockState=dock.querySelector('.state');dockState.textContent='Instant calculations · AI for calculator questions';const dockVersion=document.createElement('span');dockVersion.className='ai-dock-version';const appVersion=String(window.SevenTaskNative?.getVersionName?.()||document.documentElement.dataset.webVersion||'1.18.40');dockVersion.innerHTML='<span>TOUHID</span> <b>'+appVersion+'</b>';dockVersion.setAttribute('aria-label','TOUHID version '+appVersion);dockState.insertAdjacentElement('afterend',dockVersion);const dockVersionStyle=document.createElement('style');dockVersionStyle.textContent=`.ai-dock-version{display:inline-flex;align-items:baseline;gap:3px;flex:none;margin-left:auto!important;color:var(--ai-muted,#71767e);white-space:nowrap;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}.ai-dock-version span{font:400 8px/1 'Fjalla One','DM Sans',sans-serif;letter-spacing:.09em}.ai-dock-version b{color:var(--ui-text,#111114);font:650 9px/1 Manrope,'DM Sans',system-ui,sans-serif;letter-spacing:-.015em}:is(.win,.ai-shell)[data-theme=dark] .ai-dock-version b{color:#f3f4f6}@media(max-width:540px){.ai-dock-version{margin-left:auto!important}.ai-dock-version span{font-size:7px}.ai-dock-version b{font-size:8px}}`;root.append(dockVersionStyle);
 const intro=chat.querySelector('p');
 intro.replaceChildren();
 const introHeading=document.createElement('b');
