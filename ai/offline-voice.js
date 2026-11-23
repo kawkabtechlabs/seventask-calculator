@@ -53,6 +53,12 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
   trigger.title = 'Ask by voice';
   trigger.setAttribute('aria-pressed', 'false');
   trigger.dataset.voiceState = 'idle';
+  if (!trigger.querySelector('[data-voice-bars]')) {
+    const bars=document.createElement('span');bars.className='voice-level-bars';bars.dataset.voiceBars='';bars.setAttribute('aria-hidden','true');
+    bars.innerHTML='<i></i><i></i><i></i><i></i><i></i>';trigger.append(bars);
+  }
+  const barsStyle=document.createElement('style');
+  barsStyle.textContent='.ai-dock .voice .voice-level-bars{position:absolute;left:50%;bottom:-5px;z-index:4;display:flex;align-items:center;gap:2px;height:9px;transform:translateX(-50%);pointer-events:none}.ai-dock .voice .voice-level-bars i{display:block;width:2px;height:2px;border-radius:2px;background:currentColor;opacity:.25;transform-origin:center;transition:opacity .15s}.ai-dock .voice[data-voice-state=listening] .voice-level-bars i{opacity:1;animation:stc-voice-bar .58s ease-in-out infinite alternate}.ai-dock .voice[data-voice-state=listening] .voice-level-bars i:nth-child(2){animation-delay:-.34s}.ai-dock .voice[data-voice-state=listening] .voice-level-bars i:nth-child(3){animation-delay:-.12s}.ai-dock .voice[data-voice-state=listening] .voice-level-bars i:nth-child(4){animation-delay:-.43s}.ai-dock .voice[data-voice-state=listening] .voice-level-bars i:nth-child(5){animation-delay:-.23s}@keyframes stc-voice-bar{to{height:8px}}@media(prefers-reduced-motion:reduce){.ai-dock .voice .voice-level-bars i{animation:none!important}}';dock.getRootNode().append(barsStyle);
   let recorder = null;
   let stream = null;
   let timer = 0;
@@ -113,6 +119,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition || busy) return false;
     let heard = '';
+    let interimHeard = '';
     let submitted = false;
     let endTimer = 0;
     const finish = text => {
@@ -154,11 +161,12 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
           if (event.results[index].isFinal) finalText += (finalText ? ' ' : '') + phrase;
           else interimText = phrase;
         }
+        if(interimText)interimHeard=interimText;
         if (finalText) heard = `${heard} ${finalText}`.trim();
         const preview = `${heard} ${interimText}`.trim();
         if (preview) setStatus(preview);
       };
-      engine.onspeechend = () => setStatus(heard || 'Listening… tap the mic when you’re done.');
+      engine.onspeechend = () => { setStatus(heard||interimHeard||'Listening…');window.clearTimeout(endTimer);endTimer=window.setTimeout(()=>finish(heard||interimHeard),700); };
       engine.onerror = event => {
         if (submitted) return;
         submitted = true;
@@ -166,11 +174,12 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         recognition = null;
         busy = false;
         const denied = event.error === 'not-allowed' || event.error === 'service-not-allowed';
-        setVoiceState(denied ? 'muted' : 'error', denied ? 'Microphone permission required' : 'Voice recognition unavailable');
-        setStatus(denied ? 'Allow microphone access to ask by voice.' : 'Voice recognition stopped. Tap the microphone to try again.');
+        setVoiceState(denied ? 'muted' : 'processing', denied ? 'Microphone permission required' : 'Switching voice input');
+        if(denied)setStatus('Allow microphone access to ask by voice.');
+        else {setStatus('Switching voice input…');void startRecording();}
       };
       engine.onend = () => {
-        if (!submitted && heard) finish(heard);
+        if (!submitted && (heard||interimHeard)) finish(heard||interimHeard);
         else if (recognition === engine) { recognition = null; busy = false; setVoiceState('idle', 'Ask by voice'); }
       };
       setVoiceState('listening', 'Listening', 'Listening… tap the mic to finish');
