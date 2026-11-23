@@ -1,5 +1,5 @@
 const CACHE = "seventask-calculator-shell-1.18.58";
-const CORE = ["./", "./calculator", "./calculator-core.js?v=web-ai-click-fix-1.18.57", "./mobile-settings.js", "./ai/web-mode.js?v=web-ai-click-fix-1.18.57", "./ai/offline-commands.js?v=web-ai-click-fix-1.18.57", "./ai/offline-voice.js?v=web-ai-click-fix-1.18.57", "./ai/calculator-ai-client.js?v=web-ai-click-fix-1.18.57", "./ai/assistant-demo.js?v=web-ai-click-fix-1.18.57", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
+const CORE = ["./", "./calculator", "./calculator-core.js?v=web-ai-click-fix-1.18.58", "./mobile-settings.js", "./ai/web-mode.js?v=web-ai-click-fix-1.18.58", "./ai/offline-commands.js?v=web-ai-click-fix-1.18.58", "./ai/offline-voice.js?v=web-ai-click-fix-1.18.58", "./ai/calculator-ai-client.js?v=web-ai-click-fix-1.18.58", "./ai/assistant-demo.js?v=web-ai-click-fix-1.18.58", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
 const SHELL_PREFIX = "seventask-calculator-shell-";
 
 self.addEventListener("install", event => {
