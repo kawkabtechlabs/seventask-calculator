@@ -3225,6 +3225,50 @@
 
     // ---------- dynamic form ----------
     activeCalc(){ return CALC_MAP[this.feature]; }
+    // Keep the web AI assistant's calculator adapter aligned with the
+    // standalone AI calculator so a missing API cannot abort UI setup.
+    offlineCommandTools(){
+      return [
+        ...Object.entries(SPECIAL_LABELS).map(([id,name])=>({id,name,fields:[]})),
+        ...Object.values(CALC_MAP)
+      ];
+    }
+    offlineExpression(expression){ return evalCustomFormula(expression,{}); }
+    applyFieldDefaults(def,values){
+      def.fields.forEach(field=>{
+        if(values[field.key]===undefined){
+          const fallback=typeof field.default==='function'?field.default(values):field.default;
+          values[field.key]=fallback??'';
+        }
+        if(field.type==='select'){
+          const options=typeof field.options==='function'?field.options(values):field.options;
+          const valueOf=option=>(option&&option.value!==undefined)?option.value:option;
+          if(!options.some(option=>String(valueOf(option))===String(values[field.key]))){
+            let fallback=typeof field.default==='function'?field.default(values):field.default;
+            if(!options.some(option=>String(valueOf(option))===String(fallback)))fallback=valueOf(options[0]??'');
+            values[field.key]=fallback;
+          }
+        }
+      });
+      return values;
+    }
+    calculateOfflineTool(id,inputs){
+      const tool=CALC_MAP[id];
+      if(!tool)return [];
+      const values={...inputs};
+      this.applyFieldDefaults(tool,values);
+      if(id==='currency'||(id==='unitconverter'&&values.cat==='Currency'))return this.offlineCurrencyRows(values);
+      return tool.compute(values)||[];
+    }
+    offlineCurrencyRows(values){
+      const {from,to}=values,amount=Number(values.value);
+      if(!values.value||!Number.isFinite(amount))return [{label:'Currency conversion',value:'Enter an amount'}];
+      const rate=from===to?1:Number(values.exchangeRate);
+      if(!Number.isFinite(rate)||rate<=0)return [{label:'Exchange rate',value:'Enter a positive exchange rate'}];
+      const converted=amount*rate;
+      const formatted=new Intl.NumberFormat('en-IN',{style:'currency',currency:to,maximumFractionDigits:6}).format(converted);
+      return [{label:`${fmtMeasure(amount)} ${from} converts to`,value:formatted,emphasis:true},{label:'Rate used',value:`1 ${from} = ${fmtMeasure(rate)} ${to}`}];
+    }
 
     renderField(f){
       const val = this.formValues[f.key];
