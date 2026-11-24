@@ -1152,7 +1152,7 @@ async function offerOnline(note,query,generation=screenGeneration){
     void refreshOnline();
   }
 }
-function runCommand(query){
+function runCommand(query,forceOnline=false){
   if(!query)return;
   message(query,'you');
   const maxLength=query.startsWith('@')?2400:600;
@@ -1180,7 +1180,7 @@ function runCommand(query){
     const directTool=commands.readMention(query)?.tool||commands.tools.find(tool=>tool.name.toLowerCase()===query.toLowerCase()||tool.id===query.toLowerCase());
     const calculatorQuestion=/\b(?:explain|why|what does|meaning|difference between|how does|samjha|samjhao)\b/i.test(query);
     const localResult=command.expression||command.list||(command.tool&&!calculatorQuestion);
-    if(localResult||directTool||(!navigator.onLine&&command.error&&!command.unrecognized)){
+    if((!forceOnline&&(localResult||directTool))||(!navigator.onLine&&command.error&&!command.unrecognized)){
       renderCommand(command,query);
       return;
     }
@@ -1212,7 +1212,7 @@ async function acceptOnlineReply(reply,query=''){
   const guidance={help:'Ask about calculations, conversions, or using a SevenTask calculator.',clarify:'Please repeat the calculation with the amount, unit, or calculator name.',unsupported:'Sorry, I can only help with calculator questions and calculations.',limit:'Online requests are busy right now. You can still use offline calculator commands.'};
   message(reply.answer||guidance[reply.kind]||'Please try a calculator-related question.');
 }
-const stopVoice=mountOfflineVoice({dock,input,onlineAvailable:()=>onlineReady,onOnlineResult:async(data,mimeType)=>{
+const stopVoice=mountOfflineVoice({dock,input,onlineAvailable:()=>onlineReady,onSpeechResult:transcript=>runCommand(transcript,true),onOnlineResult:async(data,mimeType)=>{
   if(!onlineReady)throw Error('offline');
   const generation=screenGeneration;
   const session=guided;
