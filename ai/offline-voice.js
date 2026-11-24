@@ -1,4 +1,4 @@
-window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnlineResult = () => {} }) => {
+window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnlineResult = () => {}, onSpeechResult }) => {
   const trigger = dock.querySelector('.voice');
   const form = dock.querySelector('.ai-form');
   const state = dock.querySelector('.state');
@@ -67,6 +67,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
   let busy = false;
   let discardNext = false;
   let recognition = null;
+  let stopRecognition = () => {};
   let completionWatcher = null;
 
   const setVoiceState = (next, label, title = label) => {
@@ -126,6 +127,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       if (submitted) return;
       submitted = true;
       window.clearTimeout(endTimer);
+      try { recognition?.stop(); } catch {}
       recognition = null;
       busy = false;
       const transcript = String(text || heard).trim();
@@ -135,21 +137,25 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         return;
       }
       setVoiceState('processing', 'Processing your request');
-      setStatus('Heard: ' + transcript);
-      input.value = transcript;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      form?.requestSubmit();
+      setStatus('Sending your voice question…');
+      if(onSpeechResult)onSpeechResult(transcript);
+      else { input.value = transcript; input.dispatchEvent(new Event('input', { bubbles: true })); form?.requestSubmit(); }
       setVoiceState('idle', 'Ask by voice');
       setStatus('Ready for your next calculator question.');
+    };
+    stopRecognition = (discard=false) => {
+      if(!discard){finish(heard||interimHeard);return;}
+      submitted=true;window.clearTimeout(endTimer);
+      const active=recognition;recognition=null;busy=false;
+      try{active?.abort();}catch{}
+      setVoiceState('idle','Ask by voice');
     };
     try {
       const engine = new SpeechRecognition();
       recognition = engine;
       busy = true;
       engine.lang = navigator.language || 'en-IN';
-      // Keep the recognizer open until the user taps the mic again. Some
-      // speech engines emit a short final segment mid-sentence; don't submit
-      // those partial thoughts as complete calculator commands.
+      // Keep collecting speech across pauses; submit after 22 seconds of silence.
       engine.continuous = true;
       engine.interimResults = true;
       engine.maxAlternatives = 2;
@@ -161,12 +167,15 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
           if (event.results[index].isFinal) finalText += (finalText ? ' ' : '') + phrase;
           else interimText = phrase;
         }
-        if(interimText)interimHeard=interimText;
+        interimHeard=interimText;
         if (finalText) heard = `${heard} ${finalText}`.trim();
         const preview = `${heard} ${interimText}`.trim();
-        if (preview) setStatus(preview);
+        if (preview) {
+          window.clearTimeout(endTimer);
+          endTimer=window.setTimeout(()=>finish(heard||interimHeard),22000);
+        }
       };
-      engine.onspeechend = () => { setStatus(heard||interimHeard||'Listening…');window.clearTimeout(endTimer);endTimer=window.setTimeout(()=>finish(heard||interimHeard),700); };
+      engine.onspeechend = () => { if(!submitted)setStatus('Listening… pause when you’re done.'); };
       engine.onerror = event => {
         if (submitted) return;
         submitted = true;
@@ -179,16 +188,21 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         else {setStatus('Switching voice input…');void startRecording();}
       };
       engine.onend = () => {
-        if (!submitted && (heard||interimHeard)) finish(heard||interimHeard);
-        else if (recognition === engine) { recognition = null; busy = false; setVoiceState('idle', 'Ask by voice'); }
+        if (submitted || recognition !== engine) return;
+        window.setTimeout(()=>{
+          if(submitted||recognition!==engine)return;
+          try { engine.start(); } catch { finish(heard||interimHeard); }
+        },250);
       };
       setVoiceState('listening', 'Listening', 'Listening… tap the mic to finish');
       setStatus('Listening…');
+      endTimer=window.setTimeout(()=>finish(heard||interimHeard),25000);
       engine.start();
       return true;
     } catch {
       recognition = null;
       busy = false;
+      window.clearTimeout(endTimer);
       return false;
     }
   };
@@ -307,11 +321,9 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       window.SevenTaskNative.startAiVoiceInput();
       return;
     }
-    // Keep the mic open as audio and let Gemini handle transcription and
-    // multilingual understanding. A second speech recognizer can steal mic
-    // focus and bypass the configured Gemini audio route.
+    if (recognition) { stopRecognition(); return; }
     if (recorder?.state === 'recording') finishRecording();
-    else void startRecording();
+    else if (!startSpeechRecognition()) void startRecording();
   };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && recorder?.state === 'recording') finishRecording();
@@ -321,6 +333,6 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
     setVoiceState('muted', 'Voice needs an internet connection');
     setStatus('Connect to use voice with SevenTask AI.');
   });
-  return () => { stopCompletionWatcher(); finishRecording(true); stopTracks(); };
+  return () => { stopRecognition(true); stopCompletionWatcher(); finishRecording(true); stopTracks(); };
 };
 
