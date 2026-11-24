@@ -132,8 +132,8 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       busy = false;
       const transcript = String(text || heard).trim();
       if (!transcript) {
-        setVoiceState('error', 'No voice captured');
-        setStatus('I couldn’t hear that. Tap the microphone and try again.');
+        setVoiceState('idle', 'Ask by voice');
+        setStatus('Ready for your calculator question.');
         return;
       }
       setVoiceState('processing', 'Processing your request');
@@ -180,7 +180,18 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         if (submitted) return;
         // A recognizer may end during a pause. Keep the existing transcript
         // and silence deadline while onend restarts the engine.
-        if(event.error==='no-speech')return;
+        if(event.error==='no-speech'){
+          if(!heard && !interimHeard){
+            submitted=true;
+            window.clearTimeout(endTimer);
+            recognition=null;
+            busy=false;
+            setVoiceState('processing','Switching voice input');
+            setStatus('Switching voice input…');
+            void startRecording();
+          }
+          return;
+        }
         if(heard||interimHeard){finish([heard,interimHeard].filter(Boolean).join(' '));return;}
         submitted = true;
         window.clearTimeout(endTimer);
