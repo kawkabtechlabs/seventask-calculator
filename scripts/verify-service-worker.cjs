@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const assert=require('node:assert/strict');
 
 const handlers={},stores=new Map([['seventask-calculator-shell-old',new Map()]]);
-let failedPath='./calculator-core.js',skipped=0,claimed=0;
+let failCore=true,skipped=0,claimed=0;
 const caches={
   open:async name=>{
     if(!stores.has(name))stores.set(name,new Map());
@@ -20,14 +20,14 @@ const self={
   skipWaiting:async()=>{skipped++;},
   clients:{claim:async()=>{claimed++;}},
 };
-const context={self,caches,Request:class{constructor(url){this.url=url;}},fetch:async request=>({ok:request.url!==failedPath,status:request.url===failedPath?503:200}),URL,Response};
+const context={self,caches,Request:class{constructor(url){this.url=url;}},fetch:async request=>{const failed=failCore&&request.url.startsWith('./calculator-core.js');return {ok:!failed,status:failed?503:200}},URL,Response};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8'),context);
 async function dispatch(name){let pending;handlers[name]({waitUntil:promise=>{pending=promise;}});return pending;}
 (async()=>{
   await assert.rejects(dispatch('install'),/Core asset unavailable/);
   assert.equal(skipped,0,'failed core caching must not activate the new worker');
   assert.ok(stores.has('seventask-calculator-shell-old'),'old offline cache must remain after failed install');
-  failedPath=null;
+  failCore=false;
   await dispatch('install');
   assert.equal(skipped,1,'complete core caching may activate the new worker');
   await dispatch('activate');

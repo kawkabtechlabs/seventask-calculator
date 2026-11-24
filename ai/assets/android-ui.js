@@ -128,7 +128,7 @@
     `;
     root.append(style);
     const nativeVersion=window.SevenTaskNative?.getVersionName?.(); if(nativeVersion)root.querySelectorAll(".version-number").forEach(el=>el.textContent=nativeVersion);
-    const host=root.host; if(host?.shareAndroidApp)host.shareAndroidApp=async()=>{const r=await fetch("https://seventaskcalculator.in/mobile-update.json",{cache:"no-store"});if(!r.ok)return;const release=await r.json();const url=new URL(release.apkUrl);if(url.protocol!=="https:"||url.hostname!=="seventaskcalculator.in")return;const data={title:"SevenTask Calculator",text:"SevenTask Calculator for Android",url:url.href};if(navigator.share)await navigator.share(data);else await navigator.clipboard.writeText(url.href);};
+    const host=root.host; if(host?.shareAndroidApp)host.shareAndroidApp=async()=>{const r=await fetch("https://seventaskcalculator.in/mobile-update.json",{cache:"no-store"});if(!r.ok)return;const release=await r.json();const url=new URL(release.apkUrl);const trusted=url.protocol==="https:"&&((url.hostname==="seventaskcalculator.in"&&url.pathname.startsWith("/downloads/mobile-"))||(url.hostname==="github.com"&&/^\/kawkabtechlabs\/seventask-android-releases\/releases\/download\/v[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname)));if(!trusted)return;const data={title:"SevenTask Calculator",text:"SevenTask Calculator for Android",url:url.href};if(navigator.share)await navigator.share(data);else await navigator.clipboard.writeText(url.href);};
     const update = () => {
       win.classList.toggle('st-compact', innerWidth < 360);
       win.classList.toggle('st-tiny', innerWidth < 300);

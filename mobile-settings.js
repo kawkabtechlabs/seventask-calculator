@@ -86,7 +86,9 @@
     applyDropdownSize(dropdownSize);
     alignment.addEventListener('input',()=>{dropdownSize=sizes[Number(alignment.value)]||'large';applyDropdownSize(dropdownSize);try{localStorage.setItem('stc-dropdown-size',dropdownSize)}catch{}});
     const theme=panel.querySelector('.theme-choice');
-    if(theme)theme.after(section); else panel.appendChild(section);
+    // Keep settings beside the AI entry in the compact calculator menu.
+    const menuAnchor=panel.querySelector('.mobile-guide-entry')||panel.querySelector('.info-links')||panel.querySelector('.infomade');
+    if(menuAnchor)menuAnchor.before(section); else if(theme)theme.after(section); else panel.appendChild(section);
     if(theme)section.querySelector('.st-settings-body').prepend(theme);
     panel.querySelector('.shortcut-section')?.remove();
     section.querySelector('.st-settings-toggle').addEventListener('click',event=>{
@@ -106,7 +108,8 @@
         if(!response.ok)return;
         const release=await response.json(),current=Number(window.SevenTaskNative.getVersionCode());
         const url=new URL(release.apkUrl);
-        if(!Number.isSafeInteger(release.versionCode)||release.versionCode<=current||url.protocol!=='https:'||url.hostname!=='seventaskcalculator.in'||!/^\/downloads\/mobile-[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname))return;
+        const trustedApk=url.protocol==='https:'&&((url.hostname==='seventaskcalculator.in'&&/^\/downloads\/mobile-[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname))||(url.hostname==='github.com'&&/^\/kawkabtechlabs\/seventask-android-releases\/releases\/download\/v[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname)));
+        if(!Number.isSafeInteger(release.versionCode)||release.versionCode<=current||!trustedApk)return;
         updateStatus.hidden=false;updateStatus.textContent=`Version ${release.versionName} is available. `;
         const button=document.createElement('button');button.type='button';button.textContent='Download update';button.addEventListener('click',()=>window.SevenTaskNative.openUpdate?.(url.href));updateStatus.append(button);
       }catch{}

@@ -12,5 +12,6 @@
 ## Product details
 - Product name: SevenTask Calculator
 - Publisher: Kawkab Tech Labs
-- Current product version: 1.18.08
+- Current web product version: 1.18.65
+- Current Android app version: 1.18.52 (versionCode 49)
 - Website: https://seventaskcalculator.in/

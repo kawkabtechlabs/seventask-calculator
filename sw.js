@@ -1,5 +1,5 @@
-const CACHE = "seventask-calculator-shell-1.18.60";
-const CORE = ["./", "./calculator", "./calculator-core.js?v=web-ai-click-fix-1.18.60", "./mobile-settings.js", "./ai/web-mode.js?v=web-ai-click-fix-1.18.60", "./ai/offline-commands.js?v=web-ai-click-fix-1.18.60", "./ai/offline-voice.js?v=web-ai-click-fix-1.18.60", "./ai/calculator-ai-client.js?v=web-ai-click-fix-1.18.60", "./ai/assistant-demo.js?v=web-ai-click-fix-1.18.60", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
+const CACHE = "seventask-calculator-shell-1.18.65";
+const CORE = ["./", "./calculator", "./calculator-core.js?v=web-ai-gemini-audio-1.18.65", "./mobile-settings.js?v=web-ai-gemini-audio-1.18.65", "./ai/web-mode.js?v=web-ai-gemini-audio-1.18.65", "./ai/offline-commands.js?v=web-ai-gemini-audio-1.18.65", "./ai/offline-voice.js?v=web-ai-gemini-audio-1.18.65", "./ai/calculator-ai-client.js?v=web-ai-gemini-audio-1.18.65", "./ai/assistant-demo.js?v=web-ai-gemini-audio-1.18.65", "./install", "./privacy-policy.html", "./manifest.webmanifest", "./icon.svg", "./assets/fonts/fjalla-one-latin.woff2"];
 const SHELL_PREFIX = "seventask-calculator-shell-";
 
 self.addEventListener("install", event => {
