@@ -109,7 +109,8 @@
         if(!response.ok)return;
         const release=await response.json(),current=Number(window.SevenTaskNative.getVersionCode());
         const url=new URL(release.apkUrl);
-        if(!Number.isSafeInteger(release.versionCode)||release.versionCode<=current||url.protocol!=='https:'||url.hostname!=='seventaskcalculator.in'||!/^\/downloads\/mobile-[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname))return;
+        const trustedApk=url.protocol==='https:'&&((url.hostname==='seventaskcalculator.in'&&/^\/downloads\/mobile-[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname))||(url.hostname==='github.com'&&/^\/kawkabtechlabs\/seventask-android-releases\/releases\/download\/v[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(url.pathname)));
+        if(!Number.isSafeInteger(release.versionCode)||release.versionCode<=current||!trustedApk)return;
         updateStatus.hidden=false;updateStatus.textContent=`Version ${release.versionName} is available. `;
         const button=document.createElement('button');button.type='button';button.textContent='Download update';button.addEventListener('click',()=>window.SevenTaskNative.openUpdate?.(url.href));updateStatus.append(button);
       }catch{}

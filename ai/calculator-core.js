@@ -1846,7 +1846,7 @@
       </div>
       <div class="infosection version-section">
         <div class="infolabel">Version</div><span class="version-separator" aria-hidden="true">—</span>
-        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.55</b></div>
+        <div class="infoversion"><span class="version-name">TOUHID</span><b class="version-number">1.18.65</b></div>
       </div>
       <div class="infosection">
         <div class="infolabel">About</div>
@@ -2894,7 +2894,8 @@
           const target=new URL(release.apkUrl);
           const currentBuild=Number(nativeApp.getVersionCode());
           const latestBuild=Number(release.versionCode);
-          if(target.protocol!=='https:'||target.hostname!=='seventaskcalculator.in'||!target.pathname.startsWith('/downloads/mobile-')||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
+          const trustedApk=target.protocol==='https:'&&((target.hostname==='seventaskcalculator.in'&&target.pathname.startsWith('/downloads/mobile-'))||(target.hostname==='github.com'&&/^\/kawkabtechlabs\/seventask-android-releases\/releases\/download\/v[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(target.pathname)));
+          if(!trustedApk||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
           const size=Number(release.apkSizeBytes);
           const sizeText=Number.isFinite(size)&&size>0?` · ${ (size/1048576).toFixed(2) } MB`:'';
           const currentVersion=String(nativeApp.getVersionName()||'').trim();
@@ -2913,7 +2914,8 @@
           const target=new URL(release.apkUrl);
           const currentBuild=Number(info.build);
           const latestBuild=Number(release.versionCode);
-          if(target.protocol!=='https:'||target.hostname!=='seventaskcalculator.in'||!target.pathname.startsWith('/downloads/mobile-')||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
+          const trustedApk=target.protocol==='https:'&&((target.hostname==='seventaskcalculator.in'&&target.pathname.startsWith('/downloads/mobile-'))||(target.hostname==='github.com'&&/^\/kawkabtechlabs\/seventask-android-releases\/releases\/download\/v[0-9.]+\/SevenTask-Calculator-Android-[0-9.]+\.apk$/.test(target.pathname)));
+          if(!trustedApk||!Number.isSafeInteger(latestBuild)||!Number.isSafeInteger(currentBuild))throw new Error('Invalid update information');
           const size=Number(release.apkSizeBytes);
           const sizeText=Number.isFinite(size)&&size>0?` · ${ (size/1048576).toFixed(2) } MB`:'';
           if(latestBuild>currentBuild){

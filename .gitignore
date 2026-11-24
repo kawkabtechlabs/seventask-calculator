@@ -2,5 +2,7 @@
 .env.*
 .wrangler/
 node_modules/
+tmp/
+output/
 *.log
 downloads/desktop-1.18.07/*.exe

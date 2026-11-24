@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const html = fs.readFileSync(path.join(__dirname, 'calculator.html'), 'utf8');
 const marker = "window.addEventListener('message',event=>";
 const core = fs.readFileSync(process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, 'calculator-core.js'), 'utf8');
-assert.ok(html.includes('src="calculator-core.js"') && core.includes(marker) && core.includes('const CATEGORIES = ['), 'calculator logic script exists');
+assert.ok(/src="calculator-core\.js(?:\?[^\"]*)?"/.test(html) && core.includes(marker) && core.includes('const CATEGORIES = ['), 'calculator logic script exists');
 
 const injectedChecks = `
   const expect = (condition, message) => { if (!condition) throw new Error(message); };

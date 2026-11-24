@@ -15,14 +15,14 @@ for (const file of ['index.html', 'calculator.html', 'max.html', 'keyboard-short
   }
   for (const [, url] of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/gi)) {
     if (!url.endsWith('.html')) continue;
-    assert.ok(fs.existsSync(path.join(root, url)), `${file}: missing link ${url}`);
+    assert.ok(fs.existsSync(path.join(root, url.replace(/^\//, ''))), `${file}: missing link ${url}`);
   }
 }
 
 assert.match(read('index.html'), /href="keyboard-shortcuts\.html"/);
 assert.match(read('index.html'), /href="pricing\.html"/);
-assert.match(read('calculator.html'), /href="\/max"/);
-assert.match(read('max.html'), /href="\/calculator"/);
+assert.match(read('calculator.html'), /href="\/ai\/workspaces\/max\.html"/);
+assert.match(read('max.html'), /href="\/calculator\?launch=bubble"/);
 assert.match(read('calculator-core.js'), new RegExp(`class="version-number">${release.versionName.replaceAll('.', '\\.')}<`));
 assert.match(read('calculator.html'), new RegExp(`TOUHID<\\/span><b>${release.versionName.replaceAll('.', '\\.')}<`));
 assert.match(read('sw.js'), new RegExp(`shell-${release.versionName.replaceAll('.', '\\.')}`));
