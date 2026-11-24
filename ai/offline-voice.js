@@ -178,6 +178,10 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       engine.onspeechend = () => { if(!submitted)setStatus('Listening… pause when you’re done.'); };
       engine.onerror = event => {
         if (submitted) return;
+        // A recognizer may end during a pause. Keep the existing transcript
+        // and silence deadline while onend restarts the engine.
+        if(event.error==='no-speech')return;
+        if(heard||interimHeard){finish(heard||interimHeard);return;}
         submitted = true;
         window.clearTimeout(endTimer);
         recognition = null;
