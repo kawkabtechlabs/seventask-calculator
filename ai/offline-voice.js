@@ -138,6 +138,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       }
       setVoiceState('processing', 'Processing your request');
       setStatus('Sending your voice question…');
+      if (recorder?.state === 'recording') finishRecording(true);
       if(onSpeechResult)onSpeechResult(transcript);
       else { input.value = transcript; input.dispatchEvent(new Event('input', { bubbles: true })); form?.requestSubmit(); }
       setVoiceState('idle', 'Ask by voice');
@@ -186,9 +187,10 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
             window.clearTimeout(endTimer);
             recognition=null;
             busy=false;
-            setVoiceState('processing','Switching voice input');
-            setStatus('Switching voice input…');
-            void startRecording();
+            if(recorder?.state==='recording'){
+              setVoiceState('listening','Listening');
+              setStatus('Listening… pause when you’re done.');
+            }else void startRecording();
           }
           return;
         }
@@ -200,7 +202,10 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         const denied = event.error === 'not-allowed' || event.error === 'service-not-allowed';
         setVoiceState(denied ? 'muted' : 'processing', denied ? 'Microphone permission required' : 'Switching voice input');
         if(denied)setStatus('Allow microphone access to ask by voice.');
-        else {setStatus('Switching voice input…');void startRecording();}
+        else if(recorder?.state==='recording'){
+          setVoiceState('listening','Listening');
+          setStatus('Listening… pause when you’re done.');
+        }else {setStatus('Switching voice input…');void startRecording();}
       };
       engine.onend = () => {
         if (submitted || recognition !== engine) return;
@@ -247,7 +252,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
     }
   };
 
-  async function startRecording() {
+  async function startRecording(withRecognition = false) {
     if (!onlineAvailable()) {
       setVoiceState('muted', 'Voice needs an internet connection');
       setStatus('Connect to use voice with SevenTask AI.');
@@ -280,7 +285,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         window.clearTimeout(timer);
         timer = 0;
         recorder = null;
-        if(discardNext){discardNext=false;stopTracks();setVoiceState('idle','Ask by voice');return;}
+        if(discardNext){discardNext=false;stopTracks();return;}
         setVoiceState('processing', 'Processing voice request', 'Understanding your calculator question…');
         stopTracks();
         const clip = new Blob(chunks, { type: mimeType });
@@ -304,6 +309,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         }
       };
       session.start();
+      if(withRecognition){busy=false;startSpeechRecognition();}
       setVoiceState('listening', 'Listening', 'Listening… tap the mic to send, or say “show the answer” when finished');
       setStatus('Listening… tap the mic to send, or say “show the answer” when you’re done.');
       // Send the original audio to Gemini so its multilingual audio model,
@@ -315,8 +321,8 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         const analyser=audioContext.createAnalyser();analyser.fftSize=512;
         audioContext.createMediaStreamSource(stream).connect(analyser);
         const samples=new Uint8Array(analyser.fftSize);
-        silenceTimer=window.setInterval(()=>{if(recorder!==session||session.state!=='recording')return;analyser.getByteTimeDomainData(samples);let energy=0;for(const sample of samples){const value=(sample-128)/128;energy+=value*value;}const rms=Math.sqrt(energy/samples.length);if(rms>0.025){heardVoice=true;lastVoiceAt=Date.now();}if((heardVoice?Date.now()-lastVoiceAt>22000:Date.now()-startedAt>25000)||Date.now()-startedAt>90000){setStatus('Sending your voice question…');finishRecording();}},180);
-      }else timer=window.setTimeout(()=>finishRecording(),25000);
+        silenceTimer=window.setInterval(()=>{if(recorder!==session||session.state!=='recording')return;analyser.getByteTimeDomainData(samples);let energy=0;for(const sample of samples){const value=(sample-128)/128;energy+=value*value;}const rms=Math.sqrt(energy/samples.length);if(rms>0.025){heardVoice=true;lastVoiceAt=Date.now();}if((heardVoice?Date.now()-lastVoiceAt>22000:Date.now()-startedAt>25000)||Date.now()-startedAt>90000){if(recognition)stopRecognition(true);setStatus('Sending your voice question…');finishRecording();}},180);
+      }else timer=window.setTimeout(()=>{if(recognition)stopRecognition(true);finishRecording();},25000);
       setStatus('Listening… pause when you’re done.');
     } catch (error) {
       stopTracks();
@@ -338,7 +344,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
     }
     if (recognition) { stopRecognition(); return; }
     if (recorder?.state === 'recording') finishRecording();
-    else if (!startSpeechRecognition()) void startRecording();
+    else void startRecording(true);
   };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && recorder?.state === 'recording') finishRecording();
