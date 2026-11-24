@@ -144,7 +144,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
       setStatus('Ready for your next calculator question.');
     };
     stopRecognition = (discard=false) => {
-      if(!discard){finish(heard||interimHeard);return;}
+      if(!discard){finish([heard,interimHeard].filter(Boolean).join(' '));return;}
       submitted=true;window.clearTimeout(endTimer);
       const active=recognition;recognition=null;busy=false;
       try{active?.abort();}catch{}
@@ -172,7 +172,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         const preview = `${heard} ${interimText}`.trim();
         if (preview) {
           window.clearTimeout(endTimer);
-          endTimer=window.setTimeout(()=>finish(heard||interimHeard),22000);
+          endTimer=window.setTimeout(()=>finish([heard,interimHeard].filter(Boolean).join(' ')),22000);
         }
       };
       engine.onspeechend = () => { if(!submitted)setStatus('Listening… pause when you’re done.'); };
@@ -181,7 +181,7 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         // A recognizer may end during a pause. Keep the existing transcript
         // and silence deadline while onend restarts the engine.
         if(event.error==='no-speech')return;
-        if(heard||interimHeard){finish(heard||interimHeard);return;}
+        if(heard||interimHeard){finish([heard,interimHeard].filter(Boolean).join(' '));return;}
         submitted = true;
         window.clearTimeout(endTimer);
         recognition = null;
@@ -195,12 +195,12 @@ window.mountOfflineVoice = ({ dock, input, onlineAvailable = () => false, onOnli
         if (submitted || recognition !== engine) return;
         window.setTimeout(()=>{
           if(submitted||recognition!==engine)return;
-          try { engine.start(); } catch { finish(heard||interimHeard); }
+          try { engine.start(); } catch { finish([heard,interimHeard].filter(Boolean).join(' ')); }
         },250);
       };
       setVoiceState('listening', 'Listening', 'Listening… tap the mic to finish');
       setStatus('Listening…');
-      endTimer=window.setTimeout(()=>finish(heard||interimHeard),25000);
+      endTimer=window.setTimeout(()=>finish([heard,interimHeard].filter(Boolean).join(' ')),25000);
       engine.start();
       return true;
     } catch {
