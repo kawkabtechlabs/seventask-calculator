@@ -166,7 +166,10 @@ export async function handleCalculatorAI(request, env, fetchProvider = fetch) {
         })()
         : await guard.limit({key:ip});
       if (!limit.success) return respond({ error: 'limit' }, 429);
-    } catch { return respond({error:'unavailable'},503); }
+    } catch (error) {
+      console.warn('Calculator AI rate guard failed:', error?.name || 'Error');
+      return respond({error:'unavailable'},503);
+    }
   }
   const declaredLength = Number(request.headers.get('Content-Length'));
   if (declaredLength > maxBody) return respond({error:'input'},413);
@@ -182,26 +185,33 @@ export async function handleCalculatorAI(request, env, fetchProvider = fetch) {
   const fast=params?.fast===true;
   const input = JSON.stringify({ prompt, selected, requestedFields, catalog: catalogFor(prompt, selected), responseStyle: fast ? 'Fast mode: answer in one or two short sentences. Return calculator expressions or fields directly. Keep every required field and numerical precision; do not omit essential values.' : undefined, audioInstruction: validAudio ? 'Transcribe and answer the spoken calculator request. Include transcript.' : undefined });
   for (const provider of providers) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      const result = await fetchProvider(provider.url, {
-        method: 'POST', signal: controller.signal,
-        headers: { 'Content-Type': 'application/json', ...provider.headers },
-        body: JSON.stringify(provider.body(input, validAudio ? audio : null, fast)),
-      });
-      if (!result.ok) {
-        console.warn('Calculator AI upstream status:', result.status);
-        continue;
+    const body = JSON.stringify(provider.body(input, validAudio ? audio : null, fast));
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      let retry = false;
+      try {
+        const result = await fetchProvider(provider.url, {
+          method: 'POST', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', ...provider.headers }, body,
+        });
+        if (!result.ok) {
+          console.warn('Calculator AI upstream status:', result.status);
+          retry = [429, 500, 502, 503, 504].includes(result.status);
+        } else {
+          const response = validate(JSON.parse(provider.extract(await result.json())), selected);
+          if (response?.kind === 'tool' && requestedFields) response.fields = response.fields.filter(field => requestedFields.includes(field.key));
+          if (response) return respond(response);
+          console.warn('Calculator AI upstream response did not match the calculator schema');
+        }
+      } catch (error) {
+        console.warn('Calculator AI upstream request failed:', error?.name || 'Error');
+        retry = true;
+      } finally {
+        clearTimeout(timeout);
       }
-      const response = validate(JSON.parse(provider.extract(await result.json())), selected);
-      if (response?.kind === 'tool' && requestedFields) response.fields = response.fields.filter(field => requestedFields.includes(field.key));
-      if (response) return respond(response);
-      console.warn('Calculator AI upstream response did not match the calculator schema');
-    } catch (error) {
-      console.warn('Calculator AI upstream request failed:', error?.name || 'Error');
-    } finally {
-      clearTimeout(timeout);
+      if (!retry || attempt) break;
+      await new Promise(resolve => setTimeout(resolve, 250));
     }
   }
   return respond({ error: 'unavailable' }, 503);
