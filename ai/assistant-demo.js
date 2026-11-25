@@ -591,7 +591,8 @@ function localLanguage(text=''){
   return 'en';
 }
 function resultLabelFor(text=''){
-  return ({hi:'परिणाम',ur:'نتیجہ',bn:'ফলাফল',gu:'પરિણામ',pa:'ਨਤੀਜਾ',ta:'முடிவு',te:'ఫలితం',zh:'结果',ja:'結果',ko:'결과',ru:'Результат',hinglish:'Jawaab',en:'Result'})[localLanguage(text)]||'Result';
+  const detected=localLanguage(text);
+  return ({hi:'परिणाम',ur:'نتیجہ',bn:'ফলাফল',gu:'પરિણામ',pa:'ਨਤੀਜਾ',ta:'முடிவு',te:'ఫలితం',zh:'结果',ja:'結果',ko:'결과',ru:'Результат',hinglish:'Jawaab',en:'Result'})[detected==='en'?conversationLanguage:detected]||'Result';
 }
 function showResultInput(note,query){
   if(!historyDrawer||!query)return;
@@ -626,7 +627,7 @@ function createMessageActions(text,kind='result',messageNode=null){
     let node=messageNode;
     while(node){const next=node.nextElementSibling;node.remove();node=next;}
   });
-  actions.append(copyButton,soundButton);
+  actions.append(copyButton);
   if(kind==='input')actions.append(editButton);
   return actions;
 }
@@ -818,6 +819,14 @@ const micSingleIconStyle=document.createElement('style');micSingleIconStyle.text
 const micInteractionPolish=document.createElement('style');micInteractionPolish.textContent=`.ai-dock .voice{width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;display:inline-grid!important;place-items:center!important;flex:0 0 44px!important;position:relative!important;isolation:isolate;overflow:visible!important;color:var(--ui-text,#111114)!important;cursor:pointer;touch-action:manipulation}.ai-dock .voice svg{width:34px!important;height:34px!important;overflow:visible!important;transform-origin:50% 55%;transition:transform .2s cubic-bezier(.2,.8,.25,1),color .2s ease,filter .2s ease}.ai-dock .voice:hover svg{transform:scale(1.06)}.ai-dock .voice:active svg{transform:scale(.94)}.ai-dock .voice[data-voice-state=listening] svg{color:var(--ui-text,#111114)!important;filter:drop-shadow(0 1px 2px #1113);animation:stc-mic-listening .9s ease-in-out infinite alternate}.ai-dock .voice[data-voice-state=listening]::before{content:'';position:absolute;inset:5px;border:1.5px solid #17191d35;border-radius:50%;background:transparent!important;transform:scale(.78);animation:stc-mic-wave 1.45s ease-out infinite;pointer-events:none}.ai-dock .voice[data-voice-state=listening]::after{display:none!important}.ai-dock .voice[data-voice-state=processing] svg{animation:stc-mic-process 1s linear infinite}.ai-dock .voice[data-voice-state=muted] svg,.ai-dock .voice[data-voice-state=error] svg{color:var(--ui-text,#111114)!important}.ai-dock .voice:focus-visible{outline:2px solid var(--ui-text,#111114);outline-offset:2px;border-radius:8px}@keyframes stc-mic-listening{from{transform:scale(.98)}to{transform:scale(1.04)}}@keyframes stc-mic-wave{0%{transform:scale(.78);opacity:.7}100%{transform:scale(1.45);opacity:0}}@keyframes stc-mic-process{to{transform:rotate(360deg)}}@media(max-width:420px){.ai-dock .voice{width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;flex-basis:40px!important}.ai-dock .voice svg{width:32px!important;height:32px!important}}@media(prefers-reduced-motion:reduce){.ai-dock .voice svg,.ai-dock .voice[data-voice-state=listening]::before{animation:none!important;transition:none!important}}`;root.append(micInteractionPolish);
 const commands=createOfflineCommands(app);
 let guided=null;
+let conversationLanguage='en';
+function guidedText(en,hi,hinglish){return conversationLanguage==='hi'?hi:conversationLanguage==='hinglish'?hinglish:en;}
+function guidedFieldLabel(field){
+  const label=field.label;
+  if(conversationLanguage!=='hi')return label;
+  const names={'Percent %':'प्रतिशत %','Percent (%)':'प्रतिशत (%)','Of value':'कुल राशि','Amount':'राशि','Principal':'मूलधन','Loan amount':'ऋण की राशि','Interest rate':'ब्याज दर','Annual interest rate':'सालाना ब्याज दर','Rate':'दर','Years':'वर्ष','Months':'महीने','Tenure':'अवधि','Weight':'वज़न','Height':'ऊँचाई','Age':'उम्र','Value':'वैल्यू','Price':'कीमत','Quantity':'मात्रा','Distance':'दूरी','Time':'समय'};
+  return names[label]||label;
+}
 const guidedStyle=document.createElement('style');
 guidedStyle.textContent=`
   .ai-guided-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:10px;animation:ai-guided-in .22s ease-out both}
@@ -845,7 +854,8 @@ function guidedPrompt(session,field,invalid=false){
   const question=field?'Enter '+field.label+hint+'.':session.tool.id==='programmer'
     ?'Enter an integer or operation, such as 0xFF, 0b1010, or 5 AND 3.'
     :'Enter a calculation, such as 22 + 22.';
-  const note=message(session.tool.name+'\n'+(invalid?'I couldn’t match that value. ':'')+question);
+  const prompt=field?guidedText(question,guidedFieldLabel(field)+' दर्ज करें'+hint+'।',field.label+' ki value dein'+hint+'.'):question;
+  const note=message(session.tool.name+'\n'+(invalid?guidedText('Please check that value. ','कृपया वैल्यू जाँचें। ','Value dobara check karein. '):'')+prompt);
   const controls=document.createElement('span');
   controls.className='ai-guided-controls';
   session.controls=controls;
@@ -853,10 +863,23 @@ function guidedPrompt(session,field,invalid=false){
     const effective={...session.values};
     app.applyFieldDefaults(session.tool,effective);
     const options=commands.optionsFor(field,effective);
+    if(!options.length){
+      const entry=document.createElement('input');
+      entry.type=field.type==='date'?'date':field.type==='time'?'time':'text';
+      entry.inputMode=field.type==='number'?'decimal':'text';
+      entry.placeholder=field.label;
+      entry.setAttribute('aria-label',field.label);
+      entry.style.cssText="width:100%;min-width:0;min-height:42px;padding:9px 11px;border:1.5px solid var(--ai-line,#bfc3c9);border-radius:11px;background:var(--ai-input,#fff);color:inherit;font:inherit;box-sizing:border-box";
+      entry.value=String(session.values[field.key]??'');
+      const submit=()=>{const value=entry.value.trim();if(value&&guided===session)runCommand(value);};
+      entry.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();event.stopPropagation();submit();}});
+      controls.append(entry);
+      guidedControl(controls,guidedText('Continue','आगे बढ़ें','Aage badhein'),submit);
+    }
     if(options.length){
       const select=document.createElement('select');
       select.setAttribute('aria-label',field.label);
-      const placeholder=new Option('Choose '+field.label,'',true,true);
+      const placeholder=new Option(guidedText('Choose '+field.label,guidedFieldLabel(field)+' चुनें',field.label+' chunein'),'',true,true);
       placeholder.disabled=true;
       select.add(placeholder);
       for(const option of options)select.add(new Option(option.label,String(option.value)));
@@ -872,7 +895,7 @@ function guidedPrompt(session,field,invalid=false){
       app.selectFeature(session.tool.id);
     });
   }
-  guidedControl(controls,'Cancel',()=>{
+  guidedControl(controls,guidedText('Cancel','रद्द करें','Cancel'),()=>{
     session.controls?.remove();
     if(guided===session)guided=null;
   });
@@ -913,6 +936,9 @@ guidedInputStyle.textContent=`
   @media(prefers-reduced-motion:reduce){.ai-chat .ai-guided-trigger,.ai-chat .ai-guided-trigger svg{transition:none}.ai-chat .ai-guided-menu{animation:none}}
 `;
 root.append(guidedInputStyle);
+const guidedLayoutFix=document.createElement('style');
+guidedLayoutFix.textContent='.ai-chat .ai-guided-menu{position:relative;left:auto;bottom:auto;margin-top:7px;box-shadow:0 3px 10px #11111415}.ai-chat .ai-guided-menu[hidden]{display:none!important}.ai-chat .ai-guided-controls{display:flex;flex-wrap:wrap;gap:7px}.ai-chat .ai-guided-controls>input{flex:1 0 100%}.ai-chat .ai-guided-trigger,.ai-chat .ai-guided-menu{flex-basis:100%}';
+root.append(guidedLayoutFix);
 function finishGuidedStep(session){
   const next=guidedRequired(session)[0];
   if(next){guidedPrompt(session,next);return;}
@@ -941,7 +967,8 @@ function finishGuidedStep(session){
   trigger.setAttribute('aria-label','Edit a calculator input');
   trigger.setAttribute('aria-haspopup','listbox');
   trigger.setAttribute('aria-expanded','false');
-  trigger.innerHTML='<span>Edit an input…</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  trigger.innerHTML='<span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  trigger.querySelector('span').textContent=guidedText('Edit an input…','वैल्यू बदलें…','Value badlein…');
   const menu=document.createElement('span');
   menu.className='ai-guided-menu';
   menu.setAttribute('role','listbox');
@@ -952,7 +979,7 @@ function finishGuidedStep(session){
     option.type='button';
     option.className='ai-guided-option';
     option.setAttribute('role','option');
-    option.textContent=field.label;
+    option.textContent=guidedFieldLabel(field);
     const mark=document.createElementNS('http://www.w3.org/2000/svg','svg');
     mark.setAttribute('viewBox','0 0 24 24');mark.setAttribute('aria-hidden','true');
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','m9 18 6-6-6-6');mark.append(path);option.append(mark);
@@ -1108,7 +1135,10 @@ root.append(exampleStyle);
     }
 
     if(missing.length){
-      return message(tool.name+' · Please enter '+missing.map(f=>f.label).join(', ')+'.');
+      guided?.controls?.remove();
+      guided={tool,values:{...values}};
+      guidedPrompt(guided,missing[0]);
+      return;
     }
     if(!tool.fields.length){
       const fields=tool.fields.filter(f=>f.key!=='exchangeRate').map(f=>f.key);
@@ -1153,6 +1183,7 @@ async function offerOnline(note,query,generation=screenGeneration){
   }
 }
 function runCommand(query,forceOnline=false){
+  if(/[a-zA-Z\u0900-\u097f]/u.test(query)&&!query.startsWith('@'))conversationLanguage=localLanguage(query);
   if(!query)return;
   message(query,'you');
   const maxLength=query.startsWith('@')?2400:600;
@@ -1201,7 +1232,7 @@ form.onsubmit=event=>{
   runCommand(query);
 };
 async function acceptOnlineReply(reply,query=''){
-  if(reply.transcript){const spoken=reply.transcript.trim();if(spoken){message(spoken,'you');query=spoken;}}
+  if(reply.transcript){const spoken=reply.transcript.trim();if(spoken){message(spoken,'you');query=spoken;if(/[a-zA-Z\u0900-\u097f]/u.test(spoken))conversationLanguage=localLanguage(spoken);}}
   const command=commands.fromOnline(reply);
   if(command){renderCommand(command,query,reply.label);return;}
   if(reply.kind==='answer'){
