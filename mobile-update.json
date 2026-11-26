@@ -1,7 +1,7 @@
 {
-  "apkUrl": "https://github.com/kawkabtechlabs/seventask-android-releases/releases/download/v1.18.70/SevenTask-Calculator-Android-1.18.70.apk",
-  "versionCode": 50,
-  "versionName": "1.18.70",
+  "apkUrl": "https://github.com/kawkabtechlabs/seventask-android-releases/releases/download/v1.18.71/SevenTask-Calculator-Android-1.18.71.apk",
+  "versionCode": 51,
+  "versionName": "1.18.71",
   "apkSizeBytes": 6159455,
-  "apkSha256": "734c4e5ace87240ef8275fc60b25f586907a7ffeba484c3b1608e940afe66be7"
+  "apkSha256": "841d8ff365967ebfcfe683e13fc2cf0c2c8a2bbdeefb821428951490b2c8ae2d"
 }
