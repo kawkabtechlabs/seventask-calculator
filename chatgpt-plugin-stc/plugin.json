@@ -1,0 +1,41 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "seventask-calculator-stc",
+  "version": "1.0.0",
+  "description": "SevenTask Calculator by Kawkab Tech Labs: 136 everyday, finance, business, science and conversion calculators with an interactive result card.",
+  "author": {
+    "name": "Kawkab Tech Labs",
+    "email": "kawkabtechlabs@gmail.com",
+    "url": "https://seventaskcalculator.in/"
+  },
+  "homepage": "https://seventaskcalculator.in/",
+  "repository": "https://github.com/kawkabtechlabs/seventask-calculator",
+  "keywords": ["STC", "SevenTask", "calculator", "finance", "mathematics", "india", "gst"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "SevenTask Calculator (STC)",
+        "shortDescription": "136 calculators, one premium workspace",
+        "longDescription": "The official SevenTask Calculator by Kawkab Tech Labs. Instantly calculate percentages, discounts, EMI, SIP, GST, averages, age, BMI, shop profits, fuel costs, unit conversions and more. Browse daily-use, basic maths, finance, business and home collections or search all 136 calculators. ChatGPT-supported views display a premium compact results card with Edit Inputs and Recalculate. Calculations involving finance, tax or health are estimates, not professional advice.",
+        "developerName": "Kawkab Tech Labs",
+        "category": "Other",
+        "capabilities": ["Everyday calculations", "Basic maths", "Finance estimates", "Business pricing", "Conversions"],
+        "websiteURL": "https://seventaskcalculator.in/",
+        "supportURL": "https://mcp.seventaskcalculator.in/support",
+        "privacyPolicyURL": "https://seventaskcalculator.in/privacy-policy",
+        "termsOfServiceURL": "https://seventaskcalculator.in/terms",
+        "brandColor": "#111114",
+        "logo": "./assets/seventask-icon.png",
+        "composerIcon": "./assets/seventask-icon.png",
+        "defaultPrompt": [
+          "Calculate 20% of ₹22 lakh with SevenTask.",
+          "Calculate EMI for a ₹3 lakh loan at 8% for 3 years.",
+          "Show SevenTask's daily-use calculators."
+        ]
+      },
+      "publication": {
+        "release_notes": "New STC plugin entry with a premium 1024px calculator-only icon, official .in MCP domain, 136 calculators, 14 tools, and an interactive Edit/Recalculate result card where supported by the ChatGPT host."
+      }
+    }
+  }
+}

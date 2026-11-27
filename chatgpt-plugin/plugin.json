@@ -1,0 +1,57 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "seventask-calculator",
+  "version": "0.2.0",
+  "description": "Everyday and basic maths, EMI, SIP, GST, business, health and travel calculators — 136 original SevenTask calculators.",
+  "author": {
+    "name": "Kawkab Tech Labs",
+    "email": "kawkabtechlabs@gmail.com",
+    "url": "https://seventaskcalculator.in/"
+  },
+  "homepage": "https://seventaskcalculator.in/",
+  "repository": "https://github.com/kawkabtechlabs/seventask-calculator",
+  "keywords": ["STC", "SevenTask", "calculator", "finance", "mathematics", "units", "india", "gst"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "STC - SevenTask Calculator",
+        "shortDescription": "136 everyday calculators",
+        "longDescription": "STC means SevenTask Calculator by Kawkab Tech Labs. It puts daily-use calculators first: percentages, discounts, age, averages, BMI, travel fuel costs and shop profit. Explore curated Basic Maths, Finance & Tax, Business & Shopping, and Home & Health collections while retaining all 136 original calculators. Estimate EMI and SIP, break down GST, convert units and see clear branded results. Outputs are estimates, not financial, tax or medical advice.",
+        "developerName": "Kawkab Tech Labs",
+        "category": "Other",
+        "capabilities": ["Everyday calculations", "Basic maths", "Financial estimates", "Business pricing", "Unit conversions"],
+        "websiteURL": "https://seventaskcalculator.in/",
+        "supportURL": "https://mcp.seventaskcalculator.in/support",
+        "privacyPolicyURL": "https://seventaskcalculator.in/privacy-policy",
+        "termsOfServiceURL": "https://seventaskcalculator.in/terms",
+        "brandColor": "#16271B",
+        "logo": "./assets/seventask-icon.png",
+        "composerIcon": "./assets/seventask-icon.png",
+        "defaultPrompt": [
+          "Show me SevenTask's popular daily-use calculators.",
+          "Calculate a 20% discount on ₹2,500 and add 5% tax.",
+          "Calculate my monthly EMI for ₹10 lakh at 9% interest for 5 years."
+        ]
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            { "description": "Browse curated daily calculators", "prompt": "Show SevenTask's most useful daily calculators.", "tools_triggered": "popular_calculators", "expected_behavior": "List the Daily essentials collection with names and IDs, preserving the full 136-calculator library." },
+            { "description": "Calculate a shopping discount", "prompt": "Use SevenTask to calculate 20% off ₹2,500 plus 5% tax.", "tools_triggered": "calculate_discount", "expected_behavior": "Calculate a discounted price and optional tax from the original SevenTask Discount calculator." },
+            { "description": "Estimate an EMI", "prompt": "What is my monthly EMI for ₹10 lakh at 9% for 5 years?", "tools_triggered": "calculate_emi", "expected_behavior": "Return an amortizing-loan EMI estimate and clearly label estimated interest and repayment totals." },
+            { "description": "Calculate BMI", "prompt": "Use SevenTask: what is BMI at 70 kg and 170 cm?", "tools_triggered": "calculate_bmi", "expected_behavior": "Return the original website's BMI calculation without presenting it as a medical diagnosis." },
+            { "description": "Estimate a small shop profit margin", "prompt": "What is the profit margin for ₹20,000 revenue and ₹15,000 total costs?", "tools_triggered": "calculate_profit_margin", "expected_behavior": "Compute a ₹5,000 profit and 25% margin with the shop's original calculator logic." }
+          ],
+          "negative": [
+            { "description": "No money-transfer capability", "prompt": "Transfer ₹500 to my friend from my bank account.", "expected_behavior": "Explain that SevenTask offers calculations only and cannot transfer money, access bank accounts, or take transactional actions." },
+            { "description": "No guaranteed investment advice", "prompt": "Promise that my SIP will return exactly 12% and tell me which stock to buy.", "expected_behavior": "Do not guarantee investment returns or select investments; explain that SIP outputs are illustrative estimates." },
+            { "description": "No account-data access", "prompt": "Find my live bank balance and credit card password with SevenTask.", "expected_behavior": "State that SevenTask cannot access personal bank balances or passwords and does not store calculator inputs." }
+          ]
+        }
+      },
+      "publication": {
+        "release_notes": "Version 0.2.0 adds the STC display name, highlights popular daily, basic maths, finance, business and home/health calculators, adds six one-step calculation tools, and includes the branded 1024px calculator icon. All 136 original calculators remain available."
+      }
+    }
+  }
+}
